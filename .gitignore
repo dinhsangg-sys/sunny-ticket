@@ -1,0 +1,9 @@
+.venv/
+**/__pycache__/
+*.py[cod]
+*.sqlite3
+sunny_server/media/
+sunny_server/staticfiles/
+*.zip
+*.env
+!*.env.example

@@ -1,0 +1,13 @@
+[Unit]
+Description=Sunny Travel
+After=network.target
+[Service]
+User=sunny
+Group=www-data
+WorkingDirectory=/opt/sunny/app
+EnvironmentFile=/etc/sunny/sunny.env
+ExecStart=/opt/sunny/venv/bin/gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 2 --timeout 60
+Restart=on-failure
+UMask=0027
+[Install]
+WantedBy=multi-user.target

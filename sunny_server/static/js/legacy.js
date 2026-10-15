@@ -1,0 +1,898 @@
+let serverRevision=0, storageReady=false, savingFailed=false;
+function serverRequest(method,url,body=null){
+ const xhr=new XMLHttpRequest();xhr.open(method,url,false);
+ xhr.setRequestHeader('X-CSRFToken',document.cookie.split('; ').find(x=>x.startsWith('csrftoken='))?.split('=')[1]||'');
+ if(body!==null)xhr.setRequestHeader('Content-Type','application/json');
+ xhr.send(body===null?null:JSON.stringify(body));
+ if(xhr.status<200||xhr.status>=300){savingFailed=true;document.body.style.pointerEvents='none';alert('Không lưu được dữ liệu. Trang đã khóa để tránh ghi đè. Hãy tải lại trang. '+xhr.responseText);throw Error('Server '+xhr.status)}
+ return JSON.parse(xhr.responseText);
+}
+const serverStorage={getItem(){const r=serverRequest('GET','/api/state/');serverRevision=r.revision;return Object.keys(r.data).length?JSON.stringify(r.data):null},setItem(key,value){if(!storageReady)return;const r=serverRequest('PUT','/api/state/',{revision:serverRevision,data:JSON.parse(value)});serverRevision=r.revision}};
+const uiFilters={bookings:null,agents:null,cashbook:null,reports:{},dashboard:null};
+const INITIAL={"ticketTypes":[],"agents":[],"agentPrices":[],"costPrices":[],"bookings":[],"expenses":[],"cashTransactions":[],"settings":{"businessName":"Sunny Travel","currency":"VND","version":"Production 1.9.8"}},KEY="sunny_travel_production_v1";let db=(()=>{try{return JSON.parse(serverStorage.getItem(KEY))||structuredClone(INITIAL)}catch{return structuredClone(INITIAL)}})();
+if(!Array.isArray(db.ticketTypes))db.ticketTypes=Array.isArray(db.tickets)?db.tickets:[];
+if(!Array.isArray(db.agents))db.agents=[];
+if(!Array.isArray(db.agentPrices))db.agentPrices=[];
+if(!Array.isArray(db.costPrices))db.costPrices=[];
+if(!Array.isArray(db.bookings))db.bookings=[];
+if(!Array.isArray(db.expenses))db.expenses=[];
+if(!Array.isArray(db.cashTransactions))db.cashTransactions=[];
+if(!db.settings)db.settings=structuredClone(INITIAL.settings);
+if(!Array.isArray(db.zaloCampaigns))db.zaloCampaigns=[];
+if(!db.zaloSettings)db.zaloSettings={reminderTemplate:"Sunny Travel xin chào Quý đối tác {agent}!\n\nBooking {code} hiện còn công nợ {due}. Kính mong Quý đối tác kiểm tra và hỗ trợ thanh toán.\n\nXin cảm ơn!"};
+serverStorage.setItem(KEY,JSON.stringify(db));
+const $=id=>document.getElementById(id), save=()=>serverStorage.setItem(KEY,JSON.stringify(db)), esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])), num=v=>Number(v)||0, money=n=>new Intl.NumberFormat("vi-VN").format(Math.round(num(n)))+" ₫", today=()=>new Date().toISOString().slice(0,10);
+let modalCloseCallback=null,modalInitialState="";
+function modalState(){return [...$("modal").querySelectorAll("input,select,textarea")].map(e=>`${e.id}:${e.type==="checkbox"?e.checked:e.value}`).join("|")}
+function show(x,onClose=null){modalCloseCallback=onClose;$("modal").innerHTML=x;$("mb").style.display="flex";modalInitialState=modalState()}
+function closeM(force=false){
+ if(!force&&modalInitialState&&modalState()!==modalInitialState&&!confirm("Bạn có thay đổi chưa lưu. Bạn có chắc muốn đóng?"))return;
+ $("mb").style.display="none";modalInitialState="";let cb=modalCloseCallback;modalCloseCallback=null;if(typeof cb==="function")cb()
+}
+$("mb").onclick=e=>{if(e.target===$("mb"))return}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>go(b.dataset.p));
+function go(p){
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.p===p));
+ let t={dashboard:"Dashboard",bookings:"Bán vé / Booking",types:"Khai báo loại vé",agents:"Đại lý & bảng giá riêng",costs:"Khai báo giá vốn",expenses:"Chi phí khác",cashbook:"Sổ quỹ / Thu Chi",reports:"Báo cáo",zalo:"Chăm sóc khách hàng / Zalo",data:"Dữ liệu & sao lưu"};
+ let pages={dashboard:dash,bookings:bookings,types:types,agents:agents,costs:costs,expenses:expenses,cashbook:cashbook,reports:reports,zalo:zaloPage,data:dataPage};
+ $("title").textContent=t[p]||"Sunny Travel";
+ if(!pages[p])return;
+ try{pages[p]()}catch(err){console.error(err);$("app").innerHTML=`<div class="card"><h3>Không thể mở module</h3><div class="muted">${esc(err.message||err)}</div></div>`}
+}
+function sum(a){return a.reduce((s,x)=>(s.q+=num(x.qty),s.r+=num(x.revenue),s.p+=num(x.profit),s),{q:0,r:0,p:0})}
+function dateInRange(x,a,b){return (!a||x.date>=a)&&(!b||x.date<=b)}
+function dashboardRange(){let d=today();return uiFilters.dashboard||{from:d,to:d}}
+function dash(){
+ let rg=dashboardRange();
+ $("app").innerHTML=`<div class="card"><div class="toolbar" style="margin:0"><b>Khoảng thời gian</b><div class="field" style="min-width:165px"><label>Từ ngày</label><input id="df" class="input" type="date" value="${rg.from}" onchange="renderDashboard()"></div><div class="field" style="min-width:165px"><label>Đến ngày</label><input id="dt" class="input" type="date" value="${rg.to}" onchange="renderDashboard()"></div><button class="btn primary" onclick="renderDashboard()">Xem báo cáo</button><button class="btn" onclick="dashboardThisMonth()">Tháng hiện tại</button></div></div><div id="dashboardBody" class="section"></div>`;
+ renderDashboard()
+}
+function dashboardThisMonth(){
+ let d=today(),m=d.slice(0,7);$("df").value=m+"-01";$("dt").value=d;renderDashboard()
+}
+function renderDashboard(){uiFilters.dashboard={from:$("df")?.value||"",to:$("dt")?.value||""};
+ let a=$("df").value,b=$("dt").value;if(a&&b&&a>b)return alert("Từ ngày không thể sau Đến ngày.");
+ let rows=db.bookings.filter(x=>dateInRange(x,a,b)),tot=sum(rows),exp=(db.cashTransactions||[]).filter(x=>x.kind==="expense"&&(!a||x.date>=a)&&(!b||x.date<=b)).reduce((z,x)=>z+num(x.amount),0),paid=rows.reduce((z,x)=>z+paidAmount(x),0),due=rows.reduce((z,x)=>z+dueAmount(x),0);
+ let byType={};
+ rows.forEach(x=>{
+   let k=x.ticketType||"Chưa xác định";
+   if(!byType[k])byType[k]={q:0,r:0,p:0};
+   byType[k].q+=num(x.qty);
+   byType[k].r+=num(x.revenue);
+   byType[k].p+=num(x.profit);
+ });
+ let sameMonth=a&&b&&a.slice(0,7)===b.slice(0,7),series={};
+ rows.forEach(x=>{let k=sameMonth?x.date:x.date.slice(0,7);series[k]=(series[k]||0)+num(x.revenue)});
+ let keys=[];
+ if(a&&b){
+   let d=new Date(a+"T00:00:00"),end=new Date(b+"T00:00:00");
+   if(sameMonth){while(d<=end){keys.push(d.toISOString().slice(0,10));d.setDate(d.getDate()+1)}}
+   else{let y=d.getFullYear(),m=d.getMonth(),ey=end.getFullYear(),em=end.getMonth();while(y<ey||(y===ey&&m<=em)){keys.push(`${y}-${String(m+1).padStart(2,"0")}`);m++;if(m>11){m=0;y++}}}
+ }else keys=Object.keys(series).sort();
+ let vals=keys.map(k=>series[k]||0),max=Math.max(...vals,1);
+ let chart=keys.map((k,i)=>{let v=vals[i],h=Math.max(2,Math.round(v/max*210)),lab=sameMonth?k.slice(8,10):k.slice(5,7)+"/"+k.slice(0,4);return `<div class="chartcol"><div class="chartvalue">${v?new Intl.NumberFormat("vi-VN",{notation:"compact",maximumFractionDigits:1}).format(v):""}</div><div class="chartbar" style="height:${h}px" data-tip="${lab}: ${money(v)}"></div><div class="chartlabel">${lab}</div></div>`}).join("");
+ $("dashboardBody").innerHTML=`<div class="grid cards"><div class="card"><div class="muted">Doanh thu</div><div class="metric">${money(tot.r)}</div><div class="muted">${a||"..."} → ${b||"..."}</div></div><div class="card"><div class="muted">Lợi nhuận booking</div><div class="metric green">${money(tot.p)}</div><div class="muted">Chưa trừ chi phí vận hành thực tế: ${money(exp)}</div></div><div class="card"><div class="muted">Số vé</div><div class="metric">${tot.q}</div><div class="muted">${rows.length} booking</div></div><div class="card"><div class="muted">Lợi nhuận thực tế</div><div class="metric green">${money(tot.p-exp)}</div><div class="muted">Chi phí vận hành (Sổ quỹ): ${money(exp)}</div></div></div>
+ <div class="grid cards section"><div class="card"><div class="muted">Tổng phải thu</div><div class="metric">${money(tot.r)}</div></div><div class="card"><div class="muted">Đã thu</div><div class="metric green">${money(paid)}</div></div><div class="card"><div class="muted">Công nợ còn lại</div><div class="metric">${money(due)}</div></div><div class="card"><div class="muted">Booking còn nợ</div><div class="metric">${rows.filter(x=>dueAmount(x)>0).length}</div></div></div>
+ <div class="grid two section"><div class="card"><h3>Doanh thu theo ${sameMonth?"ngày":"tháng"}</h3><div class="muted">${a||"..."} → ${b||"..."}</div><div class="chartwrap">${chart||'<div class="empty">Không có dữ liệu</div>'}</div></div>
+ <div class="card"><h3>Doanh thu theo loại vé</h3><div class="muted" style="margin-bottom:10px">${a||"..."} → ${b||"..."}</div><div class="tablebox"><table class="table" style="min-width:600px"><thead><tr><th>Loại vé</th><th>Số vé</th><th>Doanh thu</th><th>Lợi nhuận</th><th>Tỷ trọng</th></tr></thead><tbody>${Object.entries(byType).sort((x,y)=>y[1].r-x[1].r).map(([k,v])=>`<tr><td><b>${esc(k)}</b></td><td>${v.q}</td><td>${money(v.r)}</td><td class="green">${money(v.p)}</td><td>${tot.r?((v.r/tot.r)*100).toFixed(1):"0.0"}%</td></tr>`).join("")||'<tr><td colspan="5" class="empty">Không có dữ liệu</td></tr>'}</tbody></table></div></div></div>`
+}
+function paymentList(x){return Array.isArray(x.payments)?x.payments:[]}
+function paidAmount(x){return paymentList(x).reduce((z,p)=>z+num(p.amount),0)}
+function dueAmount(x){return Math.max(0,num(x.revenue)-paidAmount(x))}
+function payStatus(x){let p=paidAmount(x),t=num(x.revenue);return t<=0||p>=t?"paid":p>0?"partial":"unpaid"}
+function payBadge(x){let st=payStatus(x),cl=st==="paid"?"green":st==="partial"?"yellow":"red",tx=st==="paid"?"Đã thanh toán":st==="partial"?`Thanh toán một phần · còn ${money(dueAmount(x))}`:"Chưa thanh toán";return `<span class="badge ${cl}">${tx}</span>`}
+function bookings(){let st=uiFilters.bookings||{q:"",ps:"",m:today().slice(0,7),f:"",t:""};$("app").innerHTML=`<div class="toolbar"><button class="btn primary" onclick="bookingForm()">+ Tạo booking</button><input id="bq" class="input grow" placeholder="Tìm mã booking, loại vé, khách hàng, đại lý..." value="${esc(st.q||"")}" oninput="filterB()"><select id="bps" class="select" style="width:190px" onchange="filterB()"><option value="">Tất cả thanh toán</option><option value="unpaid">Chưa thanh toán</option><option value="partial">Thanh toán một phần</option><option value="paid">Đã thanh toán</option></select><input id="bm" class="input" style="width:160px" type="month" value="${st.m||""}" onchange="filterB()"><div class="field" style="min-width:155px"><label>Từ ngày</label><input id="bf" class="input" type="date" value="${st.f||""}" onchange="filterB()"></div><div class="field" style="min-width:155px"><label>Đến ngày</label><input id="btod" class="input" type="date" value="${st.t||""}" onchange="filterB()"></div><button class="btn" onclick="clearBookingFilters()">Xóa lọc</button></div><div class="tablebox viewport-table"><table class="table"><thead><tr><th>Mã booking</th><th>Ngày</th><th>Loại vé</th><th>Khách hàng / Đại lý</th><th>SL</th><th>Giá vé</th><th>Tổng tiền</th><th>Đã thu</th><th>Còn nợ</th><th>Thanh toán</th><th></th></tr></thead><tbody id="bt"></tbody></table></div>`;$("bps").value=st.ps||"";filterB()}
+function bookingPartyName(x){return x.customerType==="retail"?(x.customerName||x.agent||"Khách lẻ"):(x.agent||"Khách lẻ")}
+function bookingCodeDate(x){return String(x?.date||today()).replaceAll("-","").slice(0,8)||today().replaceAll("-","")}
+function nextBookingCode(date=today()){let d=String(date||today()).replaceAll("-","").slice(0,8),prefix=`ST-${d}-`,mx=0;(db.bookings||[]).forEach(b=>{let c=String(b.bookingCode||"");if(c.startsWith(prefix)){let n=parseInt(c.slice(prefix.length),10);if(Number.isFinite(n))mx=Math.max(mx,n)}});return prefix+String(mx+1).padStart(3,"0")}
+function ensureBookingCodes(){let used=new Set(),changed=false;(db.bookings||[]).slice().sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))||String(a.id||"").localeCompare(String(b.id||""))).forEach(x=>{let c=String(x.bookingCode||"").trim();if(!c||used.has(c)){let d=bookingCodeDate(x),prefix=`ST-${d}-`,n=1;do{c=prefix+String(n++).padStart(3,"0")}while(used.has(c));x.bookingCode=c;changed=true}used.add(c)});if(changed)save()}
+function bookingLink(x,kind="customer"){return `<button class="btn" style="padding:4px 8px;font-weight:700" title="Mở thanh toán booking" onclick="${kind==="supplier"?"supplierPaymentForm":"paymentForm"}('${x.id}')">${esc(x.bookingCode||x.id)}</button>`}
+function clearBookingFilters(){uiFilters.bookings={q:"",ps:"",m:today().slice(0,7),f:"",t:""};bookings()}
+function filterB(){let raw=$("bq")?.value||"",q=normalizeText(raw),m=$("bm")?.value||"",ps=$("bps")?.value||"",f=$("bf")?.value||"",t=$("btod")?.value||"";uiFilters.bookings={q:raw,ps,m,f,t};let a=db.bookings.filter(x=>(!m||x.date.startsWith(m))&&(!f||x.date>=f)&&(!t||x.date<=t)&&(!ps||payStatus(x)===ps)&&normalizeText(`${x.bookingCode||""} ${x.ticketType} ${bookingPartyName(x)} ${x.note}`).includes(q)).sort((a,b)=>b.date.localeCompare(a.date)||String(b.id||"").localeCompare(String(a.id||"")));$("bt").innerHTML=a.map(x=>`<tr><td>${bookingLink(x)}</td><td>${x.date}</td><td>${esc(x.ticketType)}</td><td>${esc(bookingPartyName(x))}</td><td>${x.qty}</td><td>${money(x.sellPrice)}</td><td>${money(x.revenue)}</td><td>${money(paidAmount(x))}</td><td>${money(dueAmount(x))}</td><td>${payBadge(x)}</td><td><button class="btn primary" onclick="paymentForm('${x.id}')">Thanh toán</button> <button class="btn" onclick="bookingForm('${x.id}')">Sửa</button> <button class="btn" onclick="deleteBooking('${x.id}')">Xóa</button></td></tr>`).join("")||`<tr><td colspan="11" class="empty">Không có dữ liệu</td></tr>`}
+function deleteBooking(id){
+ let x=db.bookings.find(v=>v.id===id);if(!x)return alert("Không tìm thấy booking.");
+ let cp=paidAmount(x),sp=supplierPaidAmount(x),msg=`XÓA BOOKING?\n\n${x.date} · ${x.ticketType} · ${x.agent||"Khách lẻ"}\nSố lượng: ${x.qty}\nTổng tiền: ${money(x.revenue)}`;
+ if(cp>0||sp>0)msg+=`\n\nCẢNH BÁO: booking có giao dịch liên kết:\n- Khách đã thanh toán: ${money(cp)}\n- Đã trả tiền vé: ${money(sp)}\n\nXóa booking sẽ đồng thời loại các giao dịch tự động này khỏi Sổ quỹ.`;
+ msg+="\n\nDữ liệu đã xóa không thể hoàn tác nếu chưa có file sao lưu.";
+ if(!confirm(msg))return;
+ db.bookings=db.bookings.filter(v=>v.id!==id);save();filterB();alert("Đã xóa booking.")
+}
+function paymentForm(id){let x=db.bookings.find(v=>v.id===id);if(!x)return;let ps=paymentList(x);show(`<div class="modalhead"><h2>Thanh toán booking</h2><button class="close" onclick="closeM()">×</button></div><div class="muted"><b>${esc(x.bookingCode||x.id)}</b> · ${x.date} · ${esc(x.ticketType)} · ${esc(bookingPartyName(x))}</div>${paymentZaloSection(x)}<div class="paystats"><div class="paystat"><span class="muted">Tổng phải thu</span><b>${money(x.revenue)}</b></div><div class="paystat"><span class="muted">Đã thu</span><b class="green">${money(paidAmount(x))}</b></div><div class="paystat"><span class="muted">Còn phải thu</span><b>${money(dueAmount(x))}</b></div></div>${dueAmount(x)<=0?`<div class="paybox" style="background:#ecfdf5;border-color:#bbf7d0"><b class="green">✓ Booking đã thanh toán 100%</b><div class="muted" style="margin-top:4px">Không còn số tiền phải thu.</div></div>`:`<div class="form"><div class="field"><label>Ngày thanh toán</label><input id="pdate" class="input" type="date" value="${today()}"></div><div class="field"><label>Số tiền</label><input id="pamount" class="input" type="number" value="${dueAmount(x)||""}"></div><div class="field full"><label>Ghi chú</label><input id="pnote" class="input" placeholder="Chuyển khoản, tiền mặt, đặt cọc..."></div></div><div style="text-align:right;margin:12px 0"><button class="btn primary" onclick="addPayment('${id}')">+ Ghi nhận thanh toán</button></div>`}<h3>Lịch sử thanh toán</h3><div class="tablebox"><table class="table" style="min-width:600px"><thead><tr><th>Ngày</th><th>Số tiền</th><th>Ghi chú</th><th></th></tr></thead><tbody>${ps.map((p,i)=>`<tr><td>${p.date}</td><td>${money(p.amount)}</td><td>${esc(p.note||"")}</td><td><button class="btn" onclick="editPayment('${id}',${i})">Sửa</button> <button class="btn" onclick="deletePayment('${id}',${i})">Xóa</button></td></tr>`).join("")||'<tr><td colspan="4" class="empty">Chưa có thanh toán</td></tr>'}</tbody></table></div>`,()=>{bookings()})}
+function refreshPaymentUI(id){
+ save();
+ if($("mb").style.display==="flex")paymentForm(id);
+ else bookings()
+}
+function addPayment(id){let x=db.bookings.find(v=>v.id===id),amt=num($("pamount").value);if(amt<=0)return alert("Vui lòng nhập số tiền.");if(amt>dueAmount(x))return alert("Số tiền lớn hơn công nợ còn lại.");x.payments=paymentList(x);x.payments.push({date:$("pdate").value||today(),amount:amt,note:$("pnote").value.trim()});refreshPaymentUI(id)}
+function editPayment(id,i){let x=db.bookings.find(v=>v.id===id),p=paymentList(x)[i];if(!p)return;let other=paymentList(x).reduce((z,v,j)=>z+(j===i?0:num(v.amount)),0),max=num(x.revenue)-other;show(`<div class="modalhead"><h2>Sửa thanh toán</h2><button class="close" onclick="closeM()">×</button></div><div class="form"><div class="field"><label>Ngày</label><input id="epd" class="input" type="date" value="${p.date}"></div><div class="field"><label>Số tiền</label><input id="epa" class="input" type="number" value="${p.amount}"></div><div class="field full"><label>Ghi chú</label><input id="epn" class="input" value="${esc(p.note||"")}"></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary" onclick="savePaymentEdit('${id}',${i},${max})">Lưu thay đổi</button></div>`)}
+function savePaymentEdit(id,i,max){let x=db.bookings.find(v=>v.id===id),amt=num($("epa").value);if(!x)return alert("Không tìm thấy booking.");if(amt<=0||amt>max)return alert("Số tiền thanh toán không hợp lệ.");x.payments=paymentList(x);x.payments[i]={date:$("epd").value||today(),amount:amt,note:$("epn").value.trim()};refreshPaymentUI(id)}
+function deletePayment(id,i){let x=db.bookings.find(v=>v.id===id),p=paymentList(x)[i];if(p&&confirm(`Xóa khoản thanh toán ${money(p.amount)}?`)){x.payments.splice(i,1);refreshPaymentUI(id)}}
+function ticketForRef(ref){let v=String(ref||'');return db.ticketTypes.find(t=>t.id===v)||db.ticketTypes.find(t=>t.name===v)||null}
+function ticketForPrice(p){return db.ticketTypes.find(t=>t.id===p.ticketId)||db.ticketTypes.find(t=>t.id===p.ticketCode)||ticketForRef(p.ticketType)}
+function ticketPriceMatches(p,t){let target=ticketForRef(t);return target?ticketForPrice(p)?.id===target.id:p.ticketType===t}
+function syncTicketReferences(){
+ let changed=false;
+ for(let p of [...db.agentPrices,...db.costPrices]){
+   let t=ticketForPrice(p);
+   if(t){if(p.ticketId!==t.id){p.ticketId=t.id;changed=true}if(p.ticketType!==t.name){p.ticketType=t.name;changed=true}}
+ }
+ for(let b of db.bookings){if(!b.ticketId){let t=ticketForRef(b.ticketType);if(t){b.ticketId=t.id;changed=true}}}
+ return changed
+}
+function agentPrice(a,t,d){return db.agentPrices.filter(x=>x.agent===a&&ticketPriceMatches(x,t)&&(x.from||"0000")<=d&&(!x.to||x.to>=d)).sort((x,y)=>y.from.localeCompare(x.from))[0]?.price}
+function validCostPrices(t,d){return db.costPrices.filter(x=>ticketPriceMatches(x,t)&&(x.from||"0000")<=d&&(!x.to||x.to>=d))}
+function costPrice(t,d){
+ let rows=validCostPrices(t,d),def=rows.find(x=>x.isDefault);
+ return (def||rows.sort((x,y)=>(y.from||"").localeCompare(x.from||""))[0])?.price
+}
+function availableCostPrices(t,d){
+ let rows=validCostPrices(t,d);
+ let seen=new Set(); return rows.sort((a,b)=>(b.isDefault?1:0)-(a.isDefault?1:0)||num(a.price)-num(b.price)).filter(x=>{let k=String(num(x.price));if(seen.has(k))return false;seen.add(k);return true})
+}
+function costOptions(t,d,current){
+ let rows=availableCostPrices(t,d), cur=num(current), has=rows.some(x=>num(x.price)===cur);
+ let out=rows.map(x=>`<option value="${num(x.price)}" ${num(x.price)===cur?"selected":""}>${x.isDefault?"⭐ Mặc định · ":""}${money(x.price)}${x.from?" — từ "+x.from:""}${x.to?" đến "+x.to:""}</option>`).join("");
+ if(cur&&!has)out+=`<option value="${cur}" selected>${money(cur)} — giá đang lưu</option>`;
+ out+=`<option value="manual" ${!rows.length&&!cur?"selected":""}>✏️ Nhập giá vốn khác</option>`; return out
+}
+function vatBase(x){return Math.max(0,num(x.sellPrice)*num(x.qty)-num(x.buyPrice)*num(x.qty))}
+function vatAmount(x){return x.hasVat?Math.round(vatBase(x)*num(x.vatRate)/100):0}
+function refreshVatPreview(){let box=$("fvatbox");if(!box)return;let on=$("fvat").checked;$("fvatrate").disabled=!on;box.style.display=on?"block":"none";let q=num($("fq").value),sell=num($("fsell").value),buy=num($("fbuy").value),rate=$("fvatrate").value==="custom"?num($("fvatcustom").value):num($("fvatrate").value),base=Math.max(0,q*sell-q*buy),vat=Math.round(base*rate/100);if($("fvatpreview"))$("fvatpreview").innerHTML=`Giá trị tính VAT: <b>${money(base)}</b> · VAT ${rate}%: <b>${money(vat)}</b>`}
+function setupTicketSearch(){
+ let input=$("ft"),box=$("ftResults"),active=-1;
+ function render(raw=""){
+   input._lastQuery=raw;
+   let q=normalizeText(raw.trim());
+   let rows=orderedTicketTypes().filter(t=>t.active&&(!q||normalizeText(`${t.id} ${t.name} ${t.product}`).includes(q)));
+   box.innerHTML=`<div class="ticketsearchbox"><input id="ftQuickSearch" autocomplete="off" placeholder="🔎 Tìm nhanh theo tên, mã vé hoặc sản phẩm..."></div><div id="ftTicketList">${rows.length?rows.map((t,i)=>`<div class="agentitem" data-i="${i}" data-id="${esc(t.id)}"><b>${esc(t.name)}</b><div class="muted">Mã: ${esc(t.id)}${t.product?" · "+esc(t.product):""}</div></div>`).join(""):`<div class="agentempty">Không tìm thấy loại vé phù hợp</div>`}</div>`;
+   let qin=$("ftQuickSearch");
+   qin.value=raw;
+   qin.oninput=()=>render(qin.value);
+   qin.onkeydown=e=>keyboard(e);
+   box.querySelectorAll(".agentitem").forEach(el=>el.onmousedown=e=>{e.preventDefault();choose(el.dataset.id)});
+   setTimeout(()=>{let x=$("ftQuickSearch");if(x){x.value=raw;x.focus();try{x.setSelectionRange(raw.length,raw.length)}catch(_){}}},0)
+ }
+ function openPicker(){
+   box.classList.add("show");active=-1;input._lastQuery="";render("");
+ }
+ function choose(id){
+   let t=db.ticketTypes.find(v=>v.id===id);if(!t)return;
+   input.value=t.name;input.dataset.ticketId=t.id;box.classList.remove("show");
+   refreshCostChoices(false);refreshSellPrice();refreshVatPreview()
+ }
+ function keyboard(e){
+   let items=[...box.querySelectorAll(".agentitem")];
+   if(e.key==="ArrowDown"&&items.length){e.preventDefault();active=Math.min(active+1,items.length-1)}
+   else if(e.key==="ArrowUp"&&items.length){e.preventDefault();active=Math.max(active-1,0)}
+   else if(e.key==="Enter"&&items.length){e.preventDefault();choose((active>=0?items[active]:items[0]).dataset.id);return}
+   else if(e.key==="Escape"){box.classList.remove("show");input.focus();return}else return;
+   items.forEach((el,i)=>el.classList.toggle("active",i===active));items[active]?.scrollIntoView({block:"nearest"})
+ }
+ input.readOnly=true;
+ input.onclick=openPicker;
+ input.onkeydown=e=>{if(e.key==="Enter"||e.key===" "||e.key==="ArrowDown"){e.preventDefault();openPicker()}};
+ document.addEventListener("mousedown",e=>{if(!input.closest(".agentsearch")?.contains(e.target))box.classList.remove("show")},{once:false})
+}
+function bookingForm(id=""){let x=db.bookings.find(v=>v.id===id)||{date:today(),customerType:"agent",agent:"",ticketType:orderedTicketTypes().find(t=>t.active)?.name||"",qty:1,buyPrice:"",sellPrice:"",cost:0,note:"",hasVat:false,vatRate:15};if(x.vatRate==null)x.vatRate=15;show(`<div class="modalhead"><h2>${id?"Sửa":"Tạo"} booking</h2><button class="close" onclick="closeM()">×</button></div><div class="form"><div class="field"><label>Ngày</label><input id="fd" class="input" type="date" value="${x.date}"></div><div class="field"><label>Loại khách</label><select id="fc" class="select"><option value="agent" ${x.customerType==="agent"?"selected":""}>Đại lý / CTV</option><option value="retail" ${x.customerType==="retail"?"selected":""}>Khách lẻ</option></select></div><div class="field agentsearch"><label id="faLabel">${x.customerType==="retail"?"Tên khách hàng":"Đại lý"}</label><input id="fa" class="input" autocomplete="off" value="${esc(x.customerType==="retail"?(x.customerName||x.agent||""):(x.agent||""))}" placeholder="${x.customerType==="retail"?"Nhập tên khách hàng...":"Gõ tên đại lý để tìm nhanh..."}"><div id="faResults" class="agentresults"></div></div><div class="field agentsearch"><label>Loại vé</label><input id="ft" class="input ticketpicker" autocomplete="off" value="${esc(x.ticketType||"")}" placeholder="Chọn loại vé..." aria-label="Chọn loại vé"><span class="ticketarrow">▼</span><div id="ftResults" class="agentresults"></div></div><div class="field"><label>Số lượng</label><input id="fq" class="input" type="number" min="1" value="${x.qty}"></div><div class="field"><label>Giá vốn / vé</label><select id="fbuySelect" class="select"></select><input id="fbuy" class="input" type="number" value="${x.buyPrice}" placeholder="Nhập giá vốn" style="margin-top:7px"></div><div class="field"><label>Giá bán / vé</label><input id="fsell" class="input" type="number" value="${x.sellPrice}"></div><div class="field"><label>Chi phí</label><select id="fcoSelect" class="select"></select><input id="fco" class="input" type="number" value="${x.cost||0}" placeholder="Nhập chi phí" style="margin-top:7px"></div>
+<div class="field full" style="border:1px solid #e2e8f0;border-radius:10px;padding:12px"><label style="display:flex;align-items:center;gap:8px;font-size:15px"><input id="fvat" type="checkbox" ${x.hasVat?"checked":""}> <b>Có VAT</b></label><div id="fvatbox" style="margin-top:10px;display:${x.hasVat?"block":"none"}"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label>Thuế suất VAT (%)</label><select id="fvatrate" class="select" style="max-width:160px"><option value="8" ${num(x.vatRate)===8?"selected":""}>8%</option><option value="10" ${num(x.vatRate)===10?"selected":""}>10%</option><option value="15" ${num(x.vatRate)===15?"selected":""}>15% (mặc định)</option><option value="custom" ${![8,10,15].includes(num(x.vatRate))?"selected":""}>Khác...</option></select><input id="fvatcustom" class="input" type="number" min="0" step="0.01" value="${![8,10,15].includes(num(x.vatRate))?num(x.vatRate):""}" placeholder="% khác" style="max-width:130px;display:${![8,10,15].includes(num(x.vatRate))?"block":"none"}"></div><div id="fvatpreview" class="muted" style="margin-top:8px"></div></div></div>
+<div class="field full"><label>Ghi chú</label><textarea id="fn" class="textarea">${esc(x.note||"")}</textarea></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary" onclick="saveBooking('${id}')">Lưu booking</button></div>`);
+ window._bookingInitialBuy=num(x.buyPrice);window._bookingEditing=!!id;
+ $("fd").onchange=()=>{refreshCostChoices(false);refreshSellPrice();refreshVatPreview()};$("fc").onchange=()=>{setupCustomerField();refreshSellPrice()};
+ setupAgentSearch();setupCustomerField();setupTicketSearch();refreshCostChoices(!!id);refreshExpenseChoices(!!id);refreshSellPrice();
+ $("fvat").onchange=refreshVatPreview;$("fq").oninput=refreshVatPreview;$("fsell").oninput=refreshVatPreview;$("fbuy").oninput=refreshVatPreview;
+ $("fvatrate").onchange=()=>{$("fvatcustom").style.display=$("fvatrate").value==="custom"?"block":"none";refreshVatPreview()};$("fvatcustom").oninput=refreshVatPreview;
+ setTimeout(()=>{refreshVatPreview();modalInitialState=modalState()},0)}
+function normalizeText(v){return String(v||"").replace(/^\ufeff/,"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()}
+function setupAgentSearch(){
+ let input=$("fa"),box=$("faResults"),active=-1;
+ function matches(){
+   let q=normalizeText(input.value.trim());
+   let rows=db.agents.filter(a=>a.active!==false&&(!q||normalizeText(a.name).includes(q))).slice(0,30);
+   box.innerHTML=rows.length?rows.map((a,i)=>`<div class="agentitem" data-i="${i}" data-name="${esc(a.name)}">${esc(a.name)}</div>`).join(""):`<div class="agentempty">Không tìm thấy khách hàng / đại lý</div>`;
+   box.classList.add("show");active=-1;
+   box.querySelectorAll(".agentitem").forEach(el=>el.onmousedown=e=>{e.preventDefault();input.value=el.dataset.name;box.classList.remove("show");refreshSellPrice()});
+ }
+ input.onfocus=matches;
+ input.oninput=()=>{matches();refreshSellPrice()};
+ input.onkeydown=e=>{
+   let items=[...box.querySelectorAll(".agentitem")];
+   if(e.key==="ArrowDown"&&items.length){e.preventDefault();active=Math.min(active+1,items.length-1)}
+   else if(e.key==="ArrowUp"&&items.length){e.preventDefault();active=Math.max(active-1,0)}
+   else if(e.key==="Enter"&&active>=0&&items[active]){e.preventDefault();input.value=items[active].dataset.name;box.classList.remove("show");refreshSellPrice();return}
+   else if(e.key==="Escape"){box.classList.remove("show");return}else return;
+   items.forEach((el,i)=>el.classList.toggle("active",i===active));items[active]?.scrollIntoView({block:"nearest"})
+ };
+ input.onblur=()=>setTimeout(()=>box.classList.remove("show"),150)
+}
+
+function setupCustomerField(){
+ let retail=$("fc")?.value==="retail",input=$("fa"),label=$("faLabel"),box=$("faResults");if(!input)return;
+ label.textContent=retail?"Tên khách hàng":"Đại lý";input.placeholder=retail?"Nhập tên khách hàng...":"Gõ tên đại lý để tìm nhanh...";
+ if(retail){box?.classList.remove("show");input.onfocus=null;input.oninput=null;input.onkeydown=null;input.onblur=null}
+ else setupAgentSearch();
+}
+function refreshSellPrice(){if($("fc")?.value!=="agent")return;let ap=agentPrice($("fa").value.trim(),$("ft").value,$("fd").value);if(ap!=null)$("fsell").value=ap}
+function refreshCostChoices(keepInitial=false){
+ let t=$("ft").value,d=$("fd").value,rows=availableCostPrices(t,d);
+ let current=keepInitial?window._bookingInitialBuy:0;
+ $("fbuySelect").innerHTML=costOptions(t,d,current);
+ if(!keepInitial && rows.length){
+   $("fbuySelect").value=String(num(rows[0].price));
+ }
+ let selected=$("fbuySelect").value;
+ if(selected==="manual"){
+   $("fbuy").style.display="block";
+   if(!keepInitial)$("fbuy").value="";
+ }else{
+   $("fbuy").value=selected;
+   $("fbuy").style.display="none";
+ }
+ $("fbuySelect").onchange=()=>{
+   if($("fbuySelect").value==="manual"){
+     $("fbuy").style.display="block";
+     $("fbuy").value="";
+     $("fbuy").focus();
+   }else{
+     $("fbuy").value=$("fbuySelect").value;
+     $("fbuy").style.display="none";
+   }
+ };
+ refreshSellPrice()
+}
+function expenseChoices(current){
+ let seen=new Set(),rows=db.expenses.filter(x=>num(x.amount)>0).filter(x=>{let k=normalizeText(x.title)+"|"+num(x.amount);if(seen.has(k))return false;seen.add(k);return true});
+ let cur=num(current),has=rows.some(x=>num(x.amount)===cur);
+ let out=`<option value="0" ${cur===0?"selected":""}>Không có chi phí — 0 ₫</option>`;
+ out+=rows.map(x=>`<option value="${num(x.amount)}" ${num(x.amount)===cur?"selected":""}>${esc(x.title)} — ${money(x.amount)}</option>`).join("");
+ if(cur&&!has)out+=`<option value="${cur}" selected>${money(cur)} — chi phí đang lưu</option>`;
+ out+=`<option value="manual">✏️ Nhập chi phí khác</option>`;return out
+}
+function refreshExpenseChoices(keepInitial=false){
+ let current=keepInitial?num($("fco").value):0;
+ $("fcoSelect").innerHTML=expenseChoices(current);
+ let selected=$("fcoSelect").value;
+ if(selected==="manual"){$("fco").style.display="block"}
+ else{$("fco").value=selected;$("fco").style.display="none"}
+ $("fcoSelect").onchange=()=>{
+   if($("fcoSelect").value==="manual"){$("fco").style.display="block";$("fco").value="";$("fco").focus()}
+   else{$("fco").value=$("fcoSelect").value;$("fco").style.display="none"}
+ }
+}
+function saveBooking(id){let chosenTicket=orderedTicketTypes().find(t=>t.active&&normalizeText(t.name)===normalizeText($("ft").value.trim()));if(!chosenTicket)return alert("Vui lòng chọn một loại vé hợp lệ từ danh sách tìm kiếm.");$("ft").value=chosenTicket.name;let q=num($("fq").value),buy=num($("fbuy").value),sell=num($("fsell").value),co=num($("fco").value),hasVat=$("fvat").checked,vatRate=hasVat?($("fvatrate").value==="custom"?num($("fvatcustom").value):num($("fvatrate").value)):0;if(hasVat&&vatRate<=0)return alert("Vui lòng nhập thuế suất VAT.");let gross=q*sell,base=Math.max(0,gross-q*buy),vat=hasVat?Math.round(base*vatRate/100):0,r=gross-co,p=r-q*buy-vat,x={id:id||"BK-"+Date.now(),bookingCode:id?(db.bookings.find(v=>v.id===id)?.bookingCode||nextBookingCode($("fd").value)):nextBookingCode($("fd").value),date:$("fd").value,customerType:$("fc").value,agent:$("fc").value==="agent"?$("fa").value.trim():"",customerName:$("fc").value==="retail"?$("fa").value.trim():"",ticketType:$("ft").value,ticketId:chosenTicket.id,qty:q,buyPrice:buy,sellPrice:sell,cost:co,revenue:r,profit:p,status:"completed",note:$("fn").value,hasVat,vatRate,vatBase:base,vatAmount:vat};let i=db.bookings.findIndex(v=>v.id===id);if(i>=0){x.payments=paymentList(db.bookings[i]);x.supplierPayments=supplierPaymentList(db.bookings[i]);if(paidAmount(x)>num(x.revenue))return alert("Tổng tiền mới nhỏ hơn số tiền đã thanh toán. Hãy chỉnh lịch sử thanh toán trước.");if(supplierPaidAmount(x)>supplierDueTotal(x))return alert("Giá vốn mới nhỏ hơn số tiền vé đã thanh toán.");db.bookings[i]=x}else{x.payments=[];x.supplierPayments=[];db.bookings.push(x)}save();closeM(true);bookings()}
+function orderedTicketTypes(){
+ return (db.ticketTypes||[]).map((x,i)=>({...x,_originalIndex:i,_order:Number.isFinite(Number(x.sortOrder))?Number(x.sortOrder):i}))
+ .sort((a,b)=>a._order-b._order||a._originalIndex-b._originalIndex)
+}
+function moveTicketType(id,dir){
+ let a=orderedTicketTypes(),i=a.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=a.length)return;
+ [a[i],a[j]]=[a[j],a[i]];
+ a.forEach((x,k)=>{let o=db.ticketTypes.find(v=>v.id===x.id);if(o)o.sortOrder=k});
+ save();types()
+}
+function types(){$("app").innerHTML=`<div class="toolbar"><button class="btn primary" onclick="typeForm()">+ Thêm loại vé</button><span class="muted">Dùng ↑ ↓ để sắp xếp thứ tự. Thứ tự được áp dụng khi chọn loại vé trong phần mềm.</span></div><div class="tablebox"><table class="table"><thead><tr><th style="width:110px">Thứ tự</th><th>Mã</th><th>Tên loại vé</th><th>Sản phẩm</th><th>Trạng thái</th><th></th></tr></thead><tbody>${orderedTicketTypes().map((t,i,a)=>`<tr><td><button class="btn" ${i===0?"disabled":""} onclick="moveTicketType('${t.id}',-1)">↑</button> <button class="btn" ${i===a.length-1?"disabled":""} onclick="moveTicketType('${t.id}',1)">↓</button></td><td>${t.id}</td><td><b>${esc(t.name)}</b></td><td>${esc(t.product)}</td><td><span class="badge ${t.active?"green":""}">${t.active?"Đang dùng":"Ngừng"}</span></td><td><button class="btn" onclick="typeForm('${t.id}')">Sửa</button></td></tr>`).join("")||`<tr><td colspan="6" class="empty">Chưa có loại vé. Bấm “+ Thêm loại vé” để khai báo.</td></tr>`}</tbody></table></div>`}
+function typeForm(id=""){let x=db.ticketTypes.find(v=>v.id===id)||{id:"T"+String(db.ticketTypes.length+1).padStart(3,"0"),name:"",product:"Hoi An Memories Show",active:true};show(`<div class="modalhead"><h2>Loại vé</h2><button class="close" onclick="closeM()">×</button></div><div class="form"><div class="field"><label>Mã</label><input id="ti" class="input" value="${x.id}"></div><div class="field"><label>Tên loại vé</label><input id="tn" class="input" value="${esc(x.name)}"></div><div class="field"><label>Sản phẩm</label><input id="tp" class="input" value="${esc(x.product)}"></div><div class="field"><label>Trạng thái</label><select id="ta" class="select"><option value="1" ${x.active?"selected":""}>Đang dùng</option><option value="0" ${!x.active?"selected":""}>Ngừng</option></select></div></div><p class="muted">Không có trường giá trong module Loại vé.</p><div style="text-align:right"><button class="btn primary" onclick="saveType('${id}')">Lưu</button></div>`)}
+function saveType(id){
+ let i=db.ticketTypes.findIndex(v=>v.id===id),old=i>=0?db.ticketTypes[i]:null;
+ let x={id:$("ti").value.trim(),name:$("tn").value.trim(),product:$("tp").value.trim(),active:$("ta").value==="1",sortOrder:old?.sortOrder??db.ticketTypes.length};
+ if(!x.id||!x.name)return alert("Nhập mã và tên.");
+ if(old&&old.id!==x.id)return alert("Mã loại vé là định danh cố định để bảo toàn bảng giá và lịch sử. Vui lòng giữ nguyên mã; chỉ đổi tên loại vé.");
+ if(db.ticketTypes.some((v,j)=>j!==i&&(v.id===x.id||normalizeText(v.name)===normalizeText(x.name))))return alert("Mã hoặc tên loại vé đã tồn tại.");
+ if(old)syncTicketReferences();
+ if(i>=0)db.ticketTypes[i]=x;else db.ticketTypes.push(x);
+ if(old&&old.name!==x.name){
+  [...db.agentPrices,...db.costPrices].forEach(p=>{if(p.ticketId===old.id||p.ticketType===old.name){p.ticketId=old.id;p.ticketType=x.name}});
+  // Historical booking labels are snapshots, only stable IDs are migrated.
+ }
+ syncTicketReferences();save();closeM(true);types()
+}
+function agents(){let st=uiFilters.agents||{q:"",status:""};$("app").innerHTML=`<div class="toolbar"><button class="btn primary" onclick="agentForm()">+ Thêm đại lý</button><button class="btn" onclick="downloadAgentImportTemplate()">⬇ Tải file mẫu</button><button class="btn" onclick="$('agentImportFile').click()">⬆ Import đại lý & bảng giá</button><input id="agentImportFile" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none" onchange="previewAgentImport(this.files[0]);this.value=''"><input id="aq" class="input grow" placeholder="Tìm đại lý..." value="${esc(st.q||"")}" oninput="agentRows()"><select id="agentStatusFilter" class="select" style="max-width:180px" onchange="agentRows()"><option value="">Tất cả</option><option value="active">Đang hoạt động</option><option value="suspended">Tạm ngưng</option></select></div><div class="card" style="margin-bottom:14px;padding:12px 15px"><b>Import nhanh đại lý & bảng giá</b><div class="muted" style="margin-top:5px">File mẫu tự tạo các cột giá theo <b>Mã loại vé</b>. Ưu tiên dùng trực tiếp <b>Excel .xlsx</b> để giữ nguyên tiếng Việt; CSV UTF-8 vẫn được hỗ trợ. Với ngày, nên dùng <b>YYYY-MM-DD</b>. Nếu dùng dạng 10/01/2026, hệ thống hiểu là <b>2026-10-01</b> (MM/DD/YYYY). Import lại cùng Mã đại lý + Mã vé + ngày hiệu lực sẽ cập nhật, không tạo thêm dòng trùng.</div></div><div class="tablebox"><table class="table"><thead><tr><th>Mã</th><th>Đại lý / CTV</th><th>Điện thoại</th><th>Giá đã khai báo</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="at"></tbody></table></div>`;$("agentStatusFilter").value=st.status||"";agentRows()}
+function csvCell(v){v=String(v??"");return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function downloadTextFile(name,text,type="text/csv;charset=utf-8"){
+ let blob=new Blob(["\ufeff"+text],{type}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),500)
+}
+function downloadAgentImportTemplate(){
+ // Lấy mã loại vé trực tiếp từ dữ liệu hiện có, tương thích cả cấu trúc cũ và mới.
+ let source=Array.isArray(db.ticketTypes)?db.ticketTypes:(Array.isArray(db.types)?db.types:[]);
+ let tickets=source.map((t,i)=>({
+   code:String(t.code??t.id??t.ma??"").trim(),
+   name:String(t.name??t.ticketType??t.ten??"").trim(),
+   order:Number.isFinite(Number(t.order))?Number(t.order):(Number.isFinite(Number(t.sortOrder))?Number(t.sortOrder):i)
+ })).filter(t=>t.code);
+ tickets.sort((a,b)=>a.order-b.order);
+ // Loại bỏ mã trùng nhưng giữ đúng thứ tự đã khai báo.
+ let seen=new Set();tickets=tickets.filter(t=>{let k=normalizeText(t.code);if(seen.has(k))return false;seen.add(k);return true});
+ // Fallback: nếu cấu trúc loại vé cũ không có trong db.ticketTypes, lấy mã đang dùng từ bảng giá/giá vốn.
+ if(!tickets.length){
+   let fallback=[];
+   (db.costs||[]).forEach(v=>{let c=String(v.ticketCode||v.code||"").trim(),n=String(v.ticketType||v.name||c).trim();if(c)fallback.push({code:c,name:n,order:fallback.length})});
+   (db.agentPrices||[]).forEach(v=>{let c=String(v.ticketCode||"").trim(),n=String(v.ticketType||c).trim();if(c)fallback.push({code:c,name:n,order:fallback.length})});
+   let fs=new Set();tickets=fallback.filter(t=>{let k=normalizeText(t.code);if(fs.has(k))return false;fs.add(k);return true})
+ }
+ if(!tickets.length)return alert("Chưa tìm thấy Mã loại vé. Hãy khai báo loại vé trước khi tải file mẫu.");
+
+ let headers=["Mã đại lý","Tên đại lý","Điện thoại","Email","Ghi chú","Từ ngày","Đến ngày",...tickets.map(t=>t.code)];
+ let note=["# HƯỚNG DẪN: Các cột từ H trở đi là MÃ LOẠI VÉ lấy tự động từ module Loại vé. Không đổi tên cột. Để trống giá nếu đại lý không bán loại vé đó. Dùng YYYY-MM-DD cho ngày."];
+ let aoa=[note,headers];
+
+ if(typeof XLSX!=="undefined"){
+   let ws=XLSX.utils.aoa_to_sheet(aoa);
+   // Ghi chú tên loại vé vào comment của header nếu thư viện hỗ trợ.
+   tickets.forEach((t,idx)=>{
+     let addr=XLSX.utils.encode_cell({r:1,c:7+idx});
+     if(ws[addr]&&t.name)ws[addr].c=[{a:"SUNNY",t:"Tên loại vé: "+t.name}]
+   });
+   ws["!cols"]=headers.map((h,i)=>({wch:i===1?24:(i<7?16:Math.max(12,String(h).length+3))}));
+   let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Import đại lý");
+   XLSX.writeFile(wb,"Sunny_Import_Dai_Ly_Bang_Gia_"+today()+".xlsx");
+ }else{
+   let csv=aoa.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
+   let blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}),a=document.createElement("a");
+   a.href=URL.createObjectURL(blob);a.download="Sunny_Import_Dai_Ly_Bang_Gia_"+today()+".csv";a.click();URL.revokeObjectURL(a.href)
+ }
+}
+function detectCSVDelimiter(text){
+ let lines=String(text||"").replace(/^\ufeff/,"").split(/\r?\n/).filter(x=>x.trim()).slice(0,8);
+ let cand=[",",";","\t"],best=",",score=-1;
+ cand.forEach(d=>{let counts=lines.map(line=>{let q=false,n=0;for(let i=0;i<line.length;i++){if(line[i]==='"'){if(q&&line[i+1]==='"')i++;else q=!q}else if(!q&&line[i]===d)n++}return n});let sc=counts.reduce((a,b)=>a+b,0);if(sc>score){score=sc;best=d}});
+ return best
+}
+function parseCSV(text){
+ text=String(text||"").replace(/^\ufeff/,"");let delim=detectCSVDelimiter(text),rows=[],row=[],cell="",q=false;
+ for(let i=0;i<text.length;i++){let c=text[i];
+   if(q){if(c==='"'&&text[i+1]==='"'){cell+='"';i++}else if(c==='"')q=false;else cell+=c}
+   else if(c==='"')q=true;
+   else if(c===delim){row.push(cell);cell=""}
+   else if(c==="\n"){row.push(cell);rows.push(row);row=[];cell=""}
+   else if(c!=="\r")cell+=c
+ }
+ row.push(cell);if(row.some(x=>x!==""))rows.push(row);return rows
+}
+function importDateCandidates(v){
+ v=String(v||"").trim();if(!v)return [""];
+ if(/^\d{4}-\d{2}-\d{2}$/.test(v))return [v];
+ let m=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+ if(!m)return [v];
+ let a=Number(m[1]),b=Number(m[2]),y=m[3];
+ // File mẫu mở bằng Excel của Sunny đang dùng MM/DD/YYYY:
+ // 10/01/2026 = 2026-10-01. Khuyến nghị YYYY-MM-DD để tuyệt đối rõ ràng.
+ if(a>=1&&a<=12&&b>=1&&b<=31)return [y+"-"+String(a).padStart(2,"0")+"-"+String(b).padStart(2,"0")];
+ return [v]
+}
+function importDate(v){return importDateCandidates(v)[0]||""}
+function previewAgentImport(file){
+ if(!file)return;
+ let ext=(file.name.split(".").pop()||"").toLowerCase();
+ if(!["xlsx","xls","csv","txt"].includes(ext))return alert("Vui lòng chọn file Excel .xlsx hoặc CSV từ file mẫu.");
+ let rd=new FileReader();rd.onload=()=>{try{
+   let buf=rd.result;
+   if(ext==="xlsx"||ext==="xls"){
+     if(typeof XLSX==="undefined")throw new Error("Thư viện đọc Excel chưa tải được. Hãy kết nối Internet một lần hoặc dùng CSV UTF-8.");
+     let wb=XLSX.read(buf,{type:"array",cellDates:false});
+     let ws=wb.Sheets[wb.SheetNames[0]];
+     let rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:""});
+     // Bỏ các dòng hoàn toàn rỗng; giữ nguyên Unicode do XLSX lưu trực tiếp.
+     rows=rows.filter(r=>r.some(v=>String(v||"").trim()!==""));
+     buildAgentImportPreview(rows);
+   }else{
+     let txt="";
+     try{txt=new TextDecoder("utf-8",{fatal:true}).decode(buf)}
+     catch(_){
+       try{txt=new TextDecoder("windows-1258").decode(buf)}
+       catch(__){throw new Error("CSV không phải UTF-8. Hãy dùng trực tiếp file Excel .xlsx để tránh lỗi tiếng Việt.")}
+     }
+     txt=txt.replace(/^\ufeff/,"").normalize("NFC");
+     buildAgentImportPreview(parseCSV(txt))
+   }
+ }catch(e){console.error(e);alert("Không đọc được file import: "+e.message)}};rd.readAsArrayBuffer(file)
+}
+function findAgentImportHeader(rows){
+ let types=new Set(orderedTicketTypes().map(t=>normalizeText(t.id)));
+ for(let i=0;i<rows.length;i++){
+   let r=rows[i]||[],a=normalizeText(r[0]).replace(/\s+/g," "),b=normalizeText(r[1]).replace(/\s+/g," ");
+   if((a==="ma dai ly"||a==="ma")&&(b==="ten dai ly"||b==="dai ly / ctv"||b==="dai ly"))return i;
+   if(r.length>=8){
+     let hits=r.slice(7).filter(x=>types.has(normalizeText(x))).length;
+     if(hits>0 && !String(r[0]||"").trim().startsWith("#"))return i;
+   }
+ }
+ return -1
+}
+function buildAgentImportPreview(rows){
+ let hi=findAgentImportHeader(rows);
+ if(hi<0)return alert("Không nhận diện được dòng tiêu đề của file mẫu. Bản 1.8.4 nhận diện theo cả tiêu đề và các Mã loại vé, đồng thời hỗ trợ CSV UTF-8/ANSI, dấu phẩy, dấu chấm phẩy hoặc Tab.");
+ let h=(rows[hi]||[]).map(x=>String(x||"").trim()),fixed=["Mã đại lý","Tên đại lý","Điện thoại","Email","Ghi chú","Từ ngày","Đến ngày"];
+ let types=orderedTicketTypes(),byCode=new Map(types.map(t=>[normalizeText(t.id),t])),ticketCols=[];
+ for(let i=7;i<h.length;i++){if(!h[i])continue;let t=byCode.get(normalizeText(h[i]));ticketCols.push({i,code:h[i],ticket:t})}
+ let unknown=ticketCols.filter(x=>!x.ticket).map(x=>x.code);
+ let data=rows.slice(hi+1).filter(r=>r.some(x=>String(x||"").trim()!=="")).map((r,n)=>{
+   let rawFrom=String(r[5]||"").trim(),rawTo=String(r[6]||"").trim();
+   let x={line:hi+n+2,id:String(r[0]||"").trim(),name:String(r[1]||"").trim(),phone:String(r[2]||"").trim(),email:String(r[3]||"").trim(),note:String(r[4]||"").trim(),rawFrom,rawTo,from:importDate(rawFrom),to:importDate(rawTo),prices:[],errors:[],warnings:[]};
+   if(!x.id)x.errors.push("Thiếu mã đại lý");if(!x.name)x.errors.push("Thiếu tên đại lý");
+   if(/[?]/.test(x.name))x.errors.push("Tên đại lý chứa dấu ? — file CSV đã mất ký tự tiếng Việt; hãy import trực tiếp file Excel .xlsx");
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(x.from))x.errors.push("Từ ngày phải dạng YYYY-MM-DD");
+   if(x.to&&!/^\d{4}-\d{2}-\d{2}$/.test(x.to))x.errors.push("Đến ngày phải dạng YYYY-MM-DD");
+   if(x.to&&x.from&&x.to<x.from)x.errors.push("Đến ngày trước Từ ngày");
+   ticketCols.forEach(c=>{let raw=String(r[c.i]||"").trim();if(!raw)return;if(!c.ticket)return;let v=Number(raw.replace(/[.\s₫]/g,"").replace(",", "."));if(!Number.isFinite(v)||v<=0)x.errors.push("Giá "+c.code+" không hợp lệ");else x.prices.push({ticketType:c.ticket.name,code:c.ticket.id,price:v})});
+   return x
+ });
+ let duplicateIds=data.filter((x,i)=>data.findIndex(y=>normalizeText(y.id)===normalizeText(x.id))!==i).map(x=>x.id);
+ if(duplicateIds.length)data.forEach(x=>{if(duplicateIds.some(id=>normalizeText(id)===normalizeText(x.id)))x.errors.push("Trùng mã đại lý trong file")});
+ window._agentImport={data,ticketCols,unknown};
+ let err=data.reduce((z,x)=>z+x.errors.length,0)+unknown.length;
+ show(`<div class="modalhead"><h2>Kiểm tra Import đại lý & bảng giá</h2><button class="close" onclick="closeM()">×</button></div>
+ <div class="grid cards" style="margin-bottom:14px"><div class="card"><div class="muted">Dòng dữ liệu</div><div class="metric">${data.length}</div></div><div class="card"><div class="muted">Mã vé nhận diện</div><div class="metric">${ticketCols.length-unknown.length}</div></div><div class="card"><div class="muted">Lỗi</div><div class="metric">${err}</div></div><div class="card"><div class="muted">Bảng giá sẽ đọc</div><div class="metric">${data.reduce((z,x)=>z+x.prices.length,0)}</div></div></div>
+ ${unknown.length?`<div class="card" style="border-color:#fca5a5;margin-bottom:12px"><b>Mã loại vé không tồn tại:</b> ${unknown.map(esc).join(", ")}<div class="muted">Hãy khai báo mã vé trên phần mềm trước hoặc tải lại file mẫu mới.</div></div>`:""}
+ <div class="card" style="margin-bottom:12px"><b>Import tự động theo Mã đại lý</b><div class="muted" style="margin-top:5px">Mã chưa có: tạo đại lý mới. Mã đã có: cập nhật hồ sơ. Ô giá có dữ liệu: thêm/cập nhật bảng giá theo ngày hiệu lực; nếu ngày hiệu lực nằm trong một mức giá cũ, hệ thống tự tách/thay thế từ ngày đó. Ô giá trống: giữ nguyên giá đang có.</div></div>
+ <div class="tablebox" style="max-height:360px"><table class="table"><thead><tr><th>Dòng</th><th>Mã</th><th>Đại lý</th><th>Từ ngày</th><th>Số giá</th><th>Kiểm tra</th></tr></thead><tbody>${data.map(x=>`<tr><td>${x.line}</td><td>${esc(x.id)}</td><td>${esc(x.name)}</td><td>${esc(x.from)}</td><td>${x.prices.length}</td><td>${x.errors.length?`<span class="badge red">${esc(x.errors.join("; "))}</span>`:x.warnings.length?`<span class="badge" style="background:#fef3c7;color:#92400e">${esc(x.warnings.join("; "))}</span>`:`<span class="badge green">Hợp lệ</span>`}</td></tr>`).join("")||'<tr><td colspan="6" class="empty">Không có dữ liệu</td></tr>'}</tbody></table></div>
+ <div style="text-align:right;margin-top:15px"><button class="btn" onclick="closeM()">Hủy</button> <button class="btn primary" ${err?"disabled":""} onclick="commitAgentImport()">Xác nhận Import</button></div>`)
+}
+function previousDateISO(s){
+ let d=new Date(s+"T12:00:00");d.setDate(d.getDate()-1);
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")
+}
+function normalizeAgentPriceRows(agentName,ticketType,ticketCode,effectiveFrom,price){
+ let same=db.agentPrices.map((v,i)=>({v,i})).filter(o=>o.v.agent===agentName&&(normalizeText(o.v.ticketCode||"")===normalizeText(ticketCode)||o.v.ticketType===ticketType));
+ // Xóa dòng trùng hoàn toàn cùng ngày bắt đầu, giữ dòng cuối cùng.
+ let exact=same.filter(o=>(o.v.from||"")===effectiveFrom);
+ if(exact.length>1){
+   exact.slice(0,-1).map(o=>o.i).sort((a,b)=>b-a).forEach(i=>db.agentPrices.splice(i,1));
+ }
+ // Dọn đoạn giá do lỗi phiên bản cũ tạo ra ngay trước ngày hiệu lực đúng.
+ // Ví dụ 2026-01-10 → 2026-09-30 rồi lại có 2026-10-01 → không giới hạn.
+ let prev=previousDateISO(effectiveFrom);
+ db.agentPrices=db.agentPrices.filter(v=>!(v.agent===agentName &&
+   (normalizeText(v.ticketCode||"")===normalizeText(ticketCode)||v.ticketType===ticketType) &&
+   v.to===prev && Number(v.price)===Number(price)));
+}
+function commitAgentImport(){
+ let pack=window._agentImport;if(!pack)return alert("Không còn dữ liệu import.");
+ if(pack.unknown.length||pack.data.some(x=>x.errors.length))return alert("File còn lỗi. Vui lòng sửa file rồi import lại.");
+ let added=0,updated=0,pricesAdded=0,pricesUpdated=0,unchanged=0;
+ for(let x of pack.data){
+   let a=db.agents.find(v=>normalizeText(v.id)===normalizeText(x.id));
+   if(!a){
+     if(/[?]/.test(x.name)){alert(`Không tạo ${x.id}: tên đại lý "${x.name}" đã mất ký tự tiếng Việt trong file CSV. Hãy lưu file bằng CSV UTF-8 rồi import lại.`);continue}
+     a={id:x.id,name:x.name,phone:x.phone,email:x.email,note:x.note,active:true};
+     db.agents.push(a);added++;
+   }else{
+     let oldName=a.name;
+     a.name=x.name;a.phone=x.phone;a.email=x.email;a.note=x.note;if(a.active==null)a.active=true;
+     if(oldName!==a.name)db.agentPrices.forEach(p=>{if(p.agent===oldName)p.agent=a.name});
+     updated++;
+   }
+   for(let p of x.prices){
+     let matches=db.agentPrices.filter(v=>v.agent===a.name&&(normalizeText(v.ticketCode||"")===normalizeText(p.code)||v.ticketType===p.ticketType));
+     let effectiveFrom=x.from;
+     let effectiveTo=x.to;
+     // Nếu ngày kiểu 10/01/2026 mơ hồ, ưu tiên cách hiểu khớp bảng giá đang có.
+     let exact=matches.find(v=>(v.from||"")===effectiveFrom);
+     if(exact){
+       exact.price=p.price;exact.to=effectiveTo;exact.ticketType=p.ticketType;exact.ticketCode=p.code;
+       normalizeAgentPriceRows(a.name,p.ticketType,p.code,effectiveFrom,p.price);
+       pricesUpdated++;continue;
+     }
+
+     // Import is authoritative for a non-empty price cell.
+     // If the effective date falls inside an existing period, split/replace that period
+     // instead of rejecting the whole import.
+     let containing=matches.find(v=>(v.from||"0000-01-01")<effectiveFrom&&(!v.to||v.to>=effectiveFrom));
+     if(containing){
+       let oldTo=containing.to||"";
+       let d=new Date(effectiveFrom+"T00:00:00"); d.setDate(d.getDate()-1);
+       containing.to=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+       db.agentPrices.push({agent:a.name,ticketType:p.ticketType,ticketCode:p.code,price:p.price,from:effectiveFrom,to:effectiveTo||oldTo});
+       pricesUpdated++;continue;
+     }
+
+     // If the imported period begins before a future existing period, cap the new period
+     // at the day before that future price starts, preserving future declarations.
+     let future=matches.filter(v=>(v.from||"")>effectiveFrom).sort((u,v)=>(u.from||"").localeCompare(v.from||""))[0];
+     let newTo=effectiveTo||"";
+     if(future && (!newTo || newTo>=future.from)){
+       let d=new Date(future.from+"T00:00:00"); d.setDate(d.getDate()-1);
+       newTo=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+     }
+     db.agentPrices.push({agent:a.name,ticketType:p.ticketType,ticketCode:p.code,price:p.price,from:effectiveFrom,to:newTo});
+     normalizeAgentPriceRows(a.name,p.ticketType,p.code,effectiveFrom,p.price);
+     pricesAdded++;
+   }
+   if(!x.prices.length)unchanged++;
+ }
+ // Dọn các dòng trùng hoàn toàn còn sót từ các phiên bản trước.
+ let seen=new Map(),remove=[];
+ db.agentPrices.forEach((p,i)=>{let k=[p.agent,normalizeText(p.ticketCode||p.ticketType),p.from||"",p.to||""].join("|");if(seen.has(k))remove.push(seen.get(k));seen.set(k,i)});
+ remove.sort((a,b)=>b-a).forEach(i=>db.agentPrices.splice(i,1));
+ save();window._agentImport=null;closeM(true);agents();
+ alert(`Import hoàn tất.\nĐại lý mới: ${added}\nĐại lý cập nhật: ${updated}\nGiá thêm mới: ${pricesAdded}\nGiá cập nhật/thay thế: ${pricesUpdated}\nDòng không có giá (giữ nguyên): ${unchanged}`);
+}
+function agentHasTransactions(a){
+ return db.bookings.some(b=>b.agent===a.name);
+}
+function agentRows(){
+ let raw=$("aq")?.value||"",q=normalizeText(raw),st=$("agentStatusFilter")?.value||"";uiFilters.agents={q:raw,status:st};
+ let rows=db.agents.filter(a=>(!q||normalizeText(`${a.id} ${a.name} ${a.phone||""}`).includes(q))&&(!st||(st==="active"?a.active!==false:a.active===false)));
+ $("at").innerHTML=rows.map(a=>`<tr><td>${esc(a.id)}</td><td><b>${esc(a.name)}</b></td><td>${esc(a.phone||"")}</td><td>${db.agentPrices.filter(p=>p.agent===a.name).length}</td><td>${a.active===false?'<span class="badge">Tạm ngưng</span>':'<span class="badge green">Đang hoạt động</span>'}</td><td><button class="btn" onclick="agentForm('${a.id}')">Hồ sơ</button> <button class="btn primary" onclick="priceList('${a.id}')">Bảng giá</button> ${a.active===false?`<button class="btn" onclick="setAgentActive('${a.id}',true)">Kích hoạt</button>`:`<button class="btn" onclick="setAgentActive('${a.id}',false)">Tạm ngưng</button>`} <button class="btn" style="color:#b91c1c" onclick="deleteAgent('${a.id}')">Xóa</button></td></tr>`).join("")||'<tr><td colspan="6" class="empty">Không có đại lý phù hợp</td></tr>'
+}
+function agentForm(id=""){
+ let x=db.agents.find(v=>v.id===id)||{id:"A"+String(db.agents.length+1).padStart(3,"0"),name:"",phone:"",email:"",note:"",active:true};
+ show(`<div class="modalhead"><h2>Hồ sơ đại lý</h2><button class="close" onclick="closeM()">×</button></div><div class="form"><div class="field"><label>Mã</label><input id="ai" class="input" value="${esc(x.id)}"></div><div class="field"><label>Tên đại lý / CTV</label><input id="an" class="input" value="${esc(x.name)}"></div><div class="field"><label>Điện thoại</label><input id="aph" class="input" value="${esc(x.phone||"")}"></div><div class="field"><label>Email</label><input id="ae" class="input" value="${esc(x.email||"")}"></div><div class="field"><label>Trạng thái</label><select id="aa" class="select"><option value="1" ${x.active!==false?"selected":""}>Đang hoạt động</option><option value="0" ${x.active===false?"selected":""}>Tạm ngưng</option></select></div><div class="field full"><label>Ghi chú</label><textarea id="ano" class="textarea">${esc(x.note||"")}</textarea></div></div><div class="muted" style="margin:10px 0">Đại lý tạm ngưng sẽ không xuất hiện khi tạo booking mới nhưng toàn bộ booking, bảng giá, công nợ và báo cáo lịch sử vẫn được giữ nguyên.</div><div style="text-align:right"><button class="btn primary" onclick="saveAgent('${id}')">Lưu</button></div>`)
+}
+function saveAgent(id){
+ let old=db.agents.find(v=>v.id===id),x={id:$("ai").value.trim(),name:$("an").value.trim(),phone:$("aph").value.trim(),email:$("ae").value.trim(),note:$("ano").value,active:$("aa").value==="1"};
+ if(!x.id||!x.name)return alert("Nhập mã và tên đại lý.");
+ if(db.agents.some(v=>v!==old&&normalizeText(v.id)===normalizeText(x.id)))return alert("Mã đại lý đã tồn tại.");
+ if(old&&old.name!==x.name){db.agentPrices.forEach(p=>{if(p.agent===old.name)p.agent=x.name});db.bookings.forEach(b=>{if(b.agent===old.name)b.agent=x.name})}
+ let i=db.agents.findIndex(v=>v.id===id);if(i>=0)db.agents[i]=x;else db.agents.push(x);save();closeM(true);agents()
+}
+function setAgentActive(id,active){
+ let a=db.agents.find(v=>v.id===id);if(!a)return;
+ if(!active&&!confirm(`Tạm ngưng đại lý "${a.name}"?\n\nĐại lý sẽ không xuất hiện khi tạo booking mới. Dữ liệu lịch sử vẫn được giữ nguyên.`))return;
+ a.active=active;save();agentRows()
+}
+function deleteAgent(id){
+ let a=db.agents.find(v=>v.id===id);if(!a)return;
+ if(agentHasTransactions(a)){
+   alert(`Không thể xóa đại lý "${a.name}" vì đã phát sinh booking/giao dịch.\n\nHãy dùng chức năng Tạm ngưng để ngừng sử dụng đại lý nhưng vẫn giữ nguyên toàn bộ dữ liệu lịch sử.`);
+   return
+ }
+ if(!confirm(`Xóa vĩnh viễn đại lý "${a.name}"?\n\nĐại lý này chưa phát sinh booking. Bảng giá khai báo của đại lý cũng sẽ bị xóa.`))return;
+ db.agentPrices=db.agentPrices.filter(p=>p.agent!==a.name);
+ db.agents=db.agents.filter(v=>v.id!==id);
+ save();agentRows()
+}
+function priceList(id){
+ let a=db.agents.find(v=>v.id===id);if(!a)return;
+ syncTicketReferences();
+ let rows=db.agentPrices.map((p,i)=>({...p,_i:i})).filter(p=>p.agent===a.name);
+ rows.sort((u,v)=>{let tu=ticketForPrice(u),tv=ticketForPrice(v),order=orderedTicketTypes();let iu=order.findIndex(t=>t.id===tu?.id),iv=order.findIndex(t=>t.id===tv?.id);return (iu<0?9999:iu)-(iv<0?9999:iv)||(v.from||'').localeCompare(u.from||'')});
+ let declared=new Set(rows.map(p=>ticketForPrice(p)?.id).filter(Boolean));
+ let missing=orderedTicketTypes().filter(t=>t.active&&!declared.has(t.id));
+ show(`<div class="modalhead"><h2>Bảng giá — ${esc(a.name)}</h2><button class="close" onclick="closeM()">×</button></div><div class="toolbar"><button class="btn primary" onclick="priceForm('${a.id}')">+ Khai báo giá</button><span class="muted">Đồng bộ từ Loại vé. Giá bán đại lý không tự đổi khi sửa giá vốn.</span></div><div class="tablebox"><table class="table"><thead><tr><th>Loại vé</th><th>Giá bán/vé</th><th>Từ ngày</th><th>Đến ngày</th><th>Thao tác</th></tr></thead><tbody>${rows.map(p=>`<tr><td>${esc(ticketForPrice(p)?.name||p.ticketType)}${ticketForPrice(p)?.active===false?' <span class="badge">Ngừng</span>':''}</td><td>${money(p.price)}</td><td>${p.from}</td><td>${p.to||"Không giới hạn"}</td><td><button class="btn" onclick="priceForm('${a.id}',${p._i})">Sửa</button> <button class="btn" style="color:#b91c1c" onclick="deletePrice('${a.id}',${p._i})">Xóa</button></td></tr>`).join("")}${missing.map(t=>`<tr style="background:#fffbeb"><td>${esc(t.name)}</td><td><span class="muted">Chưa khai báo</span></td><td>—</td><td>—</td><td><button class="btn primary" onclick="priceForm('${a.id}',-1,'${esc(t.id)}')">+ Khai báo</button></td></tr>`).join('')}${!rows.length&&!missing.length?`<tr><td colspan="5" class="empty">Chưa có loại vé để khai báo</td></tr>`:''}</tbody></table></div>`)
+}
+function priceForm(id,idx=-1,preselect=""){let a=db.agents.find(v=>v.id===id),p=idx>=0?db.agentPrices[idx]:{ticketType:(ticketForRef(preselect)||orderedTicketTypes().find(t=>t.active))?.name||"",price:"",from:today(),to:""};show(`<div class="modalhead"><h2>${idx>=0?"Chỉnh sửa":"Thêm"} giá cho ${esc(a.name)}</h2><button class="close" onclick="closeM()">×</button></div><div class="form"><div class="field"><label>Loại vé</label><select id="pt" class="select">${orderedTicketTypes().filter(t=>t.active||t.name===p.ticketType).map(t=>`<option ${t.name===p.ticketType?"selected":""}>${esc(t.name)}</option>`).join("")}</select></div><div class="field"><label>Giá / vé</label><input id="pp" class="input" type="number" value="${p.price??""}"></div><div class="field"><label>Từ ngày</label><input id="pf" class="input" type="date" value="${p.from||today()}"></div><div class="field"><label>Đến ngày (có thể bỏ trống)</label><input id="pto" class="input" type="date" value="${p.to||""}"></div></div><div style="text-align:right;margin-top:15px"><button class="btn" onclick="priceList('${a.id}')">Hủy</button> <button class="btn primary" onclick="savePrice('${a.id}',${idx})">${idx>=0?"Lưu thay đổi":"Lưu giá"}</button></div>`)}
+function savePrice(id,idx=-1){
+ let a=db.agents.find(v=>v.id===id),x={agent:a.name,ticketType:$("pt").value,ticketId:ticketForRef($("pt").value)?.id||"",price:num($("pp").value),from:$("pf").value,to:$("pto").value};
+ if(!x.price)return alert("Nhập giá.");if(!x.from)return alert("Vui lòng chọn ngày bắt đầu hiệu lực.");if(x.to&&x.to<x.from)return alert("Đến ngày không được trước Từ ngày.");
+ let end=x.to||"9999-12-31",overlap=db.agentPrices.some((p,i)=>i!==idx&&p.agent===x.agent&&ticketPriceMatches(p,x.ticketType)&&(p.from||"0000-01-01")<=end&&(!p.to||p.to>=x.from));
+ if(overlap)return alert("Khoảng thời gian này đang trùng với một bảng giá khác của cùng đại lý và loại vé. Hãy đặt Đến ngày cho bảng giá cũ hoặc chọn Từ ngày mới không bị trùng.");
+ if(idx>=0)db.agentPrices[idx]=x;else db.agentPrices.push(x);save();priceList(id)
+}
+function deletePrice(id,idx){if(!confirm("Xóa dòng giá này?"))return;db.agentPrices.splice(idx,1);save();priceList(id)}
+function costs(){
+ let rows=db.costPrices.map((x,i)=>({...x,_i:i})).sort((a,b)=>a.ticketType.localeCompare(b.ticketType,"vi")||(b.isDefault?1:0)-(a.isDefault?1:0)||(b.from||"").localeCompare(a.from||""));
+ $("app").innerHTML=`<div class="card" style="margin-bottom:14px"><b>Quản lý giá vốn</b><div class="muted" style="margin-top:6px">Mỗi loại vé có thể có nhiều mức giá vốn. Mức ⭐ Mặc định sẽ được ưu tiên khi tạo booking nếu đang có hiệu lực theo ngày booking. Booking đã lưu luôn giữ nguyên giá vốn của chính booking đó.</div></div><div class="toolbar"><button class="btn primary" onclick="costForm()">+ Khai báo giá vốn</button></div><div class="tablebox"><table class="table"><thead><tr><th>Loại vé</th><th>Giá vốn</th><th>Từ ngày</th><th>Đến ngày</th><th>Mặc định</th><th>Thao tác</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.ticketType)}</td><td><b>${money(x.price)}</b></td><td>${x.from||""}</td><td>${x.to||"Không giới hạn"}</td><td>${x.isDefault?'<span class="badge green">⭐ Mặc định</span>':`<button class="btn" onclick="setDefaultCost(${x._i})">Đặt mặc định</button>`}</td><td><button class="btn" onclick="costForm(${x._i})">Sửa</button> <button class="btn" style="color:#b91c1c" onclick="deleteCost(${x._i})">Xóa</button></td></tr>`).join("")||`<tr><td colspan="6" class="empty">Chưa khai báo giá vốn mới</td></tr>`}</tbody></table></div>`
+}
+function costForm(i=-1){
+ let x=i>=0?db.costPrices[i]:{ticketType:orderedTicketTypes().find(t=>t.active)?.name||"",price:"",from:today(),to:"",isDefault:false};
+ show(`<div class="modalhead"><h2>${i>=0?"Sửa":"Khai báo"} giá vốn</h2><button class="close" onclick="closeM()">×</button></div><div class="form"><div class="field"><label>Loại vé</label><select id="ct" class="select">${orderedTicketTypes().filter(t=>t.active||t.name===x.ticketType).map(t=>`<option ${t.name===x.ticketType?"selected":""}>${esc(t.name)}</option>`).join("")}</select></div><div class="field"><label>Giá vốn / vé</label><input id="cp" class="input" type="number" value="${x.price??""}"></div><div class="field"><label>Từ ngày</label><input id="cf" class="input" type="date" value="${x.from||today()}"></div><div class="field"><label>Đến ngày (có thể bỏ trống)</label><input id="cto" class="input" type="date" value="${x.to||""}"></div><div class="field full"><label style="display:flex;gap:9px;align-items:center"><input id="cdef" type="checkbox" ${x.isDefault?"checked":""}> Đặt làm giá vốn mặc định cho loại vé này</label><div class="muted" style="margin-top:5px">Nếu chọn, các mức giá vốn khác của cùng loại vé sẽ bỏ trạng thái mặc định.</div></div></div><div style="text-align:right;margin-top:15px"><button class="btn" onclick="closeM()">Hủy</button> <button class="btn primary" onclick="saveCost(${i})">${i>=0?"Lưu thay đổi":"Lưu"}</button></div>`)
+}
+function saveCost(i=-1){
+ let x={ticketType:$("ct").value,ticketId:ticketForRef($("ct").value)?.id||"",price:num($("cp").value),from:$("cf").value,to:$("cto").value,isDefault:$("cdef").checked};
+ if(!x.price)return alert("Nhập giá vốn.");if(!x.from)return alert("Vui lòng chọn ngày bắt đầu.");if(x.to&&x.to<x.from)return alert("Đến ngày không được trước Từ ngày.");
+ if(x.isDefault)db.costPrices.forEach((v,j)=>{if(j!==i&&ticketPriceMatches(v,x.ticketType))v.isDefault=false});
+ if(i>=0)db.costPrices[i]=x;else db.costPrices.push(x);
+ save();closeM(true);costs()
+}
+function setDefaultCost(i){
+ let x=db.costPrices[i];if(!x)return;
+ db.costPrices.forEach((v,j)=>{if(ticketPriceMatches(v,x.ticketType))v.isDefault=j===i});
+ save();costs()
+}
+function deleteCost(i){
+ let x=db.costPrices[i];if(!x)return;
+ if(!confirm(`Xóa khai báo giá vốn ${x.ticketType} — ${money(x.price)}?\\n\\nBooking đã lưu trước đây vẫn giữ nguyên giá vốn đã lưu.`))return;
+ db.costPrices.splice(i,1);save();costs()
+}
+function expenses(){$("app").innerHTML=`<div class="card" style="margin-bottom:14px"><b>Danh mục chi phí dùng cho booking</b><div class="muted" style="margin-top:6px">Khai báo tại đây chỉ tạo mẫu để chọn khi tạo booking, chưa làm phát sinh chi phí. Chỉ booking có sử dụng mới bị trừ chi phí. Quảng cáo, Internet, vận hành, điện nước... nhập tại Sổ quỹ / Thu Chi → Chi khác.</div></div><div class="toolbar"><button class="btn primary" onclick="expenseForm()">+ Khai báo chi phí</button><span class="muted">Danh mục mẫu cho booking — không tự động trừ tiền.</span></div><div class="tablebox"><table class="table"><thead><tr><th>Ngày</th><th>Nội dung</th><th>Số tiền</th><th>Ghi chú</th><th></th></tr></thead><tbody>${db.expenses.map((x,i)=>`<tr><td>${x.date}</td><td>${esc(x.title)}</td><td>${money(x.amount)}</td><td>${esc(x.note)}</td><td><button class="btn" onclick="expenseForm(${i})">Sửa</button> <button class="btn" onclick="deleteExpense(${i})">Xóa</button></td></tr>`).join("")||`<tr><td colspan="5" class="empty">Chưa có chi phí</td></tr>`}</tbody></table></div>`}
+function expenseForm(i=-1){let x=i>=0?db.expenses[i]:{date:today(),title:"",amount:"",note:""};show(`<div class="modalhead"><h2>${i>=0?"Sửa":"Thêm"} chi phí</h2><button class="close" onclick="closeM()">×</button></div><div class="form"><div class="field"><label>Ngày</label><input id="ed" class="input" type="date" value="${x.date||today()}"></div><div class="field"><label>Số tiền</label><input id="ea" class="input" type="number" value="${x.amount||""}"></div><div class="field full"><label>Nội dung</label><input id="et" class="input" value="${esc(x.title||"")}" placeholder="Ví dụ: Tiền ship"></div><div class="field full"><label>Ghi chú</label><textarea id="en" class="textarea">${esc(x.note||"")}</textarea></div></div><div style="text-align:right"><button class="btn primary" onclick="saveExpense(${i})">${i>=0?"Lưu thay đổi":"Lưu"}</button></div>`)}
+function saveExpense(i=-1){let x={date:$("ed").value,title:$("et").value.trim(),amount:num($("ea").value),note:$("en").value};if(!x.title)return alert("Vui lòng nhập nội dung chi phí.");if(x.amount<0)return alert("Số tiền chi phí không hợp lệ.");if(i>=0)db.expenses[i]=x;else db.expenses.push(x);save();closeM(true);expenses()}
+function deleteExpense(i){let x=db.expenses[i];if(!x)return;if(confirm(`Xóa khoản chi phí "${x.title}" — ${money(x.amount)}?`)){db.expenses.splice(i,1);save();expenses()}}
+
+function supplierPaymentList(x){return Array.isArray(x.supplierPayments)?x.supplierPayments:[]}
+function supplierDueTotal(x){return num(x.buyPrice)*num(x.qty)}
+function supplierPaidAmount(x){return supplierPaymentList(x).reduce((z,p)=>z+num(p.amount),0)}
+function supplierDueAmount(x){return Math.max(0,supplierDueTotal(x)-supplierPaidAmount(x))}
+function supplierPayStatus(x){let p=supplierPaidAmount(x),t=supplierDueTotal(x);return t<=0||p>=t?"paid":p>0?"partial":"unpaid"}
+function supplierPayBadge(x){let st=supplierPayStatus(x),cl=st==="paid"?"green":st==="partial"?"yellow":"red",tx=st==="paid"?"Đã trả":st==="partial"?"Trả một phần":"Chưa trả";return `<span class="badge ${cl}">${tx}</span>`}
+function supplierPaymentForm(id){let x=db.bookings.find(v=>v.id===id);if(!x)return;let ps=supplierPaymentList(x),due=supplierDueAmount(x);show(`<div class="modalhead"><h2>Thanh toán tiền vé / Nhà cung cấp</h2><button class="close" onclick="closeM()">×</button></div><div class="muted"><b>${esc(x.bookingCode||x.id)}</b> · ${x.date} · ${esc(x.ticketType)} · ${esc(bookingPartyName(x))}</div><div class="paystats"><div class="paystat"><span class="muted">Phải trả tiền vé</span><b>${money(supplierDueTotal(x))}</b></div><div class="paystat"><span class="muted">Đã trả</span><b class="green">${money(supplierPaidAmount(x))}</b></div><div class="paystat"><span class="muted">Còn phải trả</span><b>${money(due)}</b></div></div>${due<=0?`<div class="paybox"><b class="green">✓ Đã thanh toán đủ tiền vé</b></div>`:`<div class="form"><div class="field"><label>Ngày chi</label><input id="spdate" class="input" type="date" value="${today()}"></div><div class="field"><label>Số tiền</label><input id="spamount" class="input" type="number" value="${due}"></div><div class="field full"><label>Ghi chú</label><input id="spnote" class="input" placeholder="Chuyển khoản nhà cung cấp..."></div></div><div style="text-align:right;margin:12px 0"><button class="btn primary" onclick="addSupplierPayment('${id}')">+ Ghi nhận chi tiền vé</button></div>`}<h3>Lịch sử chi tiền vé</h3><div class="tablebox"><table class="table"><thead><tr><th>Ngày</th><th>Số tiền</th><th>Ghi chú</th><th></th></tr></thead><tbody>${ps.map((p,i)=>`<tr><td>${p.date}</td><td>${money(p.amount)}</td><td>${esc(p.note||"")}</td><td><button class="btn" onclick="deleteSupplierPayment('${id}',${i})">Xóa</button></td></tr>`).join("")||'<tr><td colspan="4" class="empty">Chưa có khoản chi tiền vé</td></tr>'}</tbody></table></div>`)}
+function addSupplierPayment(id){let x=db.bookings.find(v=>v.id===id),amt=num($("spamount").value);if(!x||amt<=0)return alert("Số tiền không hợp lệ.");if(amt>supplierDueAmount(x))return alert("Số tiền lớn hơn khoản còn phải trả.");x.supplierPayments=supplierPaymentList(x);x.supplierPayments.push({date:$("spdate").value||today(),amount:amt,note:$("spnote").value.trim()});save();supplierPaymentForm(id)}
+function deleteSupplierPayment(id,i){let x=db.bookings.find(v=>v.id===id),p=supplierPaymentList(x)[i];if(p&&confirm(`Xóa khoản chi ${money(p.amount)}?`)){x.supplierPayments.splice(i,1);save();supplierPaymentForm(id)}}
+
+let bsTicketSelection=null;
+function bulkTicketOptions(){
+ let all=orderedTicketTypes().map(t=>({key:String(t.id),name:t.name+(t.active===false?' (ngừng)':'')}));
+ const existing=new Set(all.map(t=>t.key));
+ db.bookings.forEach(b=>{if(!ticketForRef(b.ticketId||b.ticketType)&&b.ticketType){let key='legacy:'+b.ticketType;if(!existing.has(key)){all.push({key,name:b.ticketType+' (lịch sử)'});existing.add(key)}}});
+ return all
+}
+function bulkSupplierPaymentForm(){
+ bsTicketSelection=null;
+ show(`<div class="modalhead"><h2>Thanh toán tiền vé hàng loạt</h2><button class="close" onclick="closeM()">×</button></div>
+ <div class="toolbar" style="margin:0 0 12px;align-items:flex-end"><div class="field"><label>Từ ngày</label><input id="bsf" class="input" type="date" onchange="renderBulkSupplierRows()"></div><div class="field"><label>Đến ngày</label><input id="bst" class="input" type="date" value="${today()}" onchange="renderBulkSupplierRows()"></div><div class="field" style="min-width:260px;position:relative"><label>Loại vé (chọn nhiều)</label><button type="button" class="btn" id="bsTicketButton" style="width:100%;text-align:left" onclick="bulkToggleTicketPanel()">Tất cả loại vé ▾</button><div id="bsTicketPanel" style="display:none;position:absolute;top:100%;left:0;min-width:320px;max-width:90vw;background:white;border:1px solid #d1d5db;border-radius:9px;padding:10px;box-shadow:0 8px 24px #0002;z-index:12"><input id="bsTicketSearch" class="input" placeholder="Tìm tên / mã loại vé..." oninput="bulkRenderTicketOptions()"><div class="toolbar" style="margin:9px 0"><button class="btn" onclick="bulkSetAllTickets(true)">Chọn tất cả</button><button class="btn" onclick="bulkSetAllTickets(false)">Bỏ chọn</button></div><div id="bsTicketOptions" style="max-height:210px;overflow:auto"></div></div></div><button class="btn" onclick="renderBulkSupplierRows()">Lọc</button></div>
+ <div class="muted" style="margin-bottom:8px">Bỏ chọn tất cả sẽ không hiển thị booking. Khi đổi bộ lọc, lựa chọn thanh toán được đặt lại để tránh thanh toán nhầm.</div>
+ <div class="tablebox" style="max-height:360px;overflow:auto"><table class="table"><thead><tr><th><input id="bsall" type="checkbox" onchange="bulkSupplierToggleAll(this.checked)"></th><th>Ngày</th><th>Loại vé</th><th>Đại lý</th><th>Còn phải trả</th></tr></thead><tbody id="bsrows"></tbody></table></div>
+ <div class="paystats" style="margin-top:14px"><div class="paystat"><span class="muted">Booking đã chọn</span><b id="bscount">0</b></div><div class="paystat"><span class="muted">Tổng thanh toán</span><b id="bstotal">0 đ</b></div></div>
+ <div class="form"><div class="field"><label>Ngày thanh toán</label><input id="bspdate" class="input" type="date" value="${today()}"></div><div class="field full"><label>Ghi chú</label><input id="bspnote" class="input" value="Thanh toán tiền vé hàng loạt"></div></div>
+ <div style="text-align:right;margin-top:14px"><button class="btn primary" onclick="saveBulkSupplierPayment()">✓ Thanh toán các booking đã chọn</button></div>`);
+ bulkRenderTicketOptions();renderBulkSupplierRows()
+}
+function bulkToggleTicketPanel(){let p=$('bsTicketPanel');p.style.display=p.style.display==='none'?'block':'none';bulkRenderTicketOptions()}
+function bulkRenderTicketOptions(){
+ let q=normalizeText($('bsTicketSearch')?.value||'');let all=bulkTicketOptions();
+ $('bsTicketOptions').innerHTML=all.filter(t=>normalizeText(t.name+' '+t.key).includes(q)).map(t=>`<label style="display:flex;align-items:center;gap:8px;padding:7px;border-bottom:1px solid #eee"><input type="checkbox" ${bsTicketSelection===null||bsTicketSelection.has(t.key)?'checked':''} onchange="bulkTicketChanged(decodeURIComponent('${encodeURIComponent(t.key).replaceAll("'",'%27')}'),this.checked)"> ${esc(t.name)}</label>`).join('')||'<p class="muted">Không tìm thấy loại vé.</p>';
+ let n=bsTicketSelection===null?all.length:bsTicketSelection.size;
+ $('bsTicketButton').textContent=n===all.length?'Tất cả loại vé ▾':n===0?'Chưa chọn loại vé ▾':`Đã chọn ${n} loại vé ▾`;
+}
+function bulkTicketChanged(key,checked){if(bsTicketSelection===null)bsTicketSelection=new Set(bulkTicketOptions().map(x=>x.key));if(checked)bsTicketSelection.add(key);else bsTicketSelection.delete(key);bulkRenderTicketOptions();renderBulkSupplierRows()}
+function bulkSetAllTickets(all){bsTicketSelection=all?null:new Set();bulkRenderTicketOptions();renderBulkSupplierRows()}
+function bulkTicketMatches(x){if(bsTicketSelection===null)return true;let key=x.ticketId&&ticketForRef(x.ticketId)?String(x.ticketId):ticketForRef(x.ticketType)?.id;if(key)return bsTicketSelection.has(String(key));return bsTicketSelection.has('legacy:'+x.ticketType)}
+function bulkVisibleSupplierRows(){let a=$('bsf')?.value||'',b=$('bst')?.value||'';return db.bookings.filter(x=>supplierDueAmount(x)>0&&(!a||x.date>=a)&&(!b||x.date<=b)&&bulkTicketMatches(x)).sort((x,y)=>x.date.localeCompare(y.date))}
+function renderBulkSupplierRows(){
+ let rows=bulkVisibleSupplierRows();
+ $('bsrows').innerHTML=rows.map(x=>`<tr><td><input class="bscheck" type="checkbox" data-id="${esc(x.id)}" onchange="updateBulkSupplierTotal()"></td><td>${esc(x.date)}</td><td>${esc(x.ticketType)}</td><td>${esc(x.agent||'Khách lẻ')}</td><td><b>${money(supplierDueAmount(x))}</b></td></tr>`).join('')||'<tr><td colspan="5" class="empty">Không có booking còn phải trả.</td></tr>';
+ if($('bsall'))$('bsall').checked=false;updateBulkSupplierTotal()
+}
+function bulkSupplierToggleAll(v){document.querySelectorAll('.bscheck').forEach(c=>c.checked=v);updateBulkSupplierTotal()}
+function updateBulkSupplierTotal(){let ids=[...document.querySelectorAll('.bscheck:checked')].map(c=>c.dataset.id),total=0;ids.forEach(id=>{let x=db.bookings.find(v=>v.id===id);if(x)total+=supplierDueAmount(x)});$('bscount').textContent=ids.length;$('bstotal').textContent=money(total)}
+function saveBulkSupplierPayment(){
+ let allowed=new Set(bulkVisibleSupplierRows().map(x=>String(x.id)));
+ let ids=[...document.querySelectorAll('.bscheck:checked')].map(c=>c.dataset.id).filter(id=>allowed.has(id));
+ if(!ids.length)return alert('Vui lòng chọn ít nhất một booking.');
+ let date=$('bspdate').value||today(),note=$('bspnote').value.trim()||'Thanh toán tiền vé hàng loạt',total=0;
+ if(!confirm(`Xác nhận thanh toán tiền vé cho ${ids.length} booking đang hiển thị?`))return;
+ ids.forEach(id=>{let x=db.bookings.find(v=>String(v.id)===id);if(!x)return;let due=supplierDueAmount(x);if(due<=0)return;x.supplierPayments=supplierPaymentList(x);x.supplierPayments.push({id:'sp-'+crypto.randomUUID(),date,amount:due,note});total+=due});
+ save();alert(`Đã thanh toán ${ids.length} booking, tổng ${money(total)}.`);closeM(true);cashbook()
+}
+function cashbook(){let d=today(),m=d.slice(0,7),st=uiFilters.cashbook||{f:`${m}-01`,t:d,type:"",source:"",q:""};$("app").innerHTML=`<div class="card"><div class="toolbar" style="margin:0;align-items:flex-end">
+<div class="field"><label>Từ ngày</label><input id="cf" class="input" type="date" value="${st.f||""}"></div><div class="field"><label>Đến ngày</label><input id="ct" class="input" type="date" value="${st.t||""}"></div>
+<div class="field"><label>Thu / Chi</label><select id="ctype" class="select"><option value="">Tất cả</option><option value="THU">Thu</option><option value="CHI">Chi</option></select></div>
+<div class="field"><label>Nguồn</label><select id="csource" class="select"><option value="">Tất cả</option><option value="auto">Tự động</option><option value="manual">Thủ công</option></select></div>
+<input id="cq" class="input grow" placeholder="Tìm đại lý, loại vé, nội dung..." value="${esc(st.q||"")}">
+<button class="btn primary" onclick="renderCashbook()">Xem / Làm mới</button><button class="btn primary" onclick="bulkSupplierPaymentForm()">✓ Thanh toán tiền vé hàng loạt</button><button class="btn" onclick="cashTransactionForm('capital')">+ Vốn ban đầu</button><button class="btn" onclick="cashTransactionForm('income')">+ Thu khác</button><button class="btn" onclick="cashTransactionForm('expense')">+ Chi khác</button></div></div><div id="cashbody" class="section"></div>`;
+$("ctype").value=st.type||"";$("csource").value=st.source||"";["cf","ct","ctype","csource"].forEach(id=>$(id).onchange=renderCashbook);$("cq").oninput=renderCashbook;renderCashbook()}
+function cashTransactionForm(kind,i=-1){let x=i>=0?db.cashTransactions[i]:{date:today(),kind,category:kind==="capital"?"Vốn ban đầu":kind==="income"?"Thu khác":"Chi khác",amount:"",note:""};let cats=kind==="capital"?["Vốn ban đầu","Bổ sung vốn"]:kind==="income"?["Thu khác","Hoàn tiền","Thu dịch vụ","Thu khác ngoài booking"]:["Quảng cáo","Internet / Mạng","Lương","Văn phòng","Ship","Hóa đơn","Điện nước","Chi khác"];show(`<div class="modalhead"><h2>Thêm / Sửa giao dịch</h2><button class="close" onclick="closeM()">×</button></div><div class="form"><div class="field"><label>Ngày</label><input id="cxd" class="input" type="date" value="${x.date||today()}"></div><div class="field"><label>Số tiền</label><input id="cxa" class="input" type="number" value="${x.amount||""}"></div><div class="field full"><label>Nhóm</label><select id="cxc" class="select">${cats.map(c=>`<option ${c===x.category?"selected":""}>${c}</option>`).join("")}</select></div><div class="field full"><label>Nội dung / Ghi chú</label><input id="cxn" class="input" value="${esc(x.note||"")}"></div></div><div style="text-align:right"><button class="btn primary" onclick="saveCashTransaction('${kind}',${i})">Lưu</button></div>`)}
+function saveCashTransaction(kind,i){let x={id:i>=0?db.cashTransactions[i].id:"CASH-"+Date.now(),date:$("cxd").value||today(),kind,category:$("cxc").value,amount:num($("cxa").value),note:$("cxn").value.trim()};if(x.amount<=0)return alert("Vui lòng nhập số tiền.");if(i>=0)db.cashTransactions[i]=x;else db.cashTransactions.push(x);save();closeM(true);cashbook()}
+function deleteCashTransaction(i){let x=db.cashTransactions[i];if(x&&confirm(`Xóa ${x.category} - ${money(x.amount)}?`)){db.cashTransactions.splice(i,1);save();renderCashbook()}}
+function allLedgerRows(){
+ let rows=db.cashTransactions.map((x,i)=>({date:x.date,type:x.kind==="expense"?"CHI":"THU",category:x.category,amount:num(x.amount),note:x.note||"",source:"manual",manual:x,_i:i}));
+ db.bookings.forEach(x=>{
+  paymentList(x).forEach((p,i)=>rows.push({date:p.date,type:"THU",category:"Thu Booking",amount:num(p.amount),note:`${x.ticketType} · ${x.agent||"Khách lẻ"}${p.note?" · "+p.note:""}`,source:"auto",booking:x,paymentIndex:i,action:"customer"}));
+  supplierPaymentList(x).forEach((p,i)=>rows.push({date:p.date,type:"CHI",category:"Chi tiền vé",amount:num(p.amount),note:`${x.ticketType} · ${x.agent||"Khách lẻ"}${p.note?" · "+p.note:""}`,source:"auto",booking:x,paymentIndex:i,action:"supplier"}))
+ });return rows
+}
+function openLedgerSource(id,action){if(action==="customer")paymentForm(id);else supplierPaymentForm(id)}
+function renderCashbook(){
+ let a=$("cf").value,b=$("ct").value;if(a&&b&&a>b)return alert("Từ ngày không thể sau Đến ngày.");
+ let type=$("ctype")?.value||"",source=$("csource")?.value||"",rawq=$("cq")?.value||"",q=rawq.trim().toLowerCase();uiFilters.cashbook={f:a,t:b,type,source,q:rawq};let all=allLedgerRows(),inRange=d=>(!a||d>=a)&&(!b||d<=b);
+ let before=all.filter(x=>a&&x.date<a).reduce((z,x)=>z+(x.type==="THU"?x.amount:-x.amount),0);
+ let period=all.filter(x=>inRange(x.date)),periodIncome=period.filter(x=>x.type==="THU").reduce((z,x)=>z+x.amount,0),periodExpense=period.filter(x=>x.type==="CHI").reduce((z,x)=>z+x.amount,0),closing=before+periodIncome-periodExpense;
+ let capital=period.filter(x=>x.manual?.kind==="capital").reduce((z,x)=>z+x.amount,0),receiptTotal=period.filter(x=>x.category==="Thu Booking").reduce((z,x)=>z+x.amount,0),otherIncome=period.filter(x=>x.type==="THU"&&x.category!=="Thu Booking"&&x.manual?.kind!=="capital").reduce((z,x)=>z+x.amount,0),ticketPaid=period.filter(x=>x.category==="Chi tiền vé").reduce((z,x)=>z+x.amount,0),otherExpense=period.filter(x=>x.type==="CHI"&&x.category!=="Chi tiền vé").reduce((z,x)=>z+x.amount,0);
+ let receivable=db.bookings.reduce((z,x)=>z+dueAmount(x),0),payable=db.bookings.reduce((z,x)=>z+supplierDueAmount(x),0);
+ let ledger=period.filter(x=>(!type||x.type===type)&&(!source||x.source===source)&&(!q||`${x.category} ${x.note}`.toLowerCase().includes(q))).sort((x,y)=>y.date.localeCompare(x.date));
+ $("cashbody").innerHTML=`<div class="grid cards"><div class="card"><div class="muted">Số dư đầu kỳ</div><div class="metric">${money(before)}</div></div><div class="card"><div class="muted">Tổng thu trong kỳ</div><div class="metric green">${money(periodIncome)}</div></div><div class="card"><div class="muted">Tổng chi trong kỳ</div><div class="metric">${money(periodExpense)}</div></div><div class="card"><div class="muted">Số dư cuối kỳ</div><div class="metric green">${money(closing)}</div></div></div>
+<div class="grid cards section"><div class="card"><div class="muted">Thu Booking</div><div class="metric green">${money(receiptTotal)}</div></div><div class="card"><div class="muted">Thu khác</div><div class="metric">${money(otherIncome)}</div></div><div class="card"><div class="muted">Chi tiền vé</div><div class="metric">${money(ticketPaid)}</div></div><div class="card"><div class="muted">Chi khác</div><div class="metric">${money(otherExpense)}</div></div></div>
+<div class="grid cards section"><div class="card"><div class="muted">Vốn phát sinh trong kỳ</div><div class="metric">${money(capital)}</div></div><div class="card"><div class="muted">Khách còn nợ</div><div class="metric">${money(receivable)}</div></div><div class="card"><div class="muted">Còn phải trả tiền vé</div><div class="metric">${money(payable)}</div></div></div>
+<div class="grid two section"><div class="card"><h3>Sổ thu chi</h3><div class="muted" style="margin-bottom:10px">Giao dịch “Tự động” lấy trực tiếp từ lịch sử thanh toán booking. Sửa/xóa thanh toán ở booking sẽ cập nhật sổ này ngay.</div><div class="tablebox"><table class="table"><thead><tr><th>Ngày</th><th>Thu/Chi</th><th>Nhóm</th><th>Số tiền</th><th>Nội dung</th><th>Nguồn</th><th></th></tr></thead><tbody>${ledger.map(x=>`<tr><td>${x.date}</td><td>${x.type}</td><td>${esc(x.category)}</td><td>${money(x.amount)}</td><td>${esc(x.note)}</td><td>${x.source==="auto"?"Tự động":"Thủ công"}</td><td>${x.manual?`<button class="btn" onclick="cashTransactionForm('${x.manual.kind}',${x._i})">Sửa</button> <button class="btn" onclick="deleteCashTransaction(${x._i})">Xóa</button>`:`<button class="btn" onclick="openLedgerSource('${x.booking.id}','${x.action}')">Xem / Sửa nguồn</button>`}</td></tr>`).join("")||'<tr><td colspan="7" class="empty">Không có giao dịch phù hợp</td></tr>'}</tbody></table></div></div>
+<div class="card"><h3>Công nợ tiền vé / Nhà cung cấp</h3><div style="margin-bottom:10px"><button class="btn primary" onclick="bulkSupplierPaymentForm()">✓ Chọn & thanh toán hàng loạt</button></div><div class="tablebox"><table class="table"><thead><tr><th>Ngày</th><th>Booking</th><th>Phải trả</th><th>Đã trả</th><th>Còn trả</th><th>Trạng thái</th><th></th></tr></thead><tbody>${db.bookings.filter(x=>supplierDueTotal(x)>0).map(x=>`<tr><td>${x.date}</td><td>${esc(x.ticketType)} · ${esc(x.agent||"Khách lẻ")}</td><td>${money(supplierDueTotal(x))}</td><td>${money(supplierPaidAmount(x))}</td><td>${money(supplierDueAmount(x))}</td><td>${supplierPayBadge(x)}</td><td><button class="btn primary" onclick="supplierPaymentForm('${x.id}')">Trả / Sửa</button></td></tr>`).join("")||'<tr><td colspan="7" class="empty">Chưa có booking</td></tr>'}</tbody></table></div></div></div>`
+}
+function customerDue(x){return Math.max(0,num(x.revenue)-paidAmount(x))}
+function supplierDueAmount(x){return Math.max(0,supplierDueTotal(x)-supplierPaidAmount(x))}
+let reportTab="overview";
+function reports(tab){reportTab=tab||reportTab||"overview";$("app").innerHTML=`<div class="card" style="padding:10px 14px"><div class="toolbar" style="margin:0">
+<button class="btn ${reportTab==="overview"?"primary":""}" onclick="reports('overview')">Tổng quan</button>
+<button class="btn ${reportTab==="detail"?"primary":""}" onclick="reports('detail')">Doanh thu & Công nợ</button>
+<button class="btn ${reportTab==="vat"?"primary":""}" onclick="reports('vat')">VAT</button>
+<button class="btn ${reportTab==="monthly"?"primary":""}" onclick="reports('monthly')">Theo tháng</button>
+<button class="btn ${reportTab==="supplier"?"primary":""}" onclick="reports('supplier')">Công nợ tiền vé</button>
+</div></div><div id="reportPage" class="section"></div>`;renderReportPage()}
+function renderReportPage(){
+ let d=today(),box=$("reportPage");
+ if(reportTab==="overview"){
+   let rows=db.bookings.filter(x=>x.date===d),t=sum(rows),paid=rows.reduce((a,x)=>a+paidAmount(x),0),debt=rows.reduce((a,x)=>a+customerDue(x),0),vat=rows.reduce((a,x)=>a+vatAmount(x),0);
+   box.innerHTML=`<div class="card"><h3>Tổng quan báo cáo</h3><div class="toolbar" style="margin:0 0 14px"><div class="field"><label>Ngày</label><input id="rovdate" class="input" type="date" value="${d}"></div><button class="btn primary" onclick="renderReportOverview()">Xem</button></div><div id="roverview"></div></div>`;renderReportOverview();return
+ }
+ if(reportTab==="detail"){
+   let st=uiFilters.reports.detail||{f:d,t:d,type:"",q:"",agent:"",pay:""};
+   box.innerHTML=`<div class="card"><h3>Báo cáo doanh thu & công nợ chi tiết</h3><div class="toolbar" style="margin:0 0 14px;align-items:flex-end">
+   <div class="field" style="min-width:165px"><label>Từ ngày</label><input id="rf" class="input" type="date" value="${st.f||""}"></div>
+   <div class="field" style="min-width:165px"><label>Đến ngày</label><input id="rt" class="input" type="date" value="${st.t||""}"></div>
+   <div class="field" style="min-width:170px"><label>Đối tượng</label><select id="rtype" class="select"><option value="">Tất cả</option><option value="agent">Đại lý / CTV</option><option value="retail">Khách lẻ</option></select></div><div class="field agentsearch" style="min-width:300px"><label>Tìm khách hàng / đại lý</label><input id="raSearch" class="input" autocomplete="off" placeholder="Gõ tên khách hàng / đại lý..." value="${esc(st.q||"")}"><div id="raResults" class="agentresults"></div></div>
+   <div class="field" style="min-width:220px"><label>Thanh toán</label><select id="rpay" class="select"><option value="">Tất cả trạng thái</option><option value="paid">Đã thanh toán</option><option value="partial">Thanh toán một phần</option><option value="unpaid">Chưa thanh toán</option><option value="debt">Còn công nợ</option></select></div>
+   <button class="btn primary" onclick="renderDetailedReport()">Xem báo cáo</button><button class="btn" onclick="exportDetailedReportExcel()">⬇ Xuất Excel</button><button class="btn" onclick="clearReportAgent()">Xóa lọc đối tượng</button></div><input type="hidden" id="ra" value="${esc(st.agent||"")}"><div id="rdetail"></div></div>`;
+   $("rtype").value=st.type||"";$("rpay").value=st.pay||"";setupReportAgentSearch();["rf","rt","rpay","rtype"].forEach(id=>$(id).onchange=renderDetailedReport);renderDetailedReport();return
+ }
+ if(reportTab==="vat"){
+   box.innerHTML=`<div class="card"><h3>Báo cáo VAT</h3><div class="toolbar" style="margin:0 0 12px;align-items:flex-end"><div class="field"><label>Từ ngày</label><input id="vf" class="input" type="date" value="${d}"></div><div class="field"><label>Đến ngày</label><input id="vt" class="input" type="date" value="${d}"></div><div class="field"><label>Thuế suất</label><select id="vrate" class="select"><option value="">Tất cả</option><option value="8">8%</option><option value="10">10%</option><option value="15">15%</option></select></div><button class="btn primary" onclick="renderVatReport()">Xem VAT</button></div><div id="vreport"></div></div>`;
+   ["vf","vt","vrate"].forEach(id=>$(id).onchange=renderVatReport);renderVatReport();return
+ }
+ if(reportTab==="monthly"){
+   let m={};db.bookings.forEach(x=>{let k=x.date.slice(0,7);m[k]??=[];m[k].push(x)});
+   box.innerHTML=`<div class="card"><h3>Báo cáo theo tháng</h3><div class="tablebox"><table class="table"><thead><tr><th>Tháng</th><th>Số vé</th><th>Doanh thu</th><th>Lợi nhuận</th><th>VAT</th></tr></thead><tbody>${Object.keys(m).sort().map(k=>{let t=sum(m[k]),v=m[k].reduce((a,x)=>a+vatAmount(x),0);return `<tr><td>${k}</td><td>${t.q}</td><td>${money(t.r)}</td><td class="green">${money(t.p)}</td><td>${money(v)}</td></tr>`}).join("")||'<tr><td colspan="5" class="empty">Chưa có dữ liệu.</td></tr>'}</tbody></table></div></div>`;return
+ }
+ if(reportTab==="supplier"){
+   box.innerHTML=`<div class="card"><h3>Công nợ tiền vé / Nhà cung cấp</h3><div class="toolbar" style="margin:0 0 14px"><div class="field"><label>Từ ngày</label><input id="rsf" class="input" type="date" value="${d}"></div><div class="field"><label>Đến ngày</label><input id="rst" class="input" type="date" value="${d}"></div><select id="rsstatus" class="select" style="max-width:220px"><option value="">Tất cả trạng thái</option><option value="debt">Còn phải trả</option><option value="paid">Đã trả</option></select><button class="btn primary" onclick="renderSupplierReport()">Xem</button></div><div id="rsreport"></div></div>`;["rsf","rst","rsstatus"].forEach(id=>$(id).onchange=renderSupplierReport);renderSupplierReport()
+ }
+}
+function renderReportOverview(){
+ let d=$("rovdate")?.value||today(),rows=db.bookings.filter(x=>x.date===d),t=sum(rows),paid=rows.reduce((a,x)=>a+paidAmount(x),0),debt=rows.reduce((a,x)=>a+customerDue(x),0),vat=rows.reduce((a,x)=>a+vatAmount(x),0),sup=rows.reduce((a,x)=>a+supplierDueAmount(x),0);
+ $("roverview").innerHTML=`<div class="grid cards"><div class="card"><div class="muted">Doanh thu</div><div class="metric">${money(t.r)}</div></div><div class="card"><div class="muted">Lợi nhuận</div><div class="metric green">${money(t.p)}</div></div><div class="card"><div class="muted">Đã thu</div><div class="metric green">${money(paid)}</div></div><div class="card"><div class="muted">Khách còn nợ</div><div class="metric">${money(debt)}</div></div><div class="card"><div class="muted">VAT</div><div class="metric">${money(vat)}</div></div><div class="card"><div class="muted">Còn trả tiền vé</div><div class="metric">${money(sup)}</div></div></div>`
+}
+function renderSupplierReport(){
+ let a=$("rsf").value,b=$("rst").value,st=$("rsstatus").value,rows=db.bookings.filter(x=>x.date>=a&&x.date<=b).filter(x=>st==="debt"?supplierDueAmount(x)>0:st==="paid"?supplierDueAmount(x)<=0:true);
+ let total=rows.reduce((z,x)=>{z.due+=supplierDueTotal(x);z.paid+=supplierPaidAmount(x);z.left+=supplierDueAmount(x);return z},{due:0,paid:0,left:0});
+ $("rsreport").innerHTML=`<div class="grid cards" style="margin-bottom:12px"><div class="card"><div class="muted">Phải trả</div><div class="metric">${money(total.due)}</div></div><div class="card"><div class="muted">Đã trả</div><div class="metric green">${money(total.paid)}</div></div><div class="card"><div class="muted">Còn phải trả</div><div class="metric">${money(total.left)}</div></div></div><div class="tablebox"><table class="table"><thead><tr><th>Mã booking</th><th>Ngày</th><th>Khách hàng / Đại lý</th><th>Loại vé</th><th>SL</th><th>Phải trả</th><th>Đã trả</th><th>Còn trả</th><th>Trạng thái</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${bookingLink(x,"supplier")}</td><td>${x.date}</td><td>${esc(bookingPartyName(x))}</td><td>${esc(x.ticketType)}</td><td>${x.qty}</td><td>${money(supplierDueTotal(x))}</td><td>${money(supplierPaidAmount(x))}</td><td>${money(supplierDueAmount(x))}</td><td>${supplierDueAmount(x)>0?"Còn nợ":"Đã trả"}</td></tr>`).join("")||'<tr><td colspan="9" class="empty">Không có dữ liệu.</td></tr>'}</tbody></table></div>`
+}
+function renderVatReport(){
+ let a=$("vf")?.value||"",b=$("vt")?.value||"",rate=$("vrate")?.value||"";
+ let rows=db.bookings.filter(x=>x.hasVat&&(!a||x.date>=a)&&(!b||x.date<=b)&&(!rate||num(x.vatRate)===num(rate))).sort((x,y)=>y.date.localeCompare(x.date));
+ let t=rows.reduce((z,x)=>{z.b++;z.q+=num(x.qty);z.sell+=num(x.sellPrice)*num(x.qty);z.buy+=num(x.buyPrice)*num(x.qty);z.base+=vatBase(x);z.vat+=vatAmount(x);return z},{b:0,q:0,sell:0,buy:0,base:0,vat:0});
+ $("vreport").innerHTML=`<div class="grid cards" style="margin-bottom:12px"><div class="card"><div class="muted">Booking có VAT</div><div class="metric">${t.b}</div></div><div class="card"><div class="muted">Số vé xuất VAT</div><div class="metric">${t.q}</div></div><div class="card"><div class="muted">Giá trị tính VAT</div><div class="metric">${money(t.base)}</div></div><div class="card"><div class="muted">Tổng tiền VAT</div><div class="metric">${money(t.vat)}</div></div></div><div class="tablebox viewport-table"><table class="table" style="min-width:1100px"><thead><tr><th>Mã booking</th><th>Ngày</th><th>Đại lý</th><th>Loại vé</th><th>SL</th><th>Tổng giá bán</th><th>Tổng giá vốn</th><th>Giá trị tính VAT</th><th>VAT %</th><th>Tiền VAT</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${bookingLink(x)}</td><td>${x.date}</td><td>${esc(bookingPartyName(x))}</td><td>${esc(x.ticketType)}</td><td>${x.qty}</td><td>${money(num(x.sellPrice)*num(x.qty))}</td><td>${money(num(x.buyPrice)*num(x.qty))}</td><td>${money(vatBase(x))}</td><td>${num(x.vatRate)}%</td><td><b>${money(vatAmount(x))}</b></td></tr>`).join("")||'<tr><td colspan="10" class="empty">Không có booking VAT trong khoảng thời gian đã chọn.</td></tr>'}</tbody></table></div>`;
+}
+function setupReportAgentSearch(){
+ let input=$("raSearch"),box=$("raResults"),hidden=$("ra"),active=-1;
+ function matches(){
+   let q=normalizeText(input.value.trim());
+   hidden.value="";
+   let names=[...new Set([...db.agents.map(a=>a.name),...db.bookings.map(bookingPartyName)].filter(Boolean))].filter(n=>!q||normalizeText(n).includes(q)).sort((a,b)=>a.localeCompare(b,"vi")).slice(0,40);
+   box.innerHTML=names.length?names.map((n,i)=>`<div class="agentitem" data-i="${i}" data-name="${esc(n)}">${esc(n)}</div>`).join(""):`<div class="agentempty">Không tìm thấy đại lý</div>`;
+   box.classList.add("show");active=-1;
+   box.querySelectorAll(".agentitem").forEach(el=>el.onmousedown=e=>{e.preventDefault();input.value=el.dataset.name;hidden.value=el.dataset.name;box.classList.remove("show");renderDetailedReport()})
+ }
+ input.onfocus=matches;
+ input.oninput=()=>{matches();renderDetailedReport()};
+ input.onkeydown=e=>{
+   let items=[...box.querySelectorAll(".agentitem")];
+   if(e.key==="ArrowDown"&&items.length){e.preventDefault();active=Math.min(active+1,items.length-1)}
+   else if(e.key==="ArrowUp"&&items.length){e.preventDefault();active=Math.max(active-1,0)}
+   else if(e.key==="Enter"&&items.length){e.preventDefault();let el=items[active>=0?active:0];input.value=el.dataset.name;hidden.value=el.dataset.name;box.classList.remove("show");renderDetailedReport();return}
+   else if(e.key==="Escape"){box.classList.remove("show");return}else return;
+   items.forEach((el,i)=>el.classList.toggle("active",i===active));items[active]?.scrollIntoView({block:"nearest"})
+ };
+ input.onblur=()=>setTimeout(()=>box.classList.remove("show"),150)
+}
+function clearReportAgent(){$("ra").value="";$("raSearch").value="";renderDetailedReport()}
+function renderDetailedReport(){
+ let a=$("rf").value,b=$("rt").value,exactAgent=$("ra").value,q=normalizeText($("raSearch").value.trim()),pay=$("rpay").value,rtype=$("rtype")?.value||"";
+ if(a&&b&&a>b)return alert("Từ ngày không thể sau Đến ngày.");
+ let rows=db.bookings.filter(x=>{
+   let party=bookingPartyName(x),agentOk=exactAgent?party===exactAgent:(!q||normalizeText(party).includes(q));
+   let typeOk=!rtype||x.customerType===rtype;
+   let st=payStatus(x),payOk=!pay||(pay==="debt"?dueAmount(x)>0:st===pay);
+   return (!a||x.date>=a)&&(!b||x.date<=b)&&agentOk&&typeOk&&payOk
+ }).sort((x,y)=>y.date.localeCompare(x.date));
+ let totals=rows.reduce((z,x)=>{z.q+=num(x.qty);z.r+=num(x.revenue);z.buy+=num(x.buyPrice)*num(x.qty);z.cost+=num(x.cost);z.p+=num(x.profit);z.paid+=paidAmount(x);z.due+=dueAmount(x);return z},{q:0,r:0,buy:0,cost:0,p:0,paid:0,due:0});
+ let agentName=exactAgent||($("raSearch").value.trim()?`Tìm: ${$("raSearch").value.trim()}`:"Tất cả khách hàng / đại lý");
+ $("rdetail").innerHTML=`<div class="grid cards" style="margin-bottom:14px">
+ <div class="card"><div class="muted">Tổng phải thu</div><div class="metric">${money(totals.r)}</div></div>
+ <div class="card"><div class="muted">Đã thanh toán</div><div class="metric green">${money(totals.paid)}</div></div>
+ <div class="card"><div class="muted">Công nợ còn lại</div><div class="metric">${money(totals.due)}</div></div>
+ <div class="card"><div class="muted">Booking còn nợ</div><div class="metric">${rows.filter(x=>dueAmount(x)>0).length}</div></div></div>
+ <div class="muted" style="margin-bottom:10px">${a||"..."} → ${b||"..."} · ${esc(agentName)} · ${pay==="paid"?"Đã thanh toán":pay==="partial"?"Thanh toán một phần":pay==="unpaid"?"Chưa thanh toán":pay==="debt"?"Còn công nợ":"Tất cả trạng thái"} · ${rows.length} booking</div>
+ <div class="tablebox viewport-table"><table class="table" style="min-width:1450px"><thead><tr><th>Mã booking</th><th>Ngày</th><th>Khách hàng / Đại lý</th><th>Loại vé</th><th>SL</th><th>Giá bán/vé</th><th>Doanh thu</th><th>Giá vốn/vé</th><th>Chi phí</th><th>Lợi nhuận</th><th>Đã thu</th><th>Còn nợ</th><th>Trạng thái</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${bookingLink(x)}</td><td>${x.date}</td><td>${esc(bookingPartyName(x))}</td><td>${esc(x.ticketType)}</td><td>${x.qty}</td><td>${money(x.sellPrice)}</td><td>${money(x.revenue)}</td><td>${money(x.buyPrice)}</td><td>${money(x.cost)}</td><td class="${num(x.profit)>=0?"green":""}">${money(x.profit)}</td><td>${money(paidAmount(x))}</td><td>${money(dueAmount(x))}</td><td>${payBadge(x)}</td></tr>`).join("")||'<tr><td colspan="13" class="empty">Không có dữ liệu phù hợp bộ lọc</td></tr>'}${rows.length?`<tr style="font-weight:800;background:#fafafa"><td colspan="4">TỔNG CỘNG</td><td>${totals.q}</td><td></td><td>${money(totals.r)}</td><td>${money(totals.buy)}</td><td>${money(totals.cost)}</td><td class="green">${money(totals.p)}</td><td>${money(totals.paid)}</td><td>${money(totals.due)}</td><td>${totals.due>0?"CÒN CÔNG NỢ":"ĐÃ THANH TOÁN"}</td></tr>`:""}</tbody></table></div>`
+}
+function detailedReportRows(){let a=$("rf")?.value||"",b=$("rt")?.value||"",exactAgent=$("ra")?.value||"",q=normalizeText($("raSearch")?.value?.trim()||""),pay=$("rpay")?.value||"",rtype=$("rtype")?.value||"";return db.bookings.filter(x=>{let party=bookingPartyName(x),agentOk=exactAgent?party===exactAgent:(!q||normalizeText(party).includes(q)),typeOk=!rtype||x.customerType===rtype,st=payStatus(x),payOk=!pay||(pay==="debt"?dueAmount(x)>0:st===pay);return (!a||x.date>=a)&&(!b||x.date<=b)&&agentOk&&typeOk&&payOk}).sort((x,y)=>y.date.localeCompare(x.date))}
+function exportDetailedReportExcel(){let rows=detailedReportRows();if(!rows.length)return alert("Không có dữ liệu phù hợp để xuất Excel.");if(typeof XLSX==="undefined")return alert("Chưa tải được thư viện Excel. Vui lòng kiểm tra kết nối Internet rồi thử lại.");let total=rows.reduce((z,x)=>{z.total+=num(x.revenue);z.paid+=paidAmount(x);z.due+=dueAmount(x);z.debt+=dueAmount(x)>0?1:0;return z},{total:0,paid:0,due:0,debt:0}),a=$("rf")?.value||"",b=$("rt")?.value||"",party=$("ra")?.value||$("raSearch")?.value?.trim()||"Tất cả khách hàng / đại lý";let aoa=[["SUNNY TRAVEL - BÁO CÁO CÔNG NỢ"],["Đối tượng",party],["Thời gian",`${a||"..."} → ${b||"..."}`],[],["Tổng phải thu",total.total],["Đã thanh toán",total.paid],["Công nợ còn lại",total.due],["Booking còn nợ",total.debt],[],["Mã booking","Ngày","Khách hàng / Đại lý","Loại vé","SL","Giá bán/vé","Tổng tiền","Đã thu","Còn nợ","Trạng thái"]];aoa[5][1]=total.paid;aoa[6][1]=total.due;aoa[7][1]=total.debt;rows.forEach(x=>aoa.push([x.bookingCode||x.id,x.date,bookingPartyName(x),x.ticketType,num(x.qty),num(x.sellPrice),num(x.revenue),paidAmount(x),dueAmount(x),payStatus(x)==="paid"?"Đã thanh toán":payStatus(x)==="partial"?"Thanh toán một phần":"Chưa thanh toán"]));let ws=XLSX.utils.aoa_to_sheet(aoa);ws["!cols"]=[{wch:20},{wch:13},{wch:28},{wch:18},{wch:8},{wch:16},{wch:16},{wch:16},{wch:16},{wch:22}];[4,5,6].forEach(r=>{let c=XLSX.utils.encode_cell({r:r,c:1});if(ws[c])ws[c].z='#,##0 "đ"'});for(let r=10;r<aoa.length;r++)for(let c of [5,6,7,8]){let cell=ws[XLSX.utils.encode_cell({r,c})];if(cell)cell.z='#,##0 "đ"'}let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Công nợ");let safe=String(party).replace(/[\\/:*?"<>|]/g,"-").slice(0,40);XLSX.writeFile(wb,`Sunny-Cong-no-${safe}-${a||"all"}-${b||"all"}.xlsx`)}
+function dataPage(){$('app').innerHTML=`<div class="grid two"><div class="card"><h3>Sao lưu & chuyển phiên bản</h3><p class="muted">Xuất toàn bộ dữ liệu sang JSON trước khi nhập hoặc nâng cấp.</p><button class="btn primary" onclick="backup()">Xuất bản sao lưu đầy đủ</button> <button class="btn" onclick="csv()">Xuất booking CSV</button></div><div class="card"><h3>1. Khôi phục toàn bộ (Thay thế dữ liệu)</h3><p class="muted"><b style="color:#b91c1c">CẢNH BÁO:</b> Thao tác này thay thế toàn bộ dữ liệu hiện tại bằng nội dung file, kể cả khi file cũ hơn. Phần mềm sẽ tải bản sao lưu hiện tại trước khi thay thế.</p><input class="input" type="file" accept=".json,application/json" onchange="restorePreview(this.files[0],'replace');this.value=''"></div><div class="card"><h3>2. Nhập bổ sung / Hợp nhất dữ liệu</h3><p class="muted">Giữ dữ liệu hiện có, bổ sung bản ghi mới theo ID; phát hiện bản ghi trùng hoặc xung đột. Nếu phát hiện xung đột, <b>không thực hiện hợp nhất</b> để bảo vệ dữ liệu tài chính.</p><input class="input" type="file" accept=".json,application/json" onchange="restorePreview(this.files[0],'merge');this.value=''"></div></div><div id="restoreInfo" class="card section" style="display:none"></div><div class="card section"><h3>Lưu ý</h3><p class="muted">Hợp nhất không phải đồng bộ hai chiều. Nếu file cũ thiếu ID giao dịch hoặc có sửa đổi khác nhau trên cùng booking, hệ thống sẽ chặn và yêu cầu đối soát. Dữ liệu ảnh/video Zalo lưu riêng trong trình duyệt có thể không nằm trong bản sao lưu JSON.</p></div>`}
+function dl(blob,name){let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
+function portableData(){
+ return {format:"SUNNY_TRAVEL_BACKUP",schemaVersion:3,appVersion:"Production 1.9.8",exportedAt:new Date().toISOString(),data:structuredClone(db)}
+}
+function backup(){let d=today().replaceAll("-","");dl(new Blob([JSON.stringify(portableData(),null,2)],{type:"application/json"}),`sunny-travel-backup-${d}.json`)}
+function csv(){let h=["Mã booking","ID nội bộ","Ngày","Loại vé","Đại lý","SL","Giá vốn","Giá bán","Chi phí","Doanh thu","Lợi nhuận","Có VAT","VAT %","Tiền VAT","Đã thu","Còn nợ","Ghi chú"],rows=[h,...db.bookings.map(x=>[x.bookingCode||x.id,x.id,x.date,x.ticketType,x.agent,x.qty,x.buyPrice,x.sellPrice,x.cost,x.revenue,x.profit,x.hasVat?"Có":"Không",x.vatRate||0,vatAmount(x),paidAmount(x),customerDue(x),x.note])];dl(new Blob(["\ufeff"+rows.map(r=>r.map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n")],{type:"text/csv"}),"sunny-travel-bookings.csv")}
+function normalizeImportedData(raw){
+ let d=raw?.format==='SUNNY_TRAVEL_BACKUP'?raw.data:raw;
+ if(!d||typeof d!=='object'||Array.isArray(d))throw new Error('Không tìm thấy dữ liệu hợp lệ.');
+ let out={};for(let k of ['ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns'])out[k]=Array.isArray(d[k])?d[k]:k==='ticketTypes'&&Array.isArray(d.tickets)?d.tickets:[];
+ out.settings=d.settings&&typeof d.settings==='object'?d.settings:{};
+ out.zaloSettings=d.zaloSettings&&typeof d.zaloSettings==='object'?d.zaloSettings:structuredClone(db.zaloSettings);
+ out.bookings=out.bookings.map(x=>({...x,payments:Array.isArray(x.payments)?x.payments:[],supplierPayments:Array.isArray(x.supplierPayments)?x.supplierPayments:[],hasVat:!!x.hasVat,vatRate:x.hasVat?num(x.vatRate||15):0}));
+ return out
+}
+let pendingRestore=null,pendingRestoreMode='replace',pendingMerge=null;
+function stableRecord(x){return JSON.stringify(x,Object.keys(x||{}).sort())}
+function deepEqualData(a,b){return JSON.stringify(sortData(a))===JSON.stringify(sortData(b))}
+function sortData(v){if(Array.isArray(v))return v.map(sortData);if(v&&typeof v==='object')return Object.fromEntries(Object.keys(v).sort().map(k=>[k,sortData(v[k])]));return v}
+function mergeIdentity(k,x){
+ if(x.id!==undefined&&String(x.id).trim())return 'id:'+String(x.id);
+ if(k==='ticketTypes'&&x.code)return 'code:'+String(x.code);
+ if(k==='agents'&&x.code)return 'code:'+String(x.code);
+ // Do not guess identity for financial transactions with no stable ID.
+ return ''
+}
+function previewSafeMerge(incoming){
+ let merged=structuredClone(db),added={},duplicates={},conflicts=[];
+ for(let k of ['ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns']){
+  let current=Array.isArray(merged[k])?merged[k]:[];merged[k]=current;added[k]=0;duplicates[k]=0;
+  let byId=new Map();for(let v of current){let id=mergeIdentity(k,v);if(id){if(byId.has(id)&&!deepEqualData(byId.get(id),v))conflicts.push(`${k}: ID ${id} bị trùng trong dữ liệu hiện tại`);byId.set(id,v)}}
+  for(let v of incoming[k]||[]){let id=mergeIdentity(k,v);
+   if(!id){if(current.some(old=>deepEqualData(old,v))){duplicates[k]++;continue}conflicts.push(`${k}: bản ghi nhập thiếu ID ổn định, không thể hợp nhất an toàn`);continue}
+   if(byId.has(id)){if(deepEqualData(byId.get(id),v))duplicates[k]++;else conflicts.push(`${k}: ${id} khác nhau giữa hai nguồn`);continue}
+   // Avoid re-importing the same booking code with a different internal ID.
+   if(k==='bookings'&&v.bookingCode&&current.some(old=>old.bookingCode===v.bookingCode)){conflicts.push(`bookings: trùng mã ${v.bookingCode} nhưng khác ID`);continue}
+   current.push(structuredClone(v));byId.set(id,v);added[k]++
+  }
+ }
+ // Settings are intentionally kept from current system.
+ return {merged,added,duplicates,conflicts}
+}
+function restorePreview(f,mode='replace'){
+ if(!f)return;pendingRestore=null;pendingMerge=null;pendingRestoreMode=mode;
+ let r=new FileReader;r.onload=()=>{try{
+  let raw=JSON.parse(r.result),d=normalizeImportedData(raw);pendingRestore=d;
+  let counts=`${d.ticketTypes.length} loại vé · ${d.agents.length} đại lý · ${d.bookings.length} booking · ${d.cashTransactions.length} giao dịch sổ quỹ`;
+  let h=`<h3>${mode==='replace'?'Xem trước khôi phục toàn bộ':'Xem trước hợp nhất'}</h3><p class="muted">File: ${counts}</p>`;
+  if(mode==='merge'){
+   let m=previewSafeMerge(d);pendingMerge=m;
+   h+=`<p><b>Dự kiến bổ sung:</b> ${Object.entries(m.added).map(([k,v])=>`${esc(k)}: ${v}`).join(' · ')}</p><p class="muted">Bản ghi trùng, giữ nguyên: ${Object.values(m.duplicates).reduce((a,b)=>a+b,0)}</p>`;
+   if(m.conflicts.length)h+=`<p style="color:#b91c1c"><b>Phát hiện ${m.conflicts.length} xung đột — chưa cho phép hợp nhất.</b></p><div style="max-height:200px;overflow:auto;background:#fff4f4;padding:10px">${m.conflicts.slice(0,80).map(x=>`<div>${esc(x)}</div>`).join('')}${m.conflicts.length>80?'<div>... và các xung đột khác</div>':''}</div><p class="muted">Hãy đối soát dữ liệu và sử dụng bản sao lưu phù hợp. Không có giao dịch nào được ghi vào phần mềm.</p>`;
+   else h+=`<p style="color:#166534">Không phát hiện xung đột theo ID và nội dung bản ghi.</p><button class="btn primary" onclick="confirmSafeMerge()">Xác nhận hợp nhất</button>`;
+  }else h+=`<p style="color:#b91c1c"><b>Toàn bộ dữ liệu hiện tại sẽ bị thay thế.</b> Các booking và thanh toán không có trong file sẽ không còn trong dữ liệu hoạt động.</p><button class="btn primary" onclick="confirmRestore()">Tôi hiểu — khôi phục thay thế toàn bộ</button>`;
+  $('restoreInfo').style.display='block';$('restoreInfo').innerHTML=h+' <button class="btn" onclick="pendingRestore=null;pendingMerge=null;dataPage()">Hủy</button>';
+ }catch(e){pendingRestore=null;pendingMerge=null;$('restoreInfo').style.display='block';$('restoreInfo').innerHTML=`<b>Không thể nhập file:</b> ${esc(e.message)}`}};r.readAsText(f)
+}
+function confirmRestore(){
+ if(!pendingRestore||pendingRestoreMode!=='replace')return;
+ if(!confirm('CẢNH BÁO: Dữ liệu hiện tại sẽ bị THAY THẾ TOÀN BỘ. Tiếp tục?'))return;
+ let typed=prompt('Nhập THAY THE để xác nhận ghi đè dữ liệu:');if(typed!=='THAY THE')return;
+ backup();
+ db=structuredClone(pendingRestore);db.settings={...db.settings,version:'Production 1.9.8'};ensureBookingCodes();save();pendingRestore=null;alert('Đã khôi phục toàn bộ. Bản sao lưu dữ liệu trước đó đã được yêu cầu tải xuống.');go('dashboard')
+}
+function confirmSafeMerge(){
+ if(!pendingRestore||pendingRestoreMode!=='merge')return;
+ // Recompute against the current data to avoid stale previews.
+ let m=previewSafeMerge(pendingRestore);if(m.conflicts.length)return alert('Dữ liệu đã thay đổi hoặc có xung đột. Hợp nhất bị chặn; hãy xem trước lại.');
+ if(!confirm('Hợp nhất các bản ghi mới và giữ nguyên dữ liệu hiện tại?'))return;
+ backup();db=m.merged;db.settings={...db.settings,version:'Production 1.9.8'};save();pendingRestore=null;pendingMerge=null;alert('Hợp nhất hoàn tất. Không ghi đè bản ghi có sẵn.');go('dashboard')
+}
+ensureBookingCodes();
+go("dashboard");
+
+// Zalo CRM: manual messaging only; no automated personal-account sending.
+function zaloPhone(v){let n=String(v||'').replace(/[^0-9+]/g,'');if(n.startsWith('+84'))n='0'+n.slice(3);else if(n.startsWith('84')&&n.length>=11)n='0'+n.slice(2);return /^0[0-9]{9,10}$/.test(n)?n:''}
+function zaloAgentForBooking(b){if(b.customerType==='retail')return null;return db.agents.find(a=>b.agentId&&a.id===b.agentId)||db.agents.find(a=>normalizeText(a.name)===normalizeText(b.agent||''))||null}
+function zaloChat(phone){zaloPcGuide(phone)}
+function reminderText(b){let a=zaloAgentForBooking(b);let t=db.zaloSettings.reminderTemplate||'';return t.replace(/\{agent\}/g,a?.name||b.agent||'').replace(/\{code\}/g,b.bookingCode||b.id).replace(/\{due\}/g,money(dueAmount(b))).replace(/\{total\}/g,money(b.revenue)).replace(/\{paid\}/g,money(paidAmount(b)))}
+function paymentZaloSection(b){let a=zaloAgentForBooking(b),p=a&&zaloPhone(a.phone);if(!a)return '';if(!p)return `<div class="paybox" style="margin-top:12px">💬 Đại lý ${esc(a.name)} chưa có số điện thoại Zalo hợp lệ. Hãy bổ sung trong Đại lý & bảng giá.</div>`;return `<div class="paybox" style="margin-top:13px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;padding:12px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><span><b>💬 Zalo đại lý: ${esc(a.name)}</b> <span class="muted">${esc(p)}</span></span><button class="btn primary" onclick="showPaymentReminder('${esc(b.id)}')">Soạn tin nhắc thanh toán</button></div><div class="muted" style="margin-top:6px">Soạn và chỉnh sửa trước khi sao chép, gửi thủ công trên Zalo. Mở Zalo không ghi nhận thanh toán.</div></div>`}
+function showPaymentReminder(id){let b=db.bookings.find(x=>x.id===id),a=b&&zaloAgentForBooking(b);if(!a||!zaloPhone(a.phone))return alert('Không có số Zalo đại lý hợp lệ.');show(`<div class="modalhead"><h2>💬 Nhắc thanh toán qua Zalo</h2><button class="close" onclick="closeM(true)">×</button></div><p class="muted">${esc(a.name)} · ${esc(a.phone)} · ${esc(b.bookingCode||b.id)} · Còn nợ: ${money(dueAmount(b))}</p><label><b>Nội dung (có thể sửa tự do)</b></label><textarea id="zaloReminderDraft" class="textarea" style="min-height:190px;margin:9px 0">${esc(reminderText(b))}</textarea><div class="toolbar"><button class="btn primary" onclick="copyZaloDraft()">📋 Sao chép tin nhắn</button><button class="btn" onclick="zaloPcGuide('${esc(a.phone)}')">💬 Zalo PC / Sao chép SĐT</button><button class="btn" onclick="paymentForm('${esc(id)}')">← Quay lại thanh toán</button></div><p class="muted">Không tự gửi, không xác nhận đã gửi và không thay đổi dữ liệu thanh toán.</p>`)}
+async function copyZaloDraft(){let v=$('zaloReminderDraft')?.value||'';try{await navigator.clipboard.writeText(v);alert('Đã sao chép nội dung. Hãy dán và gửi thủ công trong Zalo.')}catch{let e=$('zaloReminderDraft');e.select();try{document.execCommand('copy');alert('Đã sao chép (nếu trình duyệt cho phép).')}catch{alert('Hãy chọn và sao chép nội dung thủ công.')}}}
+function zaloSettingsForm(){show(`<div class="modalhead"><h2>Mẫu tin nhắc công nợ mặc định</h2><button class="close" onclick="closeM()">×</button></div><p class="muted">Các biến: {agent}, {code}, {due}, {total}, {paid}</p><textarea id="zremtpl" class="textarea" style="min-height:220px">${esc(db.zaloSettings.reminderTemplate||'')}</textarea><div style="text-align:right;margin-top:12px"><button class="btn primary" onclick="db.zaloSettings.reminderTemplate=$('zremtpl').value;save();closeM(true);alert('Đã lưu mẫu tin nhắn.')">Lưu mẫu</button></div>`)}
+function campaignById(id){return db.zaloCampaigns.find(c=>c.id===id)}
+function zaloEligible(){return db.agents.filter(a=>a.active!==false&&zaloPhone(a.phone)&&a.zaloConsent!==false)}
+function zaloPage(){let eligible=zaloEligible();$('app').innerHTML=`<div class="card"><h2>💬 Chăm sóc khách hàng / Zalo</h2><p class="muted">Giai đoạn Zalo cá nhân: chuẩn bị nội dung, sao chép và gửi thủ công. Chức năng tự động gửi qua Zalo OA chỉ khả dụng sau khi có tích hợp API chính thức và điều kiện người nhận phù hợp.</p><div class="toolbar"><button class="btn primary" onclick="newZaloCampaign()">+ Tạo chiến dịch tháng</button><button class="btn" onclick="zaloSettingsForm()">⚙ Mẫu nhắc công nợ</button></div><div class="paystats"><div class="paystat"><span class="muted">Đại lý hoạt động có SĐT hợp lệ</span><b>${eligible.length}</b></div><div class="paystat"><span class="muted">Chiến dịch</span><b>${db.zaloCampaigns.length}</b></div><div class="paystat"><span class="muted">Chế độ</span><b>Gửi thủ công</b></div></div></div><div class="section tablebox"><table class="table"><thead><tr><th>Chiến dịch</th><th>Ngày tạo</th><th>Người nhận</th><th>Đã gửi</th><th>Chưa gửi</th><th>Thao tác</th></tr></thead><tbody>${db.zaloCampaigns.slice().reverse().map(c=>{let r=c.recipients||[],sent=r.filter(x=>x.status==='sent').length;return `<tr><td><b>${esc(c.title)}</b></td><td>${esc(c.createdAt||'')}</td><td>${r.length}</td><td>${sent}</td><td>${r.filter(x=>x.status==='pending').length}</td><td><button class="btn primary" onclick="zaloCampaignPage('${esc(c.id)}')">Mở chiến dịch</button></td></tr>`}).join('')||'<tr><td colspan="6" class="empty">Chưa có chiến dịch nào</td></tr>'}</tbody></table></div>`}
+function newZaloCampaign(){let month=today().slice(0,7);show(`<div class="modalhead"><h2>Tạo chiến dịch Zalo</h2><button class="close" onclick="closeM()">×</button></div><div class="field"><label>Tên chiến dịch</label><input id="ztitle" class="input" value="Lịch hoạt động tháng ${month}"></div><div class="field" style="margin-top:12px"><label>Nội dung chung</label><textarea id="zbody" class="textarea" style="min-height:135px">Sunny Travel xin gửi Quý đối tác lịch hoạt động tháng ${month}. Rất mong tiếp tục được đồng hành cùng Quý đối tác!</textarea></div><div class="field" style="margin-top:12px"><label>📎 Hình ảnh / video đính kèm (có thể chọn nhiều file)</label><input class="input" id="znewmedia" type="file" accept="image/*,video/*" multiple onchange="previewNewZaloMedia()"><div id="znewpreview" class="muted" style="margin-top:8px">Chưa chọn tệp</div></div><p class="muted">Người nhận mặc định: ${zaloEligible().length} đại lý đang hoạt động, có số điện thoại hợp lệ và chưa từ chối nhận tin.</p><button class="btn primary" onclick="saveNewZaloCampaign()">Tạo chiến dịch</button>`)}
+async function saveNewZaloCampaign(){let selected=Array.from($('znewmedia')?.files||[]);let title=$('ztitle').value.trim(),body=$('zbody').value.trim();if(!title||!body)return alert('Nhập tên chiến dịch và nội dung.');let id='zc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),recipients=zaloEligible().map(a=>({agentId:a.id,agentName:a.name,phone:a.phone,status:'pending',sentAt:'',note:''}));db.zaloCampaigns.push({id,title,body,createdAt:today(),recipients,media:[]});save();closeM(true);if(selected.length)await addZaloMedia(id,selected);else zaloCampaignPage(id)}
+function zaloCampaignPage(id){let c=campaignById(id);if(!c)return zaloPage();let rs=c.recipients||[];$('app').innerHTML=`<div class="toolbar"><button class="btn" onclick="zaloPage()">← Chiến dịch</button><button class="btn" onclick="editZaloCampaign('${esc(id)}')">✏ Sửa nội dung</button><button class="btn" onclick="zaloAddRecipients('${esc(id)}')">+ Thêm đại lý mới</button><button class="btn" onclick="zaloExportCampaign('${esc(id)}')">⬇ Xuất tiến độ CSV</button></div><div class="card"><h2>${esc(c.title)}</h2><p style="white-space:pre-wrap">${esc(c.body)}</p><div class="toolbar"><button class="btn primary" onclick="copyCampaignBody('${esc(id)}')">📋 Sao chép nội dung chung</button><span class="muted">Gửi thủ công: mở hướng dẫn ở từng đại lý → tìm SĐT trong Zalo PC (Ctrl+V) → dán tin và ảnh → đánh dấu Đã gửi.</span><label class="btn" style="cursor:pointer">📎 Thêm ảnh / video <input type="file" multiple accept="image/*,video/*" style="display:none" onchange="addZaloMedia('${esc(id)}',this.files);this.value=''"></label></div><div id="zMediaList">${(c.media||[]).map((m,i)=>`<div class="toolbar" style="margin:5px 0"><span>📎 ${esc(m.name)} (${esc(m.type||'')})</span><button class="btn" onclick="openZaloMedia('${esc(id)}',${i})">Xem / lưu file</button><button class="btn" onclick="removeZaloMedia('${esc(id)}',${i})">Xóa</button></div>`).join('')||'<p class="muted">Chưa có ảnh/video. File đính kèm được lưu trên trình duyệt này (IndexedDB); hãy giữ file gốc để gửi thủ công.</p>'}</div></div><div class="card section"><div class="toolbar"><b>Danh sách người nhận (${rs.length})</b><input id="zsearch" class="input grow" placeholder="Tìm tên, mã, SĐT..." oninput="renderZaloRecipients('${esc(id)}')"><select id="zstatus" class="select" style="max-width:170px" onchange="renderZaloRecipients('${esc(id)}')"><option value="">Tất cả</option><option value="pending">Chưa gửi</option><option value="sent">Đã gửi</option><option value="failed">Thất bại</option></select></div><div class="paystats"><div class="paystat"><span class="muted">Đã gửi</span><b class="green">${rs.filter(x=>x.status==='sent').length}</b></div><div class="paystat"><span class="muted">Chưa gửi</span><b>${rs.filter(x=>x.status==='pending').length}</b></div><div class="paystat"><span class="muted">Thất bại</span><b>${rs.filter(x=>x.status==='failed').length}</b></div></div><div class="tablebox viewport-table"><table class="table"><thead><tr><th>Đại lý</th><th>SĐT</th><th>Trạng thái</th><th>Ngày gửi</th><th>Thao tác</th></tr></thead><tbody id="zrows"></tbody></table></div></div>`;renderZaloRecipients(id)}
+function renderZaloRecipients(id){let c=campaignById(id);if(!c)return;let q=normalizeText($('zsearch')?.value),status=$('zstatus')?.value||'';$('zrows').innerHTML=c.recipients.map((r,i)=>({...r,i})).filter(r=>(!status||r.status===status)&&(!q||normalizeText(r.agentName+' '+r.agentId+' '+r.phone).includes(q))).map(r=>`<tr><td><b>${esc(r.agentName)}</b><div class="muted">${esc(r.agentId)}</div></td><td>${esc(r.phone)}</td><td>${r.status==='sent'?'<span class="badge green">Đã gửi</span>':r.status==='failed'?'<span class="badge red">Thất bại</span>':'<span class="badge yellow">Chưa gửi</span>'}</td><td>${esc(r.sentAt||'')}</td><td><button class="btn" onclick="zaloRecipientGuide('${esc(id)}',${r.i})">💬 Gửi qua Zalo PC</button> <button class="btn" onclick="setZaloStatus('${esc(id)}',${r.i},'sent')">✓ Đã gửi</button> <button class="btn" onclick="setZaloStatus('${esc(id)}',${r.i},'failed')">Lỗi</button> <button class="btn" onclick="setZaloStatus('${esc(id)}',${r.i},'pending')">Chưa gửi</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty">Không có đại lý phù hợp</td></tr>'}
+function setZaloStatus(id,i,status){let c=campaignById(id),r=c?.recipients?.[i];if(!r)return;r.status=status;r.sentAt=status==='sent'?new Date().toLocaleString('vi-VN'):'';save();zaloCampaignPage(id)}
+function editZaloCampaign(id){let c=campaignById(id);if(!c)return;show(`<div class="modalhead"><h2>Sửa chiến dịch</h2><button class="close" onclick="closeM()">×</button></div><div class="field"><label>Tên</label><input id="zet" class="input" value="${esc(c.title)}"></div><div class="field" style="margin-top:12px"><label>Nội dung</label><textarea id="zeb" class="textarea" style="min-height:200px">${esc(c.body)}</textarea></div><button class="btn primary" style="margin-top:12px" onclick="let c=campaignById('${esc(id)}');c.title=$('zet').value.trim();c.body=$('zeb').value;save();closeM(true);zaloCampaignPage('${esc(id)}')">Lưu</button>`)}
+function zaloAddRecipients(id){let c=campaignById(id);if(!c)return;let old=new Set(c.recipients.map(r=>r.agentId));let added=zaloEligible().filter(a=>!old.has(a.id));c.recipients.push(...added.map(a=>({agentId:a.id,agentName:a.name,phone:a.phone,status:'pending',sentAt:'',note:''})));save();zaloCampaignPage(id);alert('Đã thêm '+added.length+' đại lý mới, không thêm trùng.');}
+async function copyCampaignBody(id){let c=campaignById(id);if(!c)return;try{await navigator.clipboard.writeText(c.body);alert('Đã sao chép. Hãy dán và gửi thủ công trên Zalo.')}catch{alert('Trình duyệt không cho sao chép tự động. Hãy chọn và sao chép nội dung trên màn hình.')}}
+function zaloExportCampaign(id){let c=campaignById(id);if(!c)return;let rows=[['Mã đại lý','Đại lý','Điện thoại','Trạng thái','Ngày gửi'],...c.recipients.map(r=>[r.agentId,r.agentName,r.phone,r.status,r.sentAt])];let csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\r\n');let u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));let a=document.createElement('a');a.href=u;a.download='Sunny_Zalo_'+id+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+function zaloMediaDB(){return new Promise((res,rej)=>{let r=indexedDB.open('sunny_zalo_media_v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function addZaloMedia(id,files){let c=campaignById(id);if(!c)return;try{let dbm=await zaloMediaDB();for(let f of files){if(!f.type.startsWith('image/')&&!f.type.startsWith('video/'))continue;let key=id+'_'+Date.now()+'_'+Math.random().toString(36).slice(2);await new Promise((res,rej)=>{let tx=dbm.transaction('files','readwrite');tx.objectStore('files').put(f,key);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});c.media.push({key,name:f.name,type:f.type,size:f.size})}dbm.close();save();zaloCampaignPage(id)}catch(e){alert('Không lưu được tệp đính kèm: '+e.message)}}
+async function openZaloMedia(id,i){let m=campaignById(id)?.media?.[i];if(!m)return;try{let d=await zaloMediaDB(),blob=await new Promise((res,rej)=>{let tx=d.transaction('files');let r=tx.objectStore('files').get(m.key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});d.close();if(!blob)return alert('Không tìm thấy file trên trình duyệt này.');let u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=m.name;a.click();setTimeout(()=>URL.revokeObjectURL(u),10000)}catch(e){alert(e.message)}}
+async function removeZaloMedia(id,i){let c=campaignById(id),m=c?.media?.[i];if(!m||!confirm('Xóa tệp đính kèm khỏi chiến dịch?'))return;try{let d=await zaloMediaDB(),tx=d.transaction('files','readwrite');tx.objectStore('files').delete(m.key);d.close()}catch{}c.media.splice(i,1);save();zaloCampaignPage(id)}
+
+
+// v1.9.6: Windows Zalo PC manual workflow, no unsupported auto-chat promise.
+function zaloPcGuide(phone){let p=zaloPhone(phone);if(!p)return alert('Chưa có số điện thoại hợp lệ.');show(`<div class="modalhead"><h2>💬 Gửi bằng Zalo PC</h2><button class="close" onclick="closeM(true)">×</button></div><p><b>Số điện thoại:</b> ${esc(p)}</p><div class="toolbar"><button class="btn primary" onclick="copyZaloValue('${esc(p)}')">📋 Sao chép SĐT</button><button class="btn" onclick="copyPhoneAndOpenZalo('${esc(phone)}')">📋 Sao chép SĐT & mở Zalo PC</button></div><p class="muted">1. Mở ứng dụng Zalo PC đã đăng nhập trên Windows.<br>2. Dán số điện thoại vào ô tìm kiếm Zalo và chọn đúng đại lý.<br>3. Dán nội dung tin, gửi ảnh/video thủ công.<br>4. Quay lại Sunny để đánh dấu Đã gửi.</p><p class="muted">Trình duyệt không thể bảo đảm mở đúng cuộc trò chuyện Zalo PC theo số điện thoại. Không mở Zalo Web để tránh yêu cầu đăng nhập lại.</p>`)}
+async function copyPhoneAndOpenZalo(phone){
+ let v=zaloPhone(phone)||String(phone||'');
+ try{await navigator.clipboard.writeText(v)}catch(e){let t=document.createElement('textarea');t.value=v;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}
+ tryOpenZaloPc();
+}
+function tryOpenZaloPc(){try{window.location.href='zalo://'}catch(e){alert('Không mở được Zalo PC tự động. Hãy mở Zalo từ thanh tác vụ Windows.')}}
+async function copyZaloValue(value){try{await navigator.clipboard.writeText(value);alert('Đã sao chép.')}catch(e){let t=document.createElement('textarea');t.value=value;document.body.appendChild(t);t.select();let ok=document.execCommand('copy');t.remove();alert(ok?'Đã sao chép.':'Không thể sao chép tự động.')}}
+function zaloRecipientGuide(id,i){let c=campaignById(id),r=c?.recipients?.[i];if(!r)return;let phone=zaloPhone(r.phone);show(`<div class="modalhead"><h2>💬 Gửi chiến dịch qua Zalo PC</h2><button class="close" onclick="closeM(true)">×</button></div><p><b>${esc(r.agentName)}</b> · ${esc(r.agentId)} · ${esc(phone||r.phone)}</p><label><b>Nội dung có thể chỉnh sửa trước khi gửi</b></label><textarea class="textarea" id="zpcdraft" style="min-height:140px">${esc(c.body)}</textarea><div class="toolbar" style="margin:12px 0"><button class="btn primary" onclick="copyZaloValue($('zpcdraft').value)">📋 Sao chép nội dung</button><button class="btn" onclick="copyZaloValue('${esc(phone)}')">📋 Sao chép SĐT</button><button class="btn" onclick="copyPhoneAndOpenZalo('${esc(phone)}')">📋 Sao chép SĐT & mở Zalo PC</button></div><p><b>Ảnh / video:</b> ${(c.media||[]).length} tệp đính kèm.</p><div class="toolbar">${(c.media||[]).map((m,j)=>`<button class="btn" onclick="openZaloMedia('${esc(id)}',${j})">⬇ ${esc(m.name)}</button>`).join('')||'<span class="muted">Chưa có ảnh/video</span>'}</div><p class="muted">Tìm SĐT trong Zalo PC (Ctrl+V) → dán tin → gửi tệp ảnh/video → quay lại đánh dấu Đã gửi. Bấm mở Zalo không đồng nghĩa đã gửi.</p><div class="toolbar"><button class="btn primary" onclick="closeM(true);setZaloStatus('${esc(id)}',${i},'sent')">✓ Tôi đã gửi xong</button><button class="btn" onclick="closeM(true);zaloCampaignPage('${esc(id)}')">Để gửi sau</button></div>`)}
+function previewNewZaloMedia(){let fs=Array.from($('znewmedia')?.files||[]);$('znewpreview').textContent=fs.length?fs.map(f=>f.name+' ('+Math.round(f.size/1024)+' KB)').join(' · '):'Chưa chọn tệp'}
+
+
+// One-time migration for stable ticket references; does not recalculate historical bookings.
+if(syncTicketReferences())save();
+
+// Server media adapter: original campaign UI remains unchanged.
+function csrf(){return document.cookie.split('; ').find(x=>x.startsWith('csrftoken='))?.split('=')[1]||''}
+async function addZaloMedia(id,files){let c=campaignById(id);if(!c)return;try{for(const f of files){const key=crypto.randomUUID(),form=new FormData();form.append('file',f);const r=await fetch('/api/media/'+key+'/',{method:'POST',headers:{'X-CSRFToken':csrf()},body:form});if(!r.ok)throw Error(await r.text());c.media.push({key,name:f.name,type:f.type,size:f.size})}save();zaloCampaignPage(id)}catch(e){alert(e.message)}}
+async function openZaloMedia(id,i){const m=campaignById(id)?.media?.[i];if(m)window.open('/api/media/'+encodeURIComponent(m.key)+'/','_blank','noopener')}
+async function removeZaloMedia(id,i){const c=campaignById(id),m=c?.media?.[i];if(!m||!confirm('Xóa tệp?'))return;try{const r=await fetch('/api/media/'+encodeURIComponent(m.key)+'/',{method:'DELETE',headers:{'X-CSRFToken':csrf()}});if(!r.ok&&r.status!==404)throw Error('Không xóa được tệp');c.media.splice(i,1);save();zaloCampaignPage(id)}catch(e){alert(e.message)}}
+storageReady=true;
