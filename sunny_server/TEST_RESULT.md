@@ -1,5 +1,12 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## Bản cập nhật 1.9.8.1
+
+- 14 kiểm thử Django thành công trên Windows/Python 3.14/SQLite, gồm các ca cũ và regression HTTPS origin, logout, tạo user/nhóm quyền/gán permission, chặn origin lạ và thiếu CSRF token.
+- Node kiểm tra cú pháp JavaScript thành công; `node test_frontend.cjs` kiểm tra listener picker, fallback và thông báo lỗi thành công.
+- `verify_legacy.py`: giữ đủ 180 khai báo hàm gốc (178 tên).
+- Chưa kiểm thử trực tiếp trình duyệt, Ubuntu/PostgreSQL hay máy chủ online. Cần nghiệm thu theo UPGRADE_1_9_8_1.md.
+
 Môi trường kiểm tra: Windows, Python 3.14, Django 5.2.18, SQLite.
 
 - Django system check: không có lỗi.

@@ -1,5 +1,7 @@
 # Sunny Travel — bản chuyển đổi để kiểm thử
 
+Bản cập nhật 1.9.8.1: xem [hướng dẫn nâng cấp và cấu hình domain HTTPS](UPGRADE_1_9_8_1.md). Lịch sử lỗi và trạng thái nghiệm thu trong ISSUES.md.
+
 Giữ giao diện và các hàm nghiệp vụ của HTML v1.9.8, tách CSS/JS, thêm Django authentication, dữ liệu chung trên server, revision chống ghi đè, nhật ký lưu và file chiến dịch trên server. HTML gốc ở thư mục cha không bị sửa.
 
 ## Chạy test trên Ubuntu

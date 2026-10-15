@@ -1,11 +1,32 @@
 let serverRevision=0, storageReady=false, savingFailed=false;
+function stopServerEditing(message){
+ savingFailed=true;storageReady=false;
+ document.querySelector('.layout')?.setAttribute('inert','');
+ const panel=document.createElement('div');panel.style.cssText='position:fixed;inset:0;background:#0008;z-index:9999;display:grid;place-items:center;padding:20px';
+ const box=document.createElement('div');box.style.cssText='background:white;padding:24px;border-radius:12px;max-width:600px';
+ const text=document.createElement('p');text.textContent=message+' Thay đổi vừa nhập chưa được xác nhận lưu trên server. Hãy ghi lại thông tin cần thiết trước khi tải lại trang.';
+ const button=document.createElement('button');button.textContent='Tải lại dữ liệu từ server';button.onclick=()=>location.reload();box.append(text,button);panel.append(box);document.body.append(panel);
+ throw Error(message);
+}
+function serverErrorMessage(status,body){
+ let code='';try{code=JSON.parse(body).code||''}catch{}
+ if(status===409)return 'Dữ liệu đã được người khác thay đổi. Cần tải lại trước khi sửa tiếp.';
+ if(status===403)return code==='csrf_failed'?'Yêu cầu bị chặn do xác thực CSRF. Hãy tải lại trang; nếu vẫn lỗi, kiểm tra cấu hình domain HTTPS.':'Tài khoản không có quyền thực hiện thao tác hoặc yêu cầu xác thực bị từ chối.';
+ if(status===401)return 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.';
+ if(status===400)return 'Dữ liệu gửi lên không hợp lệ. Chưa lưu thay đổi.';
+ if(status===413)return 'Dữ liệu hoặc tệp vượt giới hạn dung lượng cho phép.';
+ return status===0?'Không kết nối được server. Chưa xác nhận lưu dữ liệu.':'Server chưa xử lý được yêu cầu (HTTP '+status+').';
+}
 function serverRequest(method,url,body=null){
+ if(savingFailed)throw Error('Cần tải lại dữ liệu trước khi tiếp tục.');
  const xhr=new XMLHttpRequest();xhr.open(method,url,false);
  xhr.setRequestHeader('X-CSRFToken',document.cookie.split('; ').find(x=>x.startsWith('csrftoken='))?.split('=')[1]||'');
  if(body!==null)xhr.setRequestHeader('Content-Type','application/json');
- xhr.send(body===null?null:JSON.stringify(body));
- if(xhr.status<200||xhr.status>=300){savingFailed=true;document.body.style.pointerEvents='none';alert('Không lưu được dữ liệu. Trang đã khóa để tránh ghi đè. Hãy tải lại trang. '+xhr.responseText);throw Error('Server '+xhr.status)}
- return JSON.parse(xhr.responseText);
+ try{xhr.send(body===null?null:JSON.stringify(body))}catch{stopServerEditing(serverErrorMessage(0,''))}
+ if(xhr.status<200||xhr.status>=300)stopServerEditing(serverErrorMessage(xhr.status,xhr.responseText));
+ let result;try{result=JSON.parse(xhr.responseText)}catch{stopServerEditing('Phiên đăng nhập có thể đã hết hạn hoặc server trả về dữ liệu không hợp lệ.')}
+ if(!result||!Number.isInteger(result.revision))stopServerEditing('Phản hồi server không hợp lệ.');
+ return result;
 }
 const serverStorage={getItem(){const r=serverRequest('GET','/api/state/');serverRevision=r.revision;return Object.keys(r.data).length?JSON.stringify(r.data):null},setItem(key,value){if(!storageReady)return;const r=serverRequest('PUT','/api/state/',{revision:serverRevision,data:JSON.parse(value)});serverRevision=r.revision}};
 const uiFilters={bookings:null,agents:null,cashbook:null,reports:{},dashboard:null};
@@ -896,3 +917,9 @@ async function addZaloMedia(id,files){let c=campaignById(id);if(!c)return;try{fo
 async function openZaloMedia(id,i){const m=campaignById(id)?.media?.[i];if(m)window.open('/api/media/'+encodeURIComponent(m.key)+'/','_blank','noopener')}
 async function removeZaloMedia(id,i){const c=campaignById(id),m=c?.media?.[i];if(!m||!confirm('Xóa tệp?'))return;try{const r=await fetch('/api/media/'+encodeURIComponent(m.key)+'/',{method:'DELETE',headers:{'X-CSRFToken':csrf()}});if(!r.ok&&r.status!==404)throw Error('Không xóa được tệp');c.media.splice(i,1);save();zaloCampaignPage(id)}catch(e){alert(e.message)}}
 storageReady=true;
+// Delegation also covers filters and forms inserted dynamically by the original UI.
+document.addEventListener('click',event=>{
+ const input=event.target;
+ if(!(input instanceof HTMLInputElement)||!['date','month'].includes(input.type)||input.disabled||input.readOnly)return;
+ if(typeof input.showPicker==='function'){try{input.showPicker()}catch{/* Native input and keyboard remain usable. */}}
+});

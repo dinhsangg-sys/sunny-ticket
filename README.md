@@ -1,5 +1,7 @@
 # Sunny Travel Ticket Management — Python test edition
 
+**Bản cập nhật 1.9.8.1:** sửa cấu hình CSRF cho domain HTTPS, thông báo lỗi lưu và thao tác mở lịch. Xem [hướng dẫn nâng cấp](sunny_server/UPGRADE_1_9_8_1.md) nếu đã cài bản trước.
+
 Bản chuyển đổi từ HTML v1.9.8 sang Django để kiểm thử. Giữ các hàm nghiệp vụ JavaScript gốc, bổ sung đăng nhập, quản trị tài khoản, lưu dữ liệu chung, chống ghi đè và cổng đại lý chỉ đọc.
 
 ## Clone và chạy thử trên Ubuntu
