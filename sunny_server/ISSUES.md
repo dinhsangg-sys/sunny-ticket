@@ -1,5 +1,10 @@
 # Lỗi ghi nhận khi kiểm thử online
 
+## 1.10.2 — Sửa nhiều mức giá vốn đồng thời
+
+- Người dùng xác nhận cùng nhà cung cấp/loại vé/cùng thời gian có thể có nhiều giá vốn. Booking tự chọn dòng hoặc dùng mặc định. Thay thế giả định cũ rằng mọi kỳ giá vốn phải không trùng.
+- Đã bỏ chặn ở frontend/backend; API chọn costPriceId và fallback mặc định, giữ snapshot booking. Hướng dẫn UPGRADE_1_10_2.md, không reset dữ liệu trong bản vá này.
+
 ## 1.10.1 — Yêu cầu khởi tạo mới
 
 - Người dùng yêu cầu xóa hết dữ liệu cũ và bỏ module ánh xạ. Đã bỏ menu/API/logic ánh xạ; bổ sung management command reset_business_data để xóa nghiệp vụ, media, nhật ký và phiên, giữ tài khoản/nhóm/quyền.

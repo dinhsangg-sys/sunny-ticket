@@ -10,7 +10,7 @@ from apps.audit.models import AuditLog
 from apps.agencies.models import Agency
 from .models import Workspace
 from .access import allowed, full_access, RESOURCES, NUMBERS, BOOLS, can_field, projected, action_permission
-from .pricing import validate, amount, calculate_booking, sell_price, supplier_options
+from .pricing import validate, amount, calculate_booking, sell_price, supplier_options, choose_cost
 
 def can(user,name): return full_access(user) or allowed(user,name)
 
@@ -42,6 +42,8 @@ def operations(request):
             # Minimal names/IDs for foreign-key selectors; never send costs or contacts here.
             for key in ('ticketTypes','agents','suppliers','priceLists'):
                 lookups[key]=[{'id':r['id'],'name':r.get('name','')} for r in obj.data.get(key,[]) if r.get('active',True)]
+            if can(user,'booking.view_buy_price'):
+                lookups['costPrices']=[{'id':p.get('id') or f'cost-row-{i}','name':str(p.get('ticketType') or p.get('ticketId'))+' / '+str(next((s['name'] for s in obj.data.get('suppliers',[]) if s['id']==p.get('supplierId')),p.get('supplierId','')))+' — '+str(p['price'])+(' (mặc định)' if p.get('isDefault') else '')} for i,p in enumerate(obj.data.get('costPrices',[]))]
         return JsonResponse({'revision':obj.revision,'resources':resources,'lookups':lookups,'payments':{'receipt':{p:can(user,'receipt.'+p) for p in ('view','create','change','delete')},'supplier':{p:can(user,'supplier_payment.'+p) for p in ('view','create','delete')}}})
     try:
         body=json.loads(request.body)
@@ -99,7 +101,7 @@ def operations(request):
                     ticket=next((t for t in data.get('ticketTypes',[]) if t['id']==row.get('ticketId') and t.get('active',True)),None)
                     if not ticket: raise ValueError('Loại vé không hợp lệ.')
                     if action=='create' or row.get('ticketId')!=old.get('ticketId'): row['ticketType']=ticket['name']
-                    needs_quote=action=='create' or any(row.get(f)!=old.get(f) for f in ('agent','ticketId','date','customerType','supplierId'))
+                    needs_quote=action=='create' or any(row.get(f)!=old.get(f) for f in ('agent','ticketId','date','customerType','supplierId','costPriceId'))
                     if needs_quote:
                         if row.get('customerType')=='agent':
                             agency=next((a for a in data.get('agents',[]) if a['name']==row.get('agent') and a.get('active',True)),None)
@@ -109,11 +111,11 @@ def operations(request):
                             if not can(user,'booking.change_sell_price') or 'sellPrice' not in values: row['sellPrice']=price
                             row['salePriceSource']=source
                         elif action=='create' and not can(user,'booking.change_sell_price'): raise ValueError('Khách lẻ cần quyền nhập giá bán.')
-                        options=[p for p in supplier_options(data,row['ticketId'],row.get('date','')) if p['supplierId']==row.get('supplierId')]
-                        if not options: raise ValueError('Chọn nhà cung cấp có giá vốn hiệu lực.')
-                        if len({p['price'] for p in options})>1: raise ValueError('Giá vốn nhà cung cấp trùng hiệu lực.')
-                        if not can(user,'booking.change_buy_price') or 'buyPrice' not in values: row['buyPrice']=options[0]['price']
-                        row['supplierName']=options[0]['supplierName']
+                        choice_id=values.get('costPriceId') if 'costPriceId' in values else (old.get('costPriceId') if all(row.get(f)==old.get(f) for f in ('supplierId','ticketId','date')) else None)
+                        selected=choose_cost(data,row['ticketId'],row.get('supplierId'),row.get('date',''),choice_id)
+                        if choice_id or not can(user,'booking.change_buy_price') or 'buyPrice' not in values: row['buyPrice']=selected['price']
+                        row['supplierName']=selected['supplierName']
+                        row['costPriceId']=selected['id']
                     row.setdefault('buyPrice',0);row.setdefault('sellPrice',0);row.setdefault('qty',1)
                     row.setdefault('cost',0);row.setdefault('payments',[]);row.setdefault('supplierPayments',[])
                     row.setdefault('bookingCode','ST-'+str(uuid.uuid4())[:12].upper())

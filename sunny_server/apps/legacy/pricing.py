@@ -49,14 +49,23 @@ def sell_price(data,agency_id,ticket_id,date):
 def supplier_options(data,ticket_id,date):
     tid=ticket_id
     result=[]
-    for p in data.get('costPrices',[]):
+    for i,p in enumerate(data.get('costPrices',[])):
         if row_ticket(data,p)!=tid or not effective(p,date): continue
         supplier_id=p.get('supplierId','')
         supplier=next((s for s in data.get('suppliers',[]) if s['id']==supplier_id and s.get('active',True)),None)
         if not supplier: continue
-        result.append(dict(p,supplierId=supplier_id,supplierName=supplier['name']))
+        result.append(dict(p,id=p.get('id') or f'cost-row-{i}',supplierId=supplier_id,supplierName=supplier['name']))
     # Distinct suppliers must remain distinct even if amounts match.
     return result
+
+def choose_cost(data,ticket_id,supplier_id,date,price_id=None):
+    rows=[p for p in supplier_options(data,ticket_id,date) if p['supplierId']==supplier_id]
+    if price_id:
+        selected=next((p for p in rows if p['id']==price_id),None)
+        if not selected: raise ValueError('Mức giá vốn không thuộc nhà cung cấp/loại vé hoặc đã hết hiệu lực.')
+        return selected
+    if not rows: raise ValueError('Nhà cung cấp chưa có giá vốn hiệu lực.')
+    return sorted(rows,key=lambda p:(bool(p.get('isDefault')),p.get('from') or ''),reverse=True)[0]
 
 def validate(data):
     if not isinstance(data,dict): raise ValueError('Dữ liệu phải là object.')
@@ -87,9 +96,7 @@ def validate(data):
         if p.get('ticketId') not in ids or not any(g['id']==p.get('priceListId') for g in data.get('priceLists',[])): raise ValueError('Bảng giá hoặc loại vé không tồn tại.')
     for key in ('suppliers','priceLists'):
         if any(not r.get('name','').strip() for r in data.get(key,[])): raise ValueError('Thiếu tên '+key)
-    for i,p in enumerate(data.get('costPrices',[])):
-        for q in data.get('costPrices',[])[i+1:]:
-            if q.get('supplierId')==p['supplierId'] and row_ticket(data,p)==row_ticket(data,q) and (p.get('from') or '')<=(q.get('to') or '9999') and (q.get('from') or '')<=(p.get('to') or '9999') and amount(p['price'])!=amount(q['price']): raise ValueError('Giá vốn cùng nhà cung cấp trùng hiệu lực.')
+    # Cost tiers may overlap for the same supplier/ticket: each booking chooses a tier.
     # Reject newly ambiguous sale prices instead of choosing an arbitrary supplier price.
     for key,owner in [('agentPrices','agent'),('priceListItems','priceListId')]:
         rows=data.get(key,[])

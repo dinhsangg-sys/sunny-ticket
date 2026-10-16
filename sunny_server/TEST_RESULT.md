@@ -1,5 +1,10 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.2 — Nhiều mức giá vốn
+
+- 36 test Django đạt, gồm nhiều giá cùng nhà cung cấp/loại vé/cùng hiệu lực, lấy mặc định hoặc chọn costPriceId cụ thể, chặn chọn sai nguồn/ngày và giữ giá của booking khác.
+- JavaScript pricing và cú pháp pricing.js/restricted.js đạt. Không có migration, không yêu cầu xóa dữ liệu. Chờ người dùng test giao diện online sau cập nhật.
+
 ## 1.10.1 — Khởi tạo mới
 
 - 33 test Django thành công, gồm xóa nghiệp vụ/media, giữ user/mật khẩu/nhóm, gỡ liên kết đại lý, tăng revision và vô hiệu hóa phiên; chế độ preview không xóa dữ liệu; API ánh xạ đã trả 404.

@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.1
+# Sunny Travel Ticket Management — 1.10.2
+
+**1.10.2:** cho phép cùng nhà cung cấp/loại vé có nhiều giá vốn cùng thời gian, chọn theo từng booking hoặc mặc định. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_2.md). Không chạy reset khi cập nhật bản sửa này.
 
 Bản khai báo mới: một loại vé, nhiều nhà cung cấp, giá vốn theo nguồn và bảng giá bán chung gán cho nhiều đại lý. Đã bỏ module ánh xạ loại vé cũ.
 
