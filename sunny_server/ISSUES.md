@@ -1,5 +1,39 @@
 # Lỗi ghi nhận khi kiểm thử online
 
+## Tiến độ bản test 1.10.0
+
+- Đã tạo mô hình nhà cung cấp + giá vốn theo nguồn, bảng giá chung gán nhiều đại lý và giá riêng ưu tiên, ánh xạ vé có xem trước giữ lịch sử.
+- FEATURE-003: đã thêm link Zalo trong hồ sơ và mở người nhận ưu tiên link hợp lệ, giữ fallback số điện thoại. Chờ nghiệm thu Zalo PC/trình duyệt thực tế.
+- FEATURE-002: đã có API/màn hình riêng và quyền backend cho các danh mục, giá, booking, thanh toán và thu/chi. CHƯA hoàn thành mọi mục trong PERMISSIONS_CATALOG.md; các chức năng chưa tách an toàn tiếp tục yêu cầu quyền đầy đủ. Xem UPGRADE_1_10_0.md, không đánh dấu toàn bộ yêu cầu phân quyền đã hoàn thành.
+
+## Phạm vi bản cập nhật tiếp theo — người dùng đã đồng ý
+
+- Triển khai phân quyền chi tiết theo PERMISSIONS_CATALOG.md, không chỉ bổ sung tên quyền. Hỗ trợ cấp trực tiếp/qua nhóm, kiểm tra backend, phạm vi dữ liệu và trường nhạy cảm; menu/nút phản ánh quyền thực tế. Cần sửa cơ chế snapshot trước khi cho phép tài khoản có quyền hạn chế sử dụng.
+- Bổ sung mở Zalo người nhận theo FEATURE-003 bên dưới.
+- Bảo toàn dữ liệu và các chức năng hiện có; kiểm thử hồi quy và tài khoản quyền hạn chế trước phát hành. Ghi rõ migration/cấu hình và cách chuyển role hiện có khi nâng cấp.
+- Đây là phạm vi đã thống nhất để làm trong bản tiếp theo; chưa triển khai hoặc phát hành các tính năng này.
+
+## FEATURE-003 — Mở Zalo người nhận từ ứng dụng
+
+- Trạng thái: người dùng đồng ý đưa vào bản cập nhật tiếp theo cùng phân quyền chi tiết.
+- Thêm nút Mở Zalo người nhận tại các điểm liên hệ Zalo hiện có: đại lý, nhắc thanh toán và người nhận chiến dịch.
+- Cho phép lưu link Zalo cá nhân do đại lý cung cấp; ưu tiên link hợp lệ đã lưu, nếu không có thì thử liên kết theo số điện thoại đã chuẩn hóa.
+- Giữ sao chép số điện thoại làm dự phòng. Không cam kết luôn mở thẳng đúng cuộc trò chuyện Zalo PC; phụ thuộc Zalo/trình duyệt/cài đặt người nhận. Không tự gửi tin hoặc tự đánh dấu Đã gửi khi mở liên kết.
+- Kiểm tra URL đầu vào để chỉ chấp nhận HTTPS trên host Zalo được hỗ trợ, không chấp nhận URL javascript/data hoặc host giả mạo. Mở liên kết từ click trực tiếp và không cho trang ngoài truy cập opener.
+- Bổ sung quyền sửa link liên hệ vào hồ sơ đại lý; quyền xem/mở liên hệ theo phạm vi đại lý và quyền CRM trong danh mục.
+- Nghiệm thu: link lưu sẵn, link theo số, số không hợp lệ, chưa có liên hệ, fallback sao chép, quyền hạn chế, mở trên PC/điện thoại; xác nhận đúng người trước gửi và không thay đổi trạng thái thanh toán/chiến dịch.
+
+## FEATURE-002 — Thiếu quyền nghiệp vụ vé, booking và khai báo
+
+- Trạng thái: đã xác nhận thiếu chức năng, chưa triển khai.
+- Bằng chứng: ảnh trang /admin/accounts/user/2/change/; danh sách quyền đang là quyền model Django Admin, không có mục quyền nghiệp vụ tạo vé, đặt vé và khai báo theo yêu cầu người dùng.
+- Hiện trạng: backend ứng dụng dùng role admin/operator/agency; operator có quyền nghiệp vụ nội bộ rộng. Chưa thể cấp operator rồi giới hạn riêng tạo/sửa booking hoặc danh mục bằng các quyền trong ảnh.
+- Phạm vi đề xuất: quyền xem/thêm/sửa/xóa riêng cho loại vé, booking, đại lý, bảng giá và giá vốn; quyền chi phí, thu/chi, báo cáo, giá vốn/lợi nhuận, nhập/khôi phục dữ liệu và CRM cần được tách tương ứng khi chuẩn hóa phân quyền.
+- Yêu cầu thực thi: cấp trực tiếp hoặc qua nhóm trong admin; giới hạn giao diện và bắt buộc kiểm tra ở backend, kể cả gọi API trực tiếp; kiểm soát cả trường dữ liệu nhạy cảm và phạm vi đại lý.
+- Ràng buộc kỹ thuật: API hiện ghi toàn bộ snapshot, nên chỉ thêm tên permission hoặc ẩn nút không đủ an toàn. Cần API theo nghiệp vụ hoặc cơ chế kiểm tra thay đổi và dữ liệu đọc trước khi cho phép lưu snapshot; không tuyên bố đã hỗ trợ phân quyền chi tiết khi chưa thực thi ở backend.
+- Nghiệm thu: tài khoản chỉ được tạo booking không sửa danh mục/giá vốn; tài khoản chỉ xem không ghi được; kiểm tra cấp qua nhóm, thu hồi quyền, gọi API trực tiếp, dữ liệu nhạy cảm và cách bảo toàn quyền người dùng hiện có khi nâng cấp.
+- Không nằm trong bản vá CSRF 1.9.8.1; chưa sửa code, chưa đẩy tính năng lên GitHub.
+
 ## Trạng thái phát hành 1.9.8.1
 
 - BUG-001 đến BUG-009: đã sửa cấu hình CSRF dùng chung và bổ sung xử lý lỗi; 14 test backend thành công, gồm lưu snapshot các module, logout HTTPS, tạo user/nhóm và gán permission Django. Chờ người dùng nghiệm thu online từng thao tác; chưa xác nhận nguyên nhân chi tiết của từng ảnh API 403 riêng lẻ.

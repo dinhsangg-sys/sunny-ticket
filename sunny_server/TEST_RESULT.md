@@ -1,5 +1,12 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## Bản test 1.10.0
+
+- 34 kiểm thử Django thành công trên Windows/Python 3.14/SQLite; giữ các regression 1.9.8.1 và bổ sung giá chung/giá riêng, kỳ hiệu lực, hai nguồn cùng giá, ánh xạ và chặn xung đột, bảo toàn booking, chặn API toàn bộ cho tài khoản hạn chế, quyền nhóm/thu hồi, không rò giá vốn/lợi nhuận, chống chèn trường và tự cấp quyền qua nhóm quản trị, server tính giá booking và kiểm tra revision.
+- Node: kiểm tra giá bán độc lập nguồn, nguồn bằng giá không bị gộp, ưu tiên giá riêng, giữ lịch sử, khôi phục danh mục mới, kiểm tra link Zalo và picker đều thành công. Các file legacy.js/pricing.js/restricted.js được kiểm tra cú pháp.
+- Django check không có lỗi; makemigrations --check không có thay đổi thiếu migration. Giữ đủ 180 khai báo hàm gốc.
+- Chưa chạy nghiệm thu GUI trình duyệt, ứng dụng Zalo, Ubuntu/PostgreSQL hoặc proxy online. Không đánh dấu hoàn thành tất cả yêu cầu phân quyền; xem giới hạn UPGRADE_1_10_0.md.
+
 ## Bản cập nhật 1.9.8.1
 
 - 14 kiểm thử Django thành công trên Windows/Python 3.14/SQLite, gồm các ca cũ và regression HTTPS origin, logout, tạo user/nhóm quyền/gán permission, chặn origin lạ và thiếu CSRF token.

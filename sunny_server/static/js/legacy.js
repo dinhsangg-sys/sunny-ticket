@@ -9,11 +9,11 @@ function stopServerEditing(message){
  throw Error(message);
 }
 function serverErrorMessage(status,body){
- let code='';try{code=JSON.parse(body).code||''}catch{}
+ let code='',detail='';try{const r=JSON.parse(body);code=r.code||'';detail=r.error||''}catch{}
  if(status===409)return 'Dữ liệu đã được người khác thay đổi. Cần tải lại trước khi sửa tiếp.';
  if(status===403)return code==='csrf_failed'?'Yêu cầu bị chặn do xác thực CSRF. Hãy tải lại trang; nếu vẫn lỗi, kiểm tra cấu hình domain HTTPS.':'Tài khoản không có quyền thực hiện thao tác hoặc yêu cầu xác thực bị từ chối.';
  if(status===401)return 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.';
- if(status===400)return 'Dữ liệu gửi lên không hợp lệ. Chưa lưu thay đổi.';
+ if(status===400)return 'Chưa lưu thay đổi. '+(detail||'Dữ liệu gửi lên không hợp lệ.');
  if(status===413)return 'Dữ liệu hoặc tệp vượt giới hạn dung lượng cho phép.';
  return status===0?'Không kết nối được server. Chưa xác nhận lưu dữ liệu.':'Server chưa xử lý được yêu cầu (HTTP '+status+').';
 }
@@ -279,7 +279,7 @@ function refreshExpenseChoices(keepInitial=false){
    else{$("fco").value=$("fcoSelect").value;$("fco").style.display="none"}
  }
 }
-function saveBooking(id){let chosenTicket=orderedTicketTypes().find(t=>t.active&&normalizeText(t.name)===normalizeText($("ft").value.trim()));if(!chosenTicket)return alert("Vui lòng chọn một loại vé hợp lệ từ danh sách tìm kiếm.");$("ft").value=chosenTicket.name;let q=num($("fq").value),buy=num($("fbuy").value),sell=num($("fsell").value),co=num($("fco").value),hasVat=$("fvat").checked,vatRate=hasVat?($("fvatrate").value==="custom"?num($("fvatcustom").value):num($("fvatrate").value)):0;if(hasVat&&vatRate<=0)return alert("Vui lòng nhập thuế suất VAT.");let gross=q*sell,base=Math.max(0,gross-q*buy),vat=hasVat?Math.round(base*vatRate/100):0,r=gross-co,p=r-q*buy-vat,x={id:id||"BK-"+Date.now(),bookingCode:id?(db.bookings.find(v=>v.id===id)?.bookingCode||nextBookingCode($("fd").value)):nextBookingCode($("fd").value),date:$("fd").value,customerType:$("fc").value,agent:$("fc").value==="agent"?$("fa").value.trim():"",customerName:$("fc").value==="retail"?$("fa").value.trim():"",ticketType:$("ft").value,ticketId:chosenTicket.id,qty:q,buyPrice:buy,sellPrice:sell,cost:co,revenue:r,profit:p,status:"completed",note:$("fn").value,hasVat,vatRate,vatBase:base,vatAmount:vat};let i=db.bookings.findIndex(v=>v.id===id);if(i>=0){x.payments=paymentList(db.bookings[i]);x.supplierPayments=supplierPaymentList(db.bookings[i]);if(paidAmount(x)>num(x.revenue))return alert("Tổng tiền mới nhỏ hơn số tiền đã thanh toán. Hãy chỉnh lịch sử thanh toán trước.");if(supplierPaidAmount(x)>supplierDueTotal(x))return alert("Giá vốn mới nhỏ hơn số tiền vé đã thanh toán.");db.bookings[i]=x}else{x.payments=[];x.supplierPayments=[];db.bookings.push(x)}save();closeM(true);bookings()}
+function saveBooking(id){let chosenTicket=orderedTicketTypes().find(t=>t.active&&normalizeText(t.name)===normalizeText($("ft").value.trim()))||(id&&db.bookings.find(b=>b.id===id)?.ticketType===$("ft").value?{...db.ticketTypes.find(t=>t.id===db.bookings.find(b=>b.id===id)?.ticketId),id:db.bookings.find(b=>b.id===id)?.ticketId,name:$("ft").value}:null);if(!chosenTicket)return alert("Vui lòng chọn một loại vé hợp lệ từ danh sách tìm kiếm.");$("ft").value=chosenTicket.name;let q=num($("fq").value),buy=num($("fbuy").value),sell=num($("fsell").value),co=num($("fco").value),hasVat=$("fvat").checked,vatRate=hasVat?($("fvatrate").value==="custom"?num($("fvatcustom").value):num($("fvatrate").value)):0;if(hasVat&&vatRate<=0)return alert("Vui lòng nhập thuế suất VAT.");let gross=q*sell,base=Math.max(0,gross-q*buy),vat=hasVat?Math.round(base*vatRate/100):0,r=gross-co,p=r-q*buy-vat,x={...(id?db.bookings.find(v=>v.id===id):{}),id:id||"BK-"+Date.now(),bookingCode:id?(db.bookings.find(v=>v.id===id)?.bookingCode||nextBookingCode($("fd").value)):nextBookingCode($("fd").value),date:$("fd").value,customerType:$("fc").value,agent:$("fc").value==="agent"?$("fa").value.trim():"",customerName:$("fc").value==="retail"?$("fa").value.trim():"",ticketType:$("ft").value,ticketId:chosenTicket.id,...(window.v2SelectedCost?{supplierId:window.v2SelectedCost.supplierId,supplierName:window.v2SelectedCost.supplierName,costPriceId:window.v2SelectedCost.id||""}:{}),qty:q,buyPrice:buy,sellPrice:sell,cost:co,revenue:r,profit:p,status:"completed",note:$("fn").value,hasVat,vatRate,vatBase:base,vatAmount:vat};let i=db.bookings.findIndex(v=>v.id===id);if(i>=0){x.payments=paymentList(db.bookings[i]);x.supplierPayments=supplierPaymentList(db.bookings[i]);if(paidAmount(x)>num(x.revenue))return alert("Tổng tiền mới nhỏ hơn số tiền đã thanh toán. Hãy chỉnh lịch sử thanh toán trước.");if(supplierPaidAmount(x)>supplierDueTotal(x))return alert("Giá vốn mới nhỏ hơn số tiền vé đã thanh toán.");db.bookings[i]=x}else{x.payments=[];x.supplierPayments=[];db.bookings.push(x)}save();closeM(true);bookings()}
 function orderedTicketTypes(){
  return (db.ticketTypes||[]).map((x,i)=>({...x,_originalIndex:i,_order:Number.isFinite(Number(x.sortOrder))?Number(x.sortOrder):i}))
  .sort((a,b)=>a._order-b._order||a._originalIndex-b._originalIndex)
@@ -539,7 +539,7 @@ function agentForm(id=""){
  show(`<div class="modalhead"><h2>Hồ sơ đại lý</h2><button class="close" onclick="closeM()">×</button></div><div class="form"><div class="field"><label>Mã</label><input id="ai" class="input" value="${esc(x.id)}"></div><div class="field"><label>Tên đại lý / CTV</label><input id="an" class="input" value="${esc(x.name)}"></div><div class="field"><label>Điện thoại</label><input id="aph" class="input" value="${esc(x.phone||"")}"></div><div class="field"><label>Email</label><input id="ae" class="input" value="${esc(x.email||"")}"></div><div class="field"><label>Trạng thái</label><select id="aa" class="select"><option value="1" ${x.active!==false?"selected":""}>Đang hoạt động</option><option value="0" ${x.active===false?"selected":""}>Tạm ngưng</option></select></div><div class="field full"><label>Ghi chú</label><textarea id="ano" class="textarea">${esc(x.note||"")}</textarea></div></div><div class="muted" style="margin:10px 0">Đại lý tạm ngưng sẽ không xuất hiện khi tạo booking mới nhưng toàn bộ booking, bảng giá, công nợ và báo cáo lịch sử vẫn được giữ nguyên.</div><div style="text-align:right"><button class="btn primary" onclick="saveAgent('${id}')">Lưu</button></div>`)
 }
 function saveAgent(id){
- let old=db.agents.find(v=>v.id===id),x={id:$("ai").value.trim(),name:$("an").value.trim(),phone:$("aph").value.trim(),email:$("ae").value.trim(),note:$("ano").value,active:$("aa").value==="1"};
+ let old=db.agents.find(v=>v.id===id),x={...old,priceListId:$("v2AgentList")?$("v2AgentList").value:(old?.priceListId||""),zaloLink:$("v2Zalo")?.value.trim()||"",id:$("ai").value.trim(),name:$("an").value.trim(),phone:$("aph").value.trim(),email:$("ae").value.trim(),note:$("ano").value,active:$("aa").value==="1"};
  if(!x.id||!x.name)return alert("Nhập mã và tên đại lý.");
  if(db.agents.some(v=>v!==old&&normalizeText(v.id)===normalizeText(x.id)))return alert("Mã đại lý đã tồn tại.");
  if(old&&old.name!==x.name){db.agentPrices.forEach(p=>{if(p.agent===old.name)p.agent=x.name});db.bookings.forEach(b=>{if(b.agent===old.name)b.agent=x.name})}
@@ -796,14 +796,14 @@ function exportDetailedReportExcel(){let rows=detailedReportRows();if(!rows.leng
 function dataPage(){$('app').innerHTML=`<div class="grid two"><div class="card"><h3>Sao lưu & chuyển phiên bản</h3><p class="muted">Xuất toàn bộ dữ liệu sang JSON trước khi nhập hoặc nâng cấp.</p><button class="btn primary" onclick="backup()">Xuất bản sao lưu đầy đủ</button> <button class="btn" onclick="csv()">Xuất booking CSV</button></div><div class="card"><h3>1. Khôi phục toàn bộ (Thay thế dữ liệu)</h3><p class="muted"><b style="color:#b91c1c">CẢNH BÁO:</b> Thao tác này thay thế toàn bộ dữ liệu hiện tại bằng nội dung file, kể cả khi file cũ hơn. Phần mềm sẽ tải bản sao lưu hiện tại trước khi thay thế.</p><input class="input" type="file" accept=".json,application/json" onchange="restorePreview(this.files[0],'replace');this.value=''"></div><div class="card"><h3>2. Nhập bổ sung / Hợp nhất dữ liệu</h3><p class="muted">Giữ dữ liệu hiện có, bổ sung bản ghi mới theo ID; phát hiện bản ghi trùng hoặc xung đột. Nếu phát hiện xung đột, <b>không thực hiện hợp nhất</b> để bảo vệ dữ liệu tài chính.</p><input class="input" type="file" accept=".json,application/json" onchange="restorePreview(this.files[0],'merge');this.value=''"></div></div><div id="restoreInfo" class="card section" style="display:none"></div><div class="card section"><h3>Lưu ý</h3><p class="muted">Hợp nhất không phải đồng bộ hai chiều. Nếu file cũ thiếu ID giao dịch hoặc có sửa đổi khác nhau trên cùng booking, hệ thống sẽ chặn và yêu cầu đối soát. Dữ liệu ảnh/video Zalo lưu riêng trong trình duyệt có thể không nằm trong bản sao lưu JSON.</p></div>`}
 function dl(blob,name){let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
 function portableData(){
- return {format:"SUNNY_TRAVEL_BACKUP",schemaVersion:3,appVersion:"Production 1.9.8",exportedAt:new Date().toISOString(),data:structuredClone(db)}
+ return {format:"SUNNY_TRAVEL_BACKUP",schemaVersion:4,appVersion:"Test 1.10.0",exportedAt:new Date().toISOString(),data:structuredClone(db)}
 }
 function backup(){let d=today().replaceAll("-","");dl(new Blob([JSON.stringify(portableData(),null,2)],{type:"application/json"}),`sunny-travel-backup-${d}.json`)}
 function csv(){let h=["Mã booking","ID nội bộ","Ngày","Loại vé","Đại lý","SL","Giá vốn","Giá bán","Chi phí","Doanh thu","Lợi nhuận","Có VAT","VAT %","Tiền VAT","Đã thu","Còn nợ","Ghi chú"],rows=[h,...db.bookings.map(x=>[x.bookingCode||x.id,x.id,x.date,x.ticketType,x.agent,x.qty,x.buyPrice,x.sellPrice,x.cost,x.revenue,x.profit,x.hasVat?"Có":"Không",x.vatRate||0,vatAmount(x),paidAmount(x),customerDue(x),x.note])];dl(new Blob(["\ufeff"+rows.map(r=>r.map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n")],{type:"text/csv"}),"sunny-travel-bookings.csv")}
 function normalizeImportedData(raw){
  let d=raw?.format==='SUNNY_TRAVEL_BACKUP'?raw.data:raw;
  if(!d||typeof d!=='object'||Array.isArray(d))throw new Error('Không tìm thấy dữ liệu hợp lệ.');
- let out={};for(let k of ['ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns'])out[k]=Array.isArray(d[k])?d[k]:k==='ticketTypes'&&Array.isArray(d.tickets)?d.tickets:[];
+ let out={};for(let k of ['ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns','suppliers','priceLists','priceListItems','ticketMappings'])out[k]=Array.isArray(d[k])?d[k]:k==='ticketTypes'&&Array.isArray(d.tickets)?d.tickets:[];
  out.settings=d.settings&&typeof d.settings==='object'?d.settings:{};
  out.zaloSettings=d.zaloSettings&&typeof d.zaloSettings==='object'?d.zaloSettings:structuredClone(db.zaloSettings);
  out.bookings=out.bookings.map(x=>({...x,payments:Array.isArray(x.payments)?x.payments:[],supplierPayments:Array.isArray(x.supplierPayments)?x.supplierPayments:[],hasVat:!!x.hasVat,vatRate:x.hasVat?num(x.vatRate||15):0}));
@@ -815,6 +815,7 @@ function deepEqualData(a,b){return JSON.stringify(sortData(a))===JSON.stringify(
 function sortData(v){if(Array.isArray(v))return v.map(sortData);if(v&&typeof v==='object')return Object.fromEntries(Object.keys(v).sort().map(k=>[k,sortData(v[k])]));return v}
 function mergeIdentity(k,x){
  if(x.id!==undefined&&String(x.id).trim())return 'id:'+String(x.id);
+ if(k==='ticketMappings'&&x.legacyId)return 'legacy:'+String(x.legacyId);
  if(k==='ticketTypes'&&x.code)return 'code:'+String(x.code);
  if(k==='agents'&&x.code)return 'code:'+String(x.code);
  // Do not guess identity for financial transactions with no stable ID.
@@ -822,7 +823,7 @@ function mergeIdentity(k,x){
 }
 function previewSafeMerge(incoming){
  let merged=structuredClone(db),added={},duplicates={},conflicts=[];
- for(let k of ['ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns']){
+ for(let k of ['ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns','suppliers','priceLists','priceListItems','ticketMappings']){
   let current=Array.isArray(merged[k])?merged[k]:[];merged[k]=current;added[k]=0;duplicates[k]=0;
   let byId=new Map();for(let v of current){let id=mergeIdentity(k,v);if(id){if(byId.has(id)&&!deepEqualData(byId.get(id),v))conflicts.push(`${k}: ID ${id} bị trùng trong dữ liệu hiện tại`);byId.set(id,v)}}
   for(let v of incoming[k]||[]){let id=mergeIdentity(k,v);
@@ -856,14 +857,14 @@ function confirmRestore(){
  if(!confirm('CẢNH BÁO: Dữ liệu hiện tại sẽ bị THAY THẾ TOÀN BỘ. Tiếp tục?'))return;
  let typed=prompt('Nhập THAY THE để xác nhận ghi đè dữ liệu:');if(typed!=='THAY THE')return;
  backup();
- db=structuredClone(pendingRestore);db.settings={...db.settings,version:'Production 1.9.8'};ensureBookingCodes();save();pendingRestore=null;alert('Đã khôi phục toàn bộ. Bản sao lưu dữ liệu trước đó đã được yêu cầu tải xuống.');go('dashboard')
+ db=structuredClone(pendingRestore);db.settings={...db.settings,version:'Test 1.10.0'};ensureBookingCodes();save();pendingRestore=null;alert('Đã khôi phục toàn bộ. Bản sao lưu dữ liệu trước đó đã được yêu cầu tải xuống.');go('dashboard')
 }
 function confirmSafeMerge(){
  if(!pendingRestore||pendingRestoreMode!=='merge')return;
  // Recompute against the current data to avoid stale previews.
  let m=previewSafeMerge(pendingRestore);if(m.conflicts.length)return alert('Dữ liệu đã thay đổi hoặc có xung đột. Hợp nhất bị chặn; hãy xem trước lại.');
  if(!confirm('Hợp nhất các bản ghi mới và giữ nguyên dữ liệu hiện tại?'))return;
- backup();db=m.merged;db.settings={...db.settings,version:'Production 1.9.8'};save();pendingRestore=null;pendingMerge=null;alert('Hợp nhất hoàn tất. Không ghi đè bản ghi có sẵn.');go('dashboard')
+ backup();db=m.merged;db.settings={...db.settings,version:'Test 1.10.0'};save();pendingRestore=null;pendingMerge=null;alert('Hợp nhất hoàn tất. Không ghi đè bản ghi có sẵn.');go('dashboard')
 }
 ensureBookingCodes();
 go("dashboard");

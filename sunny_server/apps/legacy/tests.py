@@ -9,6 +9,8 @@ from .models import Workspace
 class ServerTests(TestCase):
     def setUp(self):
         self.operator = User.objects.create_user('operator',password='test-only',role='operator')
+        from django.contrib.auth.models import Permission
+        self.operator.user_permissions.add(Permission.objects.get(content_type__app_label='legacy',codename='workspace__full_access'))
         self.agency = Agency.objects.create(legacy_id='a1',name='Agency A')
         self.agent = User.objects.create_user('agent',password='test-only',agency=self.agency)
         self.data = {'agents':[{'id':'a1','name':'Agency A'},{'id':'a2','name':'Agency B'}], 'bookings':[

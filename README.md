@@ -1,5 +1,7 @@
 # Sunny Travel Ticket Management — Python test edition
 
+**Bản test 1.10.0:** nhà cung cấp riêng, bảng giá chung cho nhiều đại lý, ánh xạ vé cũ và bước đầu API phân quyền. Đọc [phạm vi thực tế và hướng dẫn nâng cấp](sunny_server/UPGRADE_1_10_0.md) trước khi migrate; phần phân quyền chi tiết chưa hoàn tất toàn bộ danh mục đích.
+
 **Bản cập nhật 1.9.8.1:** sửa cấu hình CSRF cho domain HTTPS, thông báo lỗi lưu và thao tác mở lịch. Xem [hướng dẫn nâng cấp](sunny_server/UPGRADE_1_9_8_1.md) nếu đã cài bản trước.
 
 Bản chuyển đổi từ HTML v1.9.8 sang Django để kiểm thử. Giữ các hàm nghiệp vụ JavaScript gốc, bổ sung đăng nhập, quản trị tài khoản, lưu dữ liệu chung, chống ghi đè và cổng đại lý chỉ đọc.

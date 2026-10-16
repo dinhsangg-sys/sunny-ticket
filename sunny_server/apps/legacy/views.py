@@ -9,6 +9,8 @@ from django.views.decorators.http import require_http_methods
 from apps.agencies.models import Agency
 from apps.audit.models import AuditLog
 from .models import Workspace, Attachment
+from .access import full_access, allowed
+from .pricing import validate
 
 def internal(user):
     return user.is_superuser or user.role in ('admin','operator')
@@ -16,7 +18,8 @@ def internal(user):
 @login_required
 @ensure_csrf_cookie
 def home(request):
-    if internal(request.user): return render(request, 'legacy.html')
+    if internal(request.user):
+        return render(request, 'legacy.html' if full_access(request.user) else 'restricted.html')
     data = Workspace.objects.filter(pk=1).values_list('data',flat=True).first() or {}
     agency = request.user.agency
     # Legacy records refer to agency names: deny ambiguous names rather than leak data.
@@ -32,19 +35,25 @@ def home(request):
 @login_required
 @require_http_methods(['GET','PUT'])
 def state(request):
-    if not internal(request.user): return HttpResponseForbidden()
+    if not internal(request.user) or not full_access(request.user): return JsonResponse({'error':'Cần quyền toàn bộ workspace để dùng API dữ liệu đầy đủ.'},status=403)
     obj, _ = Workspace.objects.get_or_create(pk=1)
     if request.method == 'GET': return JsonResponse({'data':obj.data,'revision':obj.revision})
     try:
         payload = json.loads(request.body)
         data, revision = payload['data'], int(payload['revision'])
         if not isinstance(data,dict): raise ValueError()
+        validate(data)
+        old_bookings={b.get('id'):b for b in obj.data.get('bookings',[])}
+        for booking in data.get('bookings',[]):
+            old=old_bookings.get(booking.get('id'))
+            if old and old.get('supplierPayments') and booking.get('supplierId')!=old.get('supplierId'):
+                raise ValueError('Không đổi nhà cung cấp của booking đã có khoản chi. Cần đối soát trước.')
         for key in ['agents','ticketTypes','bookings','agentPrices','costPrices','expenses','cashTransactions','zaloCampaigns']:
             if key in data and (not isinstance(data[key],list) or any(not isinstance(x,dict) for x in data[key])): raise ValueError()
         agents = data.get('agents',[])
         ids = [str(a['id']) for a in agents]
         if len(ids) != len(set(ids)): raise ValueError()
-    except (ValueError,KeyError,TypeError): return JsonResponse({'error':'Dữ liệu không hợp lệ'},status=400)
+    except (ValueError,KeyError,TypeError) as exc: return JsonResponse({'error':str(exc) or 'Dữ liệu không hợp lệ'},status=400)
     with transaction.atomic():
         updated = Workspace.objects.filter(pk=1,revision=revision).update(data=data,revision=F('revision')+1)
         if not updated: return JsonResponse({'error':'Người khác đã thay đổi dữ liệu. Tải lại trang trước khi sửa tiếp.'},status=409)
@@ -56,7 +65,7 @@ def state(request):
 @login_required
 @require_http_methods(['GET','POST','DELETE'])
 def media(request, key):
-    if not internal(request.user): return HttpResponseForbidden()
+    if not internal(request.user) or not full_access(request.user): return HttpResponseForbidden()
     if request.method == 'POST':
         f = request.FILES.get('file')
         if not f or f.size > 20*1024*1024 or not f.content_type.startswith(('image/','video/')):
