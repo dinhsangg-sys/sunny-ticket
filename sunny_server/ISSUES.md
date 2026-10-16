@@ -1,5 +1,11 @@
 # Lỗi ghi nhận khi kiểm thử online
 
+## 1.10.1 — Yêu cầu khởi tạo mới
+
+- Người dùng yêu cầu xóa hết dữ liệu cũ và bỏ module ánh xạ. Đã bỏ menu/API/logic ánh xạ; bổ sung management command reset_business_data để xóa nghiệp vụ, media, nhật ký và phiên, giữ tài khoản/nhóm/quyền.
+- Không tự xóa dữ liệu online khi migrate. Cần chạy lệnh --execute trên Ubuntu theo UPGRADE_1_10_1.md; agent không có kết nối máy đó để thực hiện hoặc xác nhận kết quả.
+- Các yêu cầu ánh xạ/gộp vé của 1.10.0 bên dưới là lịch sử, đã được yêu cầu mới thay thế. Giới hạn phân quyền còn lại vẫn được theo dõi, không coi là đã hoàn tất.
+
 ## Tiến độ bản test 1.10.0
 
 - Đã tạo mô hình nhà cung cấp + giá vốn theo nguồn, bảng giá chung gán nhiều đại lý và giá riêng ưu tiên, ánh xạ vé có xem trước giữ lịch sử.

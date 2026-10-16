@@ -15,7 +15,7 @@ class ServerTests(TestCase):
         self.agent = User.objects.create_user('agent',password='test-only',agency=self.agency)
         self.data = {'agents':[{'id':'a1','name':'Agency A'},{'id':'a2','name':'Agency B'}], 'bookings':[
             {'bookingCode':'OWN','customerType':'agent','agent':'Agency A','ticketType':'Tour','qty':1,'revenue':100,'buyPrice':60,'payments':[{'amount':20}]},
-            {'bookingCode':'OTHER_SECRET','customerType':'agent','agent':'Agency B','revenue':200}], 'costPrices':[{'secret':12345}]}
+            {'bookingCode':'OTHER_SECRET','customerType':'agent','agent':'Agency B','revenue':200}], 'costPrices':[]}
 
     def save(self,revision=0,data=None):
         return self.client.put('/api/state/',json.dumps({'revision':revision,'data':self.data if data is None else data}),content_type='application/json')
@@ -84,7 +84,7 @@ class ServerTests(TestCase):
 
     def test_https_origin_can_save_all_reported_modules(self):
         c,token=self.secure_client()
-        data=dict(self.data,ticketTypes=[{'id':'t1','name':'Eco'}],agentPrices=[{'agent':'Agency A','price':100}],costPrices=[{'price':60}],expenses=[{'title':'ship','amount':10}],zaloCampaigns=[{'id':'z1','title':'Test','recipients':[]}],cashTransactions=[])
+        data=dict(self.data,ticketTypes=[{'id':'t1','name':'Eco'}],suppliers=[{'id':'s1','name':'Supplier'}],agentPrices=[{'agent':'Agency A','ticketId':'t1','price':100}],costPrices=[{'ticketId':'t1','supplierId':'s1','price':60}],expenses=[{'title':'ship','amount':10}],zaloCampaigns=[{'id':'z1','title':'Test','recipients':[]}],cashTransactions=[])
         response=c.put('/api/state/',json.dumps({'revision':0,'data':data}),content_type='application/json',HTTP_HOST='sn.hoianmemorieslands.com',HTTP_ORIGIN='https://sn.hoianmemorieslands.com',HTTP_X_CSRFTOKEN=token)
         self.assertEqual(response.status_code,200)
         self.assertEqual(Workspace.objects.get(pk=1).data,data)

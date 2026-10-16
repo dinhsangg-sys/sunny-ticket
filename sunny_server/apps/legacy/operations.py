@@ -42,8 +42,6 @@ def operations(request):
             # Minimal names/IDs for foreign-key selectors; never send costs or contacts here.
             for key in ('ticketTypes','agents','suppliers','priceLists'):
                 lookups[key]=[{'id':r['id'],'name':r.get('name','')} for r in obj.data.get(key,[]) if r.get('active',True)]
-            hidden={m['legacyId'] for m in obj.data.get('ticketMappings',[])}
-            lookups['ticketTypes']=[t for t in lookups['ticketTypes'] if t['id'] not in hidden]
         return JsonResponse({'revision':obj.revision,'resources':resources,'lookups':lookups,'payments':{'receipt':{p:can(user,'receipt.'+p) for p in ('view','create','change','delete')},'supplier':{p:can(user,'supplier_payment.'+p) for p in ('view','create','delete')}}})
     try:
         body=json.loads(request.body)
@@ -100,7 +98,6 @@ def operations(request):
                     if old.get('supplierPayments') and row.get('supplierId')!=old.get('supplierId'): raise ValueError('Không đổi nguồn booking đã có khoản chi.')
                     ticket=next((t for t in data.get('ticketTypes',[]) if t['id']==row.get('ticketId') and t.get('active',True)),None)
                     if not ticket: raise ValueError('Loại vé không hợp lệ.')
-                    if action=='create' and any(m['legacyId']==row['ticketId'] for m in data.get('ticketMappings',[])): raise ValueError('Chọn loại vé chung khi tạo booking mới.')
                     if action=='create' or row.get('ticketId')!=old.get('ticketId'): row['ticketType']=ticket['name']
                     needs_quote=action=='create' or any(row.get(f)!=old.get(f) for f in ('agent','ticketId','date','customerType','supplierId'))
                     if needs_quote:
@@ -146,16 +143,3 @@ def quote(request):
         if not can(request.user,'booking.view_buy_price'): options=[{'supplierId':p['supplierId'],'supplierName':p['supplierName']} for p in options]
         return JsonResponse({'price':price,'source':source,'options':options})
     except (ValueError,KeyError) as e: return JsonResponse({'error':str(e)},status=400)
-
-@login_required
-@require_http_methods(['POST'])
-def pricing_preview(request):
-    if not full_access(request.user): return JsonResponse({'error':'Cần quyền quản trị dữ liệu đầy đủ để ánh xạ vé cũ.'},status=403)
-    try:
-        body=json.loads(request.body)
-        obj=Workspace.objects.get(pk=1)
-        if int(body['revision'])!=obj.revision: return JsonResponse({'error':'Dữ liệu đã đổi. Tải lại trang.'},status=409)
-        data=copy.deepcopy(obj.data);data['ticketMappings']=body['mappings']
-        validate(data)
-        return JsonResponse({'summary':f"Hợp lệ: {len(body['mappings'])} ánh xạ. Giữ nguyên {len(data.get('bookings',[]))} booking và toàn bộ lịch sử thanh toán. Không tự gộp/xóa các kỳ giá; giá bán xung đột sẽ bị chặn."})
-    except (ValueError,KeyError,TypeError,Workspace.DoesNotExist) as e: return JsonResponse({'error':str(e)},status=400)

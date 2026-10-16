@@ -31,19 +31,6 @@ class PricingRulesTests(TestCase):
     def test_equal_cost_suppliers_not_deduplicated(self):
         data=fixture();data['costPrices'][1]['price']=350000
         self.assertEqual(len(supplier_options(data,'eco','2026-10-16')),2)
-    def test_mapping_retains_history_and_quotes(self):
-        data=fixture();before=copy.deepcopy(data['bookings'])
-        data['ticketMappings']=[{'legacyId':'eco-ah','ticketId':'eco','supplierId':'ah'},{'legacyId':'eco-hbm','ticketId':'eco','supplierId':'hbm'}]
-        validate(data)
-        self.assertEqual(data['bookings'],before)
-        self.assertEqual(sell_price(data,'a','eco-ah','2026-10-16')[0],450000)
-    def test_conflicting_legacy_prices_block_mapping(self):
-        data=fixture();data['agentPrices']=[{'agent':'Đại lý A','ticketId':'eco-ah','price':430000},{'agent':'Đại lý A','ticketId':'eco-hbm','price':450000}]
-        data['ticketMappings']=[{'legacyId':'eco-ah','ticketId':'eco','supplierId':'ah'},{'legacyId':'eco-hbm','ticketId':'eco','supplierId':'hbm'}]
-        with self.assertRaises(ValueError):validate(data)
-    def test_mapping_cycle_rejected(self):
-        data=fixture();data['ticketMappings']=[{'legacyId':'eco-ah','ticketId':'eco-hbm','supplierId':'ah'},{'legacyId':'eco-hbm','ticketId':'eco-ah','supplierId':'hbm'}]
-        with self.assertRaises(ValueError):validate(data)
     def test_zalo_link_host_validation(self):
         self.assertTrue(valid_zalo_link('https://zalo.me/0901234567'))
         for link in ['javascript:alert(1)','https://zalo.me.evil.com/1','https://zalo.me@evil.com/1','https://evil.com/1','http://zalo.me/1','https://zalo.me:444/1']:
@@ -106,12 +93,6 @@ class RestrictedAccessTests(TestCase):
         self.assertEqual(self.post(body).status_code,200)
         r=self.client.post('/api/operations/',json.dumps(dict(body,revision=0)),content_type='application/json')
         self.assertEqual(r.status_code,409)
-    def test_preview_does_not_mutate(self):
-        self.user.is_superuser=True;self.user.save()
-        before=Workspace.objects.get(pk=1).data
-        response=self.client.post('/api/pricing-preview/',json.dumps({'revision':0,'mappings':[{'legacyId':'eco-ah','ticketId':'eco','supplierId':'ah'}]}),content_type='application/json')
-        self.assertEqual(response.status_code,200,response.content)
-        self.assertEqual(Workspace.objects.get(pk=1).data,before)
 
     def test_non_superuser_cannot_grant_full_access_via_group(self):
         self.user.is_staff=True;self.user.save()

@@ -1,12 +1,12 @@
-# Sunny Travel Ticket Management — Python test edition
+# Sunny Travel Ticket Management — 1.10.1
 
-**Bản test 1.10.0:** nhà cung cấp riêng, bảng giá chung cho nhiều đại lý, ánh xạ vé cũ và bước đầu API phân quyền. Đọc [phạm vi thực tế và hướng dẫn nâng cấp](sunny_server/UPGRADE_1_10_0.md) trước khi migrate; phần phân quyền chi tiết chưa hoàn tất toàn bộ danh mục đích.
+Bản khai báo mới: một loại vé, nhiều nhà cung cấp, giá vốn theo nguồn và bảng giá bán chung gán cho nhiều đại lý. Đã bỏ module ánh xạ loại vé cũ.
 
-**Bản cập nhật 1.9.8.1:** sửa cấu hình CSRF cho domain HTTPS, thông báo lỗi lưu và thao tác mở lịch. Xem [hướng dẫn nâng cấp](sunny_server/UPGRADE_1_9_8_1.md) nếu đã cài bản trước.
+## Máy đã cài trước đó
 
-Bản chuyển đổi từ HTML v1.9.8 sang Django để kiểm thử. Giữ các hàm nghiệp vụ JavaScript gốc, bổ sung đăng nhập, quản trị tài khoản, lưu dữ liệu chung, chống ghi đè và cổng đại lý chỉ đọc.
+Xem [hướng dẫn cập nhật và xóa dữ liệu nghiệp vụ](sunny_server/UPGRADE_1_10_1.md). Lệnh reset xóa nghiệp vụ/tệp cũ nhưng giữ tài khoản và phân quyền. Không tự xóa dữ liệu chỉ bằng git pull hoặc migrate.
 
-## Clone và chạy thử trên Ubuntu
+## Cài mới
 
 ```bash
 git clone https://github.com/dinhsangg-sys/sunny-ticket.git
@@ -20,10 +20,6 @@ python manage.py test apps.legacy
 python manage.py runserver 127.0.0.1:8000
 ```
 
-Yêu cầu Python 3.12 trở lên và gói `python3-venv`. Nếu Ubuntu ở máy khác, dùng SSH tunnel từ máy cá nhân: `ssh -L 8000:127.0.0.1:8000 user@ubuntu-host`, sau đó mở http://127.0.0.1:8000 trên máy cá nhân. Không dùng development server để public Internet.
+Python 3.12 trở lên. Không có mật khẩu mặc định; không đưa database, media hoặc secret lên Git.
 
-- [Hướng dẫn đầy đủ và triển khai Ubuntu/PostgreSQL](sunny_server/README.md)
-- [Checklist nghiệm thu với HTML gốc](sunny_server/CHECKLIST_TEST.md)
-- [Kết quả kiểm tra đã chạy](sunny_server/TEST_RESULT.md)
-
-Đây là bản test tương thích, chưa phải backend nghiệp vụ hoàn chỉnh: server lưu snapshot JSON, tính tiền vẫn ở JavaScript, operator có đầy đủ quyền nội bộ và đại lý chỉ đọc. Xem các giới hạn trong hướng dẫn trước khi sử dụng dữ liệu thực tế. Không có mật khẩu mặc định. Môi trường Python, database, tệp người dùng tải lên và thông tin bí mật không nằm trong repository.
+Xem [phạm vi phân quyền đang hỗ trợ](sunny_server/UPGRADE_1_10_0.md#phạm-vi-phân-quyền-thực-tế-trong-bản-này) và [kết quả kiểm thử](sunny_server/TEST_RESULT.md). Các phần ánh xạ trong tài liệu 1.10.0 chỉ là lịch sử và không còn áp dụng. Chưa hoàn tất toàn bộ danh mục phân quyền hoặc mô hình production; không dùng development server như dịch vụ production.

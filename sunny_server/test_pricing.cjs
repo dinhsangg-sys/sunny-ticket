@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
-const data={ticketTypes:[{id:'eco',name:'Eco',active:true},{id:'eco-ah',name:'Eco AH',active:true},{id:'eco-hbm',name:'Eco HBM',active:true}],ticketMappings:[],suppliers:[{id:'ah',name:'An Huy'},{id:'hbm',name:'HBM'}],agents:[{id:'a',name:'Agency A',priceListId:'standard'}],priceLists:[{id:'standard',name:'Standard'}],priceListItems:[{ticketId:'eco',priceListId:'standard',price:450000,from:'2026-01-01'}],agentPrices:[],costPrices:[{ticketId:'eco',supplierId:'ah',price:350000},{ticketId:'eco',supplierId:'hbm',price:370000}],bookings:[{id:'history',ticketId:'eco-ah',sellPrice:12345}],expenses:[]};
+const data={ticketTypes:[{id:'eco',name:'Eco',active:true},{id:'eco-ah',name:'Eco AH',active:true},{id:'eco-hbm',name:'Eco HBM',active:true}],suppliers:[{id:'ah',name:'An Huy'},{id:'hbm',name:'HBM'}],agents:[{id:'a',name:'Agency A',priceListId:'standard'}],priceLists:[{id:'standard',name:'Standard'}],priceListItems:[{ticketId:'eco',priceListId:'standard',price:450000,from:'2026-01-01'}],agentPrices:[],costPrices:[{ticketId:'eco',supplierId:'ah',price:350000},{ticketId:'eco',supplierId:'hbm',price:370000}],bookings:[{id:'history',ticketId:'eco-ah',sellPrice:12345}],expenses:[]};
 const noop=()=>{},opened=[];
 const context={db:data,document:{createElement:()=>({dataset:{}}),querySelector:()=>({append:noop})},num:v=>Number(v)||0,money:String,window:{open:(...args)=>opened.push(args)},URL,alert:noop,zaloPhone:p=>/^0\d{9}$/.test(p)?p:'',structuredClone};
 for(const name of ['show','orderedTicketTypes','agentForm','saveAgent','bookingForm','saveBooking','types','priceList','supplierPaymentForm','renderSupplierReport','costForm'])context[name]=noop;
@@ -11,9 +11,6 @@ data.costPrices[1].price=350000;assert.equal(context.availableCostPrices('eco','
 data.agentPrices.push({agent:'Agency A',ticketId:'eco',price:440000,from:'2026-10-01',to:'2026-10-31'});
 assert.equal(context.agentPrice('Agency A','eco','2026-10-16'),440000);
 assert.equal(context.agentPrice('Agency A','eco','2026-11-01'),450000);
-data.ticketMappings.push({legacyId:'eco-ah',ticketId:'eco',supplierId:'ah'});
-assert(!context.orderedTicketTypes().some(t=>t.id==='eco-ah'));
-assert.equal(data.bookings[0].ticketId,'eco-ah');assert.equal(data.bookings[0].sellPrice,12345);
 context.openZaloRecipient('0901234567','https://zalo.me/example');assert.equal(opened[0][0],'https://zalo.me/example');
 context.openZaloRecipient('0901234567');assert.equal(opened[1][0],'https://zalo.me/0901234567');
 context.openZaloRecipient('0901234567','https://evil.com/x');assert.equal(opened.length,2);
@@ -21,5 +18,5 @@ console.log('PASS: pricing precedence, distinct suppliers, historical preservati
 const legacy=fs.readFileSync(__dirname+'/static/js/legacy.js','utf8');
 vm.runInContext(legacy.slice(legacy.indexOf('function normalizeImportedData('),legacy.indexOf('let pendingRestore=')),context);
 const restored=context.normalizeImportedData({format:'SUNNY_TRAVEL_BACKUP',data});
-for(const key of ['suppliers','priceLists','priceListItems','ticketMappings'])assert.equal(JSON.stringify(restored[key]),JSON.stringify(data[key]));
+for(const key of ['suppliers','priceLists','priceListItems'])assert.equal(JSON.stringify(restored[key]),JSON.stringify(data[key]));
 console.log('PASS: backup restore retains new pricing collections.');

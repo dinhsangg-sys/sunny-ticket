@@ -1,5 +1,7 @@
 # Sunny Travel — bản chuyển đổi để kiểm thử
 
+**Hiện tại 1.10.1:** bỏ module ánh xạ, khởi tạo dữ liệu mới theo yêu cầu. Đọc UPGRADE_1_10_1.md và chạy reset_business_data trên máy Ubuntu để xóa nghiệp vụ cũ nhưng giữ tài khoản/quyền. Các hướng dẫn gộp dữ liệu ở phiên bản trước không còn áp dụng.
+
 Bản test 1.10.0 có thay đổi database permissions và bảo toàn quyền người dùng cũ qua migration. Đọc UPGRADE_1_10_0.md trước nâng cấp; không áp dụng mô tả operator/quyền rộng của bản cũ cho tài khoản mới không có quyền đầy đủ.
 
 Bản cập nhật 1.9.8.1: xem [hướng dẫn nâng cấp và cấu hình domain HTTPS](UPGRADE_1_9_8_1.md). Lịch sử lỗi và trạng thái nghiệm thu trong ISSUES.md.

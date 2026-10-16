@@ -796,14 +796,14 @@ function exportDetailedReportExcel(){let rows=detailedReportRows();if(!rows.leng
 function dataPage(){$('app').innerHTML=`<div class="grid two"><div class="card"><h3>Sao lưu & chuyển phiên bản</h3><p class="muted">Xuất toàn bộ dữ liệu sang JSON trước khi nhập hoặc nâng cấp.</p><button class="btn primary" onclick="backup()">Xuất bản sao lưu đầy đủ</button> <button class="btn" onclick="csv()">Xuất booking CSV</button></div><div class="card"><h3>1. Khôi phục toàn bộ (Thay thế dữ liệu)</h3><p class="muted"><b style="color:#b91c1c">CẢNH BÁO:</b> Thao tác này thay thế toàn bộ dữ liệu hiện tại bằng nội dung file, kể cả khi file cũ hơn. Phần mềm sẽ tải bản sao lưu hiện tại trước khi thay thế.</p><input class="input" type="file" accept=".json,application/json" onchange="restorePreview(this.files[0],'replace');this.value=''"></div><div class="card"><h3>2. Nhập bổ sung / Hợp nhất dữ liệu</h3><p class="muted">Giữ dữ liệu hiện có, bổ sung bản ghi mới theo ID; phát hiện bản ghi trùng hoặc xung đột. Nếu phát hiện xung đột, <b>không thực hiện hợp nhất</b> để bảo vệ dữ liệu tài chính.</p><input class="input" type="file" accept=".json,application/json" onchange="restorePreview(this.files[0],'merge');this.value=''"></div></div><div id="restoreInfo" class="card section" style="display:none"></div><div class="card section"><h3>Lưu ý</h3><p class="muted">Hợp nhất không phải đồng bộ hai chiều. Nếu file cũ thiếu ID giao dịch hoặc có sửa đổi khác nhau trên cùng booking, hệ thống sẽ chặn và yêu cầu đối soát. Dữ liệu ảnh/video Zalo lưu riêng trong trình duyệt có thể không nằm trong bản sao lưu JSON.</p></div>`}
 function dl(blob,name){let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
 function portableData(){
- return {format:"SUNNY_TRAVEL_BACKUP",schemaVersion:4,appVersion:"Test 1.10.0",exportedAt:new Date().toISOString(),data:structuredClone(db)}
+ return {format:"SUNNY_TRAVEL_BACKUP",schemaVersion:5,appVersion:"1.10.1",exportedAt:new Date().toISOString(),data:structuredClone(db)}
 }
 function backup(){let d=today().replaceAll("-","");dl(new Blob([JSON.stringify(portableData(),null,2)],{type:"application/json"}),`sunny-travel-backup-${d}.json`)}
 function csv(){let h=["Mã booking","ID nội bộ","Ngày","Loại vé","Đại lý","SL","Giá vốn","Giá bán","Chi phí","Doanh thu","Lợi nhuận","Có VAT","VAT %","Tiền VAT","Đã thu","Còn nợ","Ghi chú"],rows=[h,...db.bookings.map(x=>[x.bookingCode||x.id,x.id,x.date,x.ticketType,x.agent,x.qty,x.buyPrice,x.sellPrice,x.cost,x.revenue,x.profit,x.hasVat?"Có":"Không",x.vatRate||0,vatAmount(x),paidAmount(x),customerDue(x),x.note])];dl(new Blob(["\ufeff"+rows.map(r=>r.map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n")],{type:"text/csv"}),"sunny-travel-bookings.csv")}
 function normalizeImportedData(raw){
  let d=raw?.format==='SUNNY_TRAVEL_BACKUP'?raw.data:raw;
  if(!d||typeof d!=='object'||Array.isArray(d))throw new Error('Không tìm thấy dữ liệu hợp lệ.');
- let out={};for(let k of ['ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns','suppliers','priceLists','priceListItems','ticketMappings'])out[k]=Array.isArray(d[k])?d[k]:k==='ticketTypes'&&Array.isArray(d.tickets)?d.tickets:[];
+ let out={};for(let k of ['ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns','suppliers','priceLists','priceListItems'])out[k]=Array.isArray(d[k])?d[k]:k==='ticketTypes'&&Array.isArray(d.tickets)?d.tickets:[];
  out.settings=d.settings&&typeof d.settings==='object'?d.settings:{};
  out.zaloSettings=d.zaloSettings&&typeof d.zaloSettings==='object'?d.zaloSettings:structuredClone(db.zaloSettings);
  out.bookings=out.bookings.map(x=>({...x,payments:Array.isArray(x.payments)?x.payments:[],supplierPayments:Array.isArray(x.supplierPayments)?x.supplierPayments:[],hasVat:!!x.hasVat,vatRate:x.hasVat?num(x.vatRate||15):0}));
@@ -815,7 +815,6 @@ function deepEqualData(a,b){return JSON.stringify(sortData(a))===JSON.stringify(
 function sortData(v){if(Array.isArray(v))return v.map(sortData);if(v&&typeof v==='object')return Object.fromEntries(Object.keys(v).sort().map(k=>[k,sortData(v[k])]));return v}
 function mergeIdentity(k,x){
  if(x.id!==undefined&&String(x.id).trim())return 'id:'+String(x.id);
- if(k==='ticketMappings'&&x.legacyId)return 'legacy:'+String(x.legacyId);
  if(k==='ticketTypes'&&x.code)return 'code:'+String(x.code);
  if(k==='agents'&&x.code)return 'code:'+String(x.code);
  // Do not guess identity for financial transactions with no stable ID.
@@ -823,7 +822,7 @@ function mergeIdentity(k,x){
 }
 function previewSafeMerge(incoming){
  let merged=structuredClone(db),added={},duplicates={},conflicts=[];
- for(let k of ['ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns','suppliers','priceLists','priceListItems','ticketMappings']){
+ for(let k of ['ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns','suppliers','priceLists','priceListItems']){
   let current=Array.isArray(merged[k])?merged[k]:[];merged[k]=current;added[k]=0;duplicates[k]=0;
   let byId=new Map();for(let v of current){let id=mergeIdentity(k,v);if(id){if(byId.has(id)&&!deepEqualData(byId.get(id),v))conflicts.push(`${k}: ID ${id} bị trùng trong dữ liệu hiện tại`);byId.set(id,v)}}
   for(let v of incoming[k]||[]){let id=mergeIdentity(k,v);
@@ -857,14 +856,14 @@ function confirmRestore(){
  if(!confirm('CẢNH BÁO: Dữ liệu hiện tại sẽ bị THAY THẾ TOÀN BỘ. Tiếp tục?'))return;
  let typed=prompt('Nhập THAY THE để xác nhận ghi đè dữ liệu:');if(typed!=='THAY THE')return;
  backup();
- db=structuredClone(pendingRestore);db.settings={...db.settings,version:'Test 1.10.0'};ensureBookingCodes();save();pendingRestore=null;alert('Đã khôi phục toàn bộ. Bản sao lưu dữ liệu trước đó đã được yêu cầu tải xuống.');go('dashboard')
+ db=structuredClone(pendingRestore);db.settings={...db.settings,version:'1.10.1'};ensureBookingCodes();save();pendingRestore=null;alert('Đã khôi phục toàn bộ. Bản sao lưu dữ liệu trước đó đã được yêu cầu tải xuống.');go('dashboard')
 }
 function confirmSafeMerge(){
  if(!pendingRestore||pendingRestoreMode!=='merge')return;
  // Recompute against the current data to avoid stale previews.
  let m=previewSafeMerge(pendingRestore);if(m.conflicts.length)return alert('Dữ liệu đã thay đổi hoặc có xung đột. Hợp nhất bị chặn; hãy xem trước lại.');
  if(!confirm('Hợp nhất các bản ghi mới và giữ nguyên dữ liệu hiện tại?'))return;
- backup();db=m.merged;db.settings={...db.settings,version:'Test 1.10.0'};save();pendingRestore=null;pendingMerge=null;alert('Hợp nhất hoàn tất. Không ghi đè bản ghi có sẵn.');go('dashboard')
+ backup();db=m.merged;db.settings={...db.settings,version:'1.10.1'};save();pendingRestore=null;pendingMerge=null;alert('Hợp nhất hoàn tất. Không ghi đè bản ghi có sẵn.');go('dashboard')
 }
 ensureBookingCodes();
 go("dashboard");

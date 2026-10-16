@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.1 — Khởi tạo mới
+
+- 33 test Django thành công, gồm xóa nghiệp vụ/media, giữ user/mật khẩu/nhóm, gỡ liên kết đại lý, tăng revision và vô hiệu hóa phiên; chế độ preview không xóa dữ liệu; API ánh xạ đã trả 404.
+- Kiểm tra JavaScript về bảng giá/nguồn vé, Zalo, backup và picker đạt; không còn menu/luồng ánh xạ trong frontend đang chạy.
+- Không có migration mới; chưa chạy reset trên máy Ubuntu của người dùng, cần chạy lệnh theo UPGRADE_1_10_1.md. Chưa nghiệm thu GUI hoặc production và không coi các phần phân quyền còn thiếu đã hoàn tất.
+
 ## Bản test 1.10.0
 
 - 34 kiểm thử Django thành công trên Windows/Python 3.14/SQLite; giữ các regression 1.9.8.1 và bổ sung giá chung/giá riêng, kỳ hiệu lực, hai nguồn cùng giá, ánh xạ và chặn xung đột, bảo toàn booking, chặn API toàn bộ cho tài khoản hạn chế, quyền nhóm/thu hồi, không rò giá vốn/lợi nhuận, chống chèn trường và tự cấp quyền qua nhóm quản trị, server tính giá booking và kiểm tra revision.
