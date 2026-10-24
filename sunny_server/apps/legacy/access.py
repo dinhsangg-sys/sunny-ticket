@@ -17,7 +17,7 @@ RESOURCES = {
  'agentPrices':('agency_price','Giá riêng đại lý',{'id':'Mã dòng','agent':'Tên đại lý','ticketId':'Loại vé','price':'Giá bán','from':'Từ ngày','to':'Đến ngày'}),
  'costPrices':('cost_price','Giá vốn',{'id':'Mã dòng','supplierId':'Nhà cung cấp','ticketId':'Loại vé','price':'Giá vốn','from':'Từ ngày','to':'Đến ngày','isDefault':'Mặc định'}),
  'expenses':('expense_template','Mẫu chi phí',{'id':'Mã dòng','date':'Ngày','title':'Nội dung','amount':'Số tiền','note':'Ghi chú'}),
- 'bookings':('booking','Booking',{'id':'Mã','date':'Ngày','customerType':'Loại khách','agent':'Tên đại lý','customerName':'Khách lẻ','ticketId':'Loại vé','supplierId':'Nhà cung cấp','costPriceId':'Mức giá vốn (để trống dùng mặc định)','qty':'Số lượng','sellPrice':'Giá bán','buyPrice':'Giá vốn','cost':'Chi phí','hasVat':'VAT','vatRate':'Thuế suất','note':'Ghi chú'}),
+ 'bookings':('booking','Booking',{'id':'Mã','date':'Ngày','customerType':'Loại khách','agent':'Tên đại lý','customerName':'Khách lẻ','ticketId':'Loại vé','supplierId':'Nhà cung cấp','costPriceId':'Mức giá vốn (để trống dùng mặc định)','costSource':'Nguồn giá (supplier/manual)','manualSourceName':'Tên nguồn nhập tay','qty':'Số lượng','sellPrice':'Giá bán','buyPrice':'Giá vốn','cost':'Chi phí','hasVat':'VAT','vatRate':'Thuế suất','note':'Ghi chú'}),
 }
 NUMBERS={'price','amount','qty','sellPrice','buyPrice','cost','vatRate','sortOrder'}
 BOOLS={'active','isDefault','hasVat'}
@@ -27,7 +27,7 @@ def field_permission(resource,field):
       ('ticketTypes','active'):'ticket_type.change_status',('ticketTypes','sortOrder'):'ticket_type.reorder',
       ('partnerTypes','active'):'partner_type.change_status',('agents','partnerTypeId'):'agency.classify',('agents','active'):'agency.change_status',('agents','zaloLink'):'agency.change_zalo_link',
       ('agents','priceListId'):'agency.assign_price_list',('costPrices','isDefault'):'cost_price.set_default',
-      ('bookings','costPriceId'):'booking.change_buy_price',('bookings','sellPrice'):'booking.change_sell_price',('bookings','buyPrice'):'booking.change_buy_price',
+      ('bookings','costSource'):'booking.change_buy_price',('bookings','manualSourceName'):'booking.change_buy_price',('bookings','costPriceId'):'booking.change_buy_price',('bookings','sellPrice'):'booking.change_sell_price',('bookings','buyPrice'):'booking.change_buy_price',
       ('bookings','cost'):'booking.change_expense',('bookings','hasVat'):'booking.change_vat',('bookings','vatRate'):'booking.change_vat',
     }.get((resource,field))
 

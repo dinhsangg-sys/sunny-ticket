@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.6
+# Sunny Travel Ticket Management — 1.10.7
+
+**1.10.7:** nguồn giá vốn nhập tay cho booking, tìm nhanh đối tác khi sao chép giá và cố định cột thao tác Booking. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_7.md). Không reset dữ liệu.
 
 **1.10.6:** sao chép giá từ đối tác khác có xem trước/chặn ghi đè, và sửa sidebar bị tràn nền. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_6.md). Không reset dữ liệu.
 

@@ -122,3 +122,13 @@ def calculate_booking(row):
     if sum(amount(p['amount']) for p in row.get('payments',[]))>revenue: raise ValueError('Tổng thu vượt doanh thu booking.')
     if sum(amount(p['amount']) for p in row.get('supplierPayments',[]))>buy*qty: raise ValueError('Tổng chi vượt giá vốn booking.')
     return row
+
+def prepare_manual_cost(row):
+    if row.get('costSource')!='manual': return
+    if 'buyPrice' not in row or row['buyPrice'] in ('',None): raise ValueError('Nhập giá vốn cho nguồn nhập tay.')
+    row['buyPrice']=float(amount(row['buyPrice']))
+    name=row.get('manualSourceName','')
+    if not isinstance(name,str): raise ValueError('Tên nguồn nhập tay không hợp lệ.')
+    name=name.strip()
+    if len(name)>200: raise ValueError('Tên nguồn nhập tay tối đa 200 ký tự.')
+    row.update(supplierId='__manual__',supplierName=name or 'Nguồn nhập tay',costPriceId='',manualSourceName=name)

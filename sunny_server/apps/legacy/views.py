@@ -10,7 +10,7 @@ from apps.agencies.models import Agency
 from apps.audit.models import AuditLog
 from .models import Workspace, Attachment
 from .access import full_access, allowed
-from .pricing import validate
+from .pricing import validate, prepare_manual_cost, calculate_booking
 from .ticket_lifecycle import enforce_ticket_lifecycle
 from .partners import enforce_partner_types
 
@@ -45,12 +45,16 @@ def state(request):
         data, revision = payload['data'], int(payload['revision'])
         if not isinstance(data,dict): raise ValueError()
         validate(data)
+        previous={b.get('id'):b for b in obj.data.get('bookings',[])}
+        for b in data.get('bookings',[]):
+            if b.get('costSource')=='manual' and b!=previous.get(b.get('id')):
+                prepare_manual_cost(b);calculate_booking(b)
         enforce_ticket_lifecycle(obj.data,data)
         enforce_partner_types(obj.data,data)
         old_bookings={b.get('id'):b for b in obj.data.get('bookings',[])}
         for booking in data.get('bookings',[]):
             old=old_bookings.get(booking.get('id'))
-            if old and old.get('supplierPayments') and booking.get('supplierId')!=old.get('supplierId'):
+            if old and old.get('supplierPayments') and (booking.get('supplierId')!=old.get('supplierId') or old.get('costSource')=='manual' and booking.get('supplierName')!=old.get('supplierName')):
                 raise ValueError('Không đổi nhà cung cấp của booking đã có khoản chi. Cần đối soát trước.')
         for key in ['agents','ticketTypes','bookings','agentPrices','costPrices','expenses','cashTransactions','zaloCampaigns']:
             if key in data and (not isinstance(data[key],list) or any(not isinstance(x,dict) for x in data[key])): raise ValueError()

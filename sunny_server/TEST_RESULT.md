@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.7 — Giá vốn nhập tay và giao diện Booking
+
+- Toàn bộ 67 test Django đạt, gồm giá nhập tay không cần danh mục nguồn, giá 0 hợp lệ, từ chối giá trống/âm/sai định dạng, kiểm tra quyền, tính lại tổng tiền và bảo vệ nguồn đã chi tiền.
+- Node test_booking_updates.cjs đạt: lưu nguồn nhập tay, giá 0/không hợp lệ, nguồn đã thanh toán và tìm không dấu. Các regression test_partners.cjs, test_pricing.cjs, test_frontend.cjs và kiểm tra cú pháp script mới đều đạt.
+- Không có migration mới. Chưa nghiệm thu bố cục bằng trình duyệt online hoặc thử trên Ubuntu; cần kiểm tra sau triển khai theo hướng dẫn.
+
 ## 1.10.6 — Sao chép giá và sidebar
 
 - Toàn bộ 61 test backend ban đầu của đợt cập nhật đạt; sau bổ sung kiểm tra tên đối tác trùng, chạy lại 10 test của module sao chép đều đạt (tổng 62 ca riêng biệt được kiểm tra trong đợt).

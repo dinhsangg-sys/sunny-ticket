@@ -10,7 +10,7 @@ from apps.audit.models import AuditLog
 from apps.agencies.models import Agency
 from .models import Workspace
 from .access import allowed, full_access, RESOURCES, NUMBERS, BOOLS, can_field, projected, action_permission
-from .pricing import validate, amount, calculate_booking, sell_price, supplier_options, choose_cost
+from .pricing import validate, amount, calculate_booking, sell_price, supplier_options, choose_cost, prepare_manual_cost
 from .ticket_lifecycle import ticket_used, enforce_ticket_lifecycle
 from .partners import partner_types, enforce_partner_types
 
@@ -110,6 +110,7 @@ def operations(request):
                     if f not in readable or not can_field(user,resource,f):
                         if v!=old.get(f): return JsonResponse({'error':'Không có quyền sửa trường '+f},status=403)
                         continue
+                    if f=='buyPrice' and values.get('costSource',old.get('costSource'))=='manual' and v in ('',None): raise ValueError('Nhập giá vốn cho nguồn nhập tay.')
                     if f in NUMBERS: v=float(amount(v or 0))
                     if f in BOOLS and not isinstance(v,bool): raise ValueError('Trạng thái không hợp lệ.')
                     row[f]=v
@@ -117,11 +118,13 @@ def operations(request):
                 elif row.get('id')!=old.get('id'): raise ValueError('Không được đổi mã định danh.')
                 if resource=='agents' and old and row.get('name')!=old.get('name'): raise ValueError('Đổi tên đại lý có lịch sử cần quản trị chuyển đổi liên kết.')
                 if resource=='bookings':
+                    prepare_manual_cost(row)
                     if old.get('supplierPayments') and row.get('supplierId')!=old.get('supplierId'): raise ValueError('Không đổi nguồn booking đã có khoản chi.')
+                    if old.get('supplierPayments') and old.get('costSource')=='manual' and row.get('supplierName')!=old.get('supplierName'): raise ValueError('Không đổi tên nguồn nhập tay đã có khoản chi.')
                     ticket=next((t for t in data.get('ticketTypes',[]) if t['id']==row.get('ticketId') and t.get('active',True)),None)
                     if not ticket: raise ValueError('Loại vé không hợp lệ.')
                     if action=='create' or row.get('ticketId')!=old.get('ticketId'): row['ticketType']=ticket['name']
-                    needs_quote=action=='create' or any(row.get(f)!=old.get(f) for f in ('agent','ticketId','date','customerType','supplierId','costPriceId'))
+                    needs_quote=action=='create' or any(row.get(f)!=old.get(f) for f in ('agent','ticketId','date','customerType','supplierId','costPriceId','costSource'))
                     if needs_quote:
                         if row.get('customerType')=='agent':
                             agency=next((a for a in data.get('agents',[]) if a['name']==row.get('agent') and a.get('active',True)),None)
@@ -131,11 +134,11 @@ def operations(request):
                             if not can(user,'booking.change_sell_price') or 'sellPrice' not in values: row['sellPrice']=price
                             row['salePriceSource']=source
                         elif action=='create' and not can(user,'booking.change_sell_price'): raise ValueError('Khách lẻ cần quyền nhập giá bán.')
-                        choice_id=values.get('costPriceId') if 'costPriceId' in values else (old.get('costPriceId') if all(row.get(f)==old.get(f) for f in ('supplierId','ticketId','date')) else None)
-                        selected=choose_cost(data,row['ticketId'],row.get('supplierId'),row.get('date',''),choice_id)
-                        if choice_id or not can(user,'booking.change_buy_price') or 'buyPrice' not in values: row['buyPrice']=selected['price']
-                        row['supplierName']=selected['supplierName']
-                        row['costPriceId']=selected['id']
+                        if row.get('costSource')!='manual':
+                            choice_id=values.get('costPriceId') if 'costPriceId' in values else (old.get('costPriceId') if all(row.get(f)==old.get(f) for f in ('supplierId','ticketId','date')) else None)
+                            selected=choose_cost(data,row['ticketId'],row.get('supplierId'),row.get('date',''),choice_id)
+                            if choice_id or not can(user,'booking.change_buy_price') or 'buyPrice' not in values: row['buyPrice']=selected['price']
+                            row.update(supplierName=selected['supplierName'],costPriceId=selected['id'],costSource='supplier',manualSourceName='')
                     row.setdefault('buyPrice',0);row.setdefault('sellPrice',0);row.setdefault('qty',1)
                     row.setdefault('cost',0);row.setdefault('payments',[]);row.setdefault('supplierPayments',[])
                     row.setdefault('bookingCode','ST-'+str(uuid.uuid4())[:12].upper())

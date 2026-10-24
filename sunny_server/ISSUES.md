@@ -1,6 +1,32 @@
 # Lỗi ghi nhận khi kiểm thử online
 
-## Danh sách chờ bản cập nhật tiếp theo
+## Các yêu cầu cập nhật gần đây
+
+### FEATURE-005 — Nguồn giá vốn nhập tay
+
+- Đã triển khai trong 1.10.7: giá và tên nguồn riêng từng booking, không cần danh mục nhà cung cấp. Kiểm tra quyền sửa giá vốn và khóa đổi nguồn đã có chi tiền. Không reset dữ liệu.
+
+### UX-003 — Bảng Booking phải luôn thấy nút Thanh toán và Sửa
+
+- Cập nhật 1.10.7: đã cố định cột thao tác, thu gọn bảng và cho tên dài xuống dòng; chờ nghiệm thu trình duyệt online. Các dòng chờ xử lý dưới đây là ghi nhận ban đầu.
+
+- Trạng thái: đã ghi nhận, chờ gom chỉnh trong bản cập nhật tiếp theo.
+- Bằng chứng: ảnh màn hình Bán vé / Booking; bảng vượt chiều rộng vùng nội dung, các nút thao tác bên phải bị khuất và phải kéo thanh cuộn ngang mới thấy.
+- Yêu cầu: điều chỉnh kích thước/bố cục để thấy Thanh toán và Sửa mà không cần kéo ngang.
+- Hướng xử lý dự kiến: cố định cột thao tác bên phải, thu gọn khoảng đệm/độ rộng cột, cho tên đối tác dài xuống dòng, tối ưu nút và trạng thái thanh toán. Không thu nhỏ toàn trang đến mức khó đọc, không bỏ dữ liệu cần thiết chỉ để ép vừa bảng.
+- Nghiệm thu: Thanh toán và Sửa luôn hiển thị, bấm đúng booking ở độ rộng màn hình trong ảnh, khi zoom và khi cuộn dọc; header/cột cố định không chồng sai dữ liệu; kiểm tra tên đối tác dài và số tiền lớn. Trên màn hình nhỏ cần bố cục phù hợp, giữ thao tác chính dễ truy cập.
+- Chưa sửa code hoặc đẩy GitHub; gom cùng UX-002 khi người dùng yêu cầu tạo bản cập nhật.
+
+### UX-002 — Tìm kiếm nhanh đối tác trong màn hình sao chép giá
+
+- Cập nhật 1.10.7: đã thêm tìm theo tên/mã không dấu cho nguồn và đích, giữ lựa chọn theo ID và vô hiệu hóa preview khi gõ lại. Chờ nghiệm thu online. Các dòng dưới là ghi nhận ban đầu.
+
+- Trạng thái: đã ghi nhận, chưa chỉnh code; người dùng yêu cầu lưu cho bản sau.
+- Bằng chứng: ảnh hộp thoại Sao chép giá từ đối tác khác, khoanh dropdown Đối tác nguồn.
+- Yêu cầu: thêm ô nhập tìm nhanh thay cho việc cuộn danh sách đối tác dài.
+- Phạm vi dự kiến: cả Đối tác nguồn và Đối tác đích; gõ tên/mã để lọc, hỗ trợ tìm không dấu, hiển thị rõ tên và mã để phân biệt.
+- Nghiệm thu: lọc khi gõ, chọn đúng ID đối tác, xử lý không có kết quả; giữ lựa chọn nguồn/đích và không làm sai bước xem trước/xác nhận; dùng được bàn phím và thiết bị cảm ứng.
+- Không sửa code, tạo migration hoặc đẩy GitHub trong lần ghi nhận này; gom khi người dùng yêu cầu tạo bản cập nhật tiếp theo.
 
 ### BUG-010 — Menu bên trái tràn khỏi nền tối
 
