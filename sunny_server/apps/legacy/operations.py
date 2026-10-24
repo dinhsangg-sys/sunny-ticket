@@ -11,6 +11,7 @@ from apps.agencies.models import Agency
 from .models import Workspace
 from .access import allowed, full_access, RESOURCES, NUMBERS, BOOLS, can_field, projected, action_permission
 from .pricing import validate, amount, calculate_booking, sell_price, supplier_options, choose_cost
+from .ticket_lifecycle import ticket_used, enforce_ticket_lifecycle
 
 def can(user,name): return full_access(user) or allowed(user,name)
 
@@ -32,6 +33,8 @@ def operations(request):
         for key,(prefix,label,fields) in RESOURCES.items():
             if not can(user,prefix+'.view'): continue
             rows=[dict(projected(user,key,r),_index=i) for i,r in enumerate(obj.data.get(key,[]))]
+            if key=='ticketTypes':
+                for row in rows: row['_deletable']=not ticket_used(obj.data,row)
             readable=projected(user,key,{f:'' for f in fields})
             def permitted(action):
                 if key=='cashTransactions': return any(can(user,action_permission(key,action,k)) for k in ('capital','income','expense'))
@@ -78,7 +81,8 @@ def operations(request):
             if not can(user,prefix+'.view') or not can(user,action_permission(resource,action,kind)): return JsonResponse({'error':'Không có quyền '+action+' '+label},status=403)
             if action=='delete':
                 if resource=='bookings' and (old.get('payments') or old.get('supplierPayments')): raise ValueError('Không xóa booking đã có thanh toán ở màn hình phân quyền; cần quản trị đối soát.')
-                if resource in ('agents','ticketTypes','suppliers','priceLists'): raise ValueError('Dùng ngừng hoạt động để giữ liên kết lịch sử; xóa danh mục cần quản trị dữ liệu.')
+                if resource=='ticketTypes' and ticket_used(obj.data,old): raise ValueError('Loại vé đã phát sinh dữ liệu; chỉ được dừng sử dụng.')
+                if resource in ('agents','suppliers','priceLists'): raise ValueError('Dùng ngừng hoạt động để giữ liên kết lịch sử; xóa danh mục cần quản trị dữ liệu.')
                 rows.pop(index)
             else:
                 values=body.get('values',{})
@@ -129,6 +133,7 @@ def operations(request):
                 else: rows[index]=row
         else: raise ValueError('Thao tác không hỗ trợ.')
         validate(data)
+        enforce_ticket_lifecycle(obj.data,data)
         with transaction.atomic(): save_workspace(obj,data,user,revision,'operation.'+action)
         return JsonResponse({'revision':revision+1})
     except RuntimeError as e: return JsonResponse({'error':str(e)},status=409)

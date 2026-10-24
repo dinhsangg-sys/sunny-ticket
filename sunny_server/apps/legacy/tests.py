@@ -87,6 +87,7 @@ class ServerTests(TestCase):
         data=dict(self.data,ticketTypes=[{'id':'t1','name':'Eco'}],suppliers=[{'id':'s1','name':'Supplier'}],agentPrices=[{'agent':'Agency A','ticketId':'t1','price':100}],costPrices=[{'ticketId':'t1','supplierId':'s1','price':60}],expenses=[{'title':'ship','amount':10}],zaloCampaigns=[{'id':'z1','title':'Test','recipients':[]}],cashTransactions=[])
         response=c.put('/api/state/',json.dumps({'revision':0,'data':data}),content_type='application/json',HTTP_HOST='sn.hoianmemorieslands.com',HTTP_ORIGIN='https://sn.hoianmemorieslands.com',HTTP_X_CSRFTOKEN=token)
         self.assertEqual(response.status_code,200)
+        data['ticketTypes'][0]['hasActivity']=True
         self.assertEqual(Workspace.objects.get(pk=1).data,data)
 
     def test_https_origin_logout(self):

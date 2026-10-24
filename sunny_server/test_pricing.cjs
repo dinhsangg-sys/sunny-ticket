@@ -20,3 +20,8 @@ vm.runInContext(legacy.slice(legacy.indexOf('function normalizeImportedData('),l
 const restored=context.normalizeImportedData({format:'SUNNY_TRAVEL_BACKUP',data});
 for(const key of ['suppliers','priceLists','priceListItems'])assert.equal(JSON.stringify(restored[key]),JSON.stringify(data[key]));
 console.log('PASS: backup restore retains new pricing collections.');
+assert(context.ticketHasActivity({id:'eco',name:'Eco'},data));
+assert(!context.ticketHasActivity({id:'unused',name:'Unused'},data));
+assert(context.ticketHasActivity({id:'used',name:'Used',hasActivity:true},{bookings:[]}));
+assert(!context.ticketHasActivity({id:'eco',name:'Eco'},{bookings:[{ticketId:'other',ticketType:'Eco'}]}));
+console.log('PASS: ticket deletion eligibility and persistent usage flag.');

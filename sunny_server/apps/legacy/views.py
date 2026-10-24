@@ -11,6 +11,7 @@ from apps.audit.models import AuditLog
 from .models import Workspace, Attachment
 from .access import full_access, allowed
 from .pricing import validate
+from .ticket_lifecycle import enforce_ticket_lifecycle
 
 def internal(user):
     return user.is_superuser or user.role in ('admin','operator')
@@ -43,6 +44,7 @@ def state(request):
         data, revision = payload['data'], int(payload['revision'])
         if not isinstance(data,dict): raise ValueError()
         validate(data)
+        enforce_ticket_lifecycle(obj.data,data)
         old_bookings={b.get('id'):b for b in obj.data.get('bookings',[])}
         for booking in data.get('bookings',[]):
             old=old_bookings.get(booking.get('id'))

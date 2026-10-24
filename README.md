@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.2
+# Sunny Travel Ticket Management — 1.10.3
+
+**1.10.3:** xóa loại vé chưa phát sinh dữ liệu; loại vé đã dùng chỉ dừng sử dụng, giữ lịch sử. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_3.md). Cần migrate để bổ sung quyền, không reset dữ liệu.
 
 **1.10.2:** cho phép cùng nhà cung cấp/loại vé có nhiều giá vốn cùng thời gian, chọn theo từng booking hoặc mặc định. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_2.md). Không chạy reset khi cập nhật bản sửa này.
 

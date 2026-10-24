@@ -62,11 +62,12 @@ Web hiện chưa có nút sửa riêng khoản chi nhà cung cấp; không liệ
 |---|---|
 | ticket_type.view | Xem mã, tên vé, nhãn sản phẩm và trạng thái |
 | ticket_type.create | Thêm loại vé |
+| ticket_type.delete | Xóa loại vé chưa có booking, giá vốn hoặc bảng giá liên quan; đã phát sinh thì chỉ dừng |
 | ticket_type.change | Sửa tên loại vé và nhãn sản phẩm |
 | ticket_type.change_status | Bật/ngừng dùng loại vé |
 | ticket_type.reorder | Đổi thứ tự bằng nút lên/xuống |
 
-Không có xóa loại vé, danh mục sản phẩm độc lập hoặc phát hành/kiểm soát vé QR trong web hiện tại. Mã loại vé đã lưu là định danh cố định.
+Từ 1.10.3 có xóa loại vé chưa phát sinh dữ liệu. Không có danh mục sản phẩm độc lập hoặc phát hành/kiểm soát vé QR. Mã loại vé đã lưu là định danh cố định.
 
 ## 6. Đại lý / CTV
 

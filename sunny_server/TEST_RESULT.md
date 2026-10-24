@@ -1,5 +1,10 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.3 — Xóa loại vé có điều kiện
+
+- 42 test backend đạt; bổ sung xóa vé chưa dùng, chặn vé có tham chiếu, chặn xóa dây chuyền trong cùng payload, dừng giữ lịch sử, lưu dấu đã phát sinh và kiểm tra API tài khoản phân quyền.
+- Kiểm tra JavaScript điều kiện sử dụng, các luồng giá/Zalo/backup và cú pháp đạt. Có migration bổ sung quyền xóa; chưa nghiệm thu GUI online.
+
 ## 1.10.2 — Nhiều mức giá vốn
 
 - 36 test Django đạt, gồm nhiều giá cùng nhà cung cấp/loại vé/cùng hiệu lực, lấy mặc định hoặc chọn costPriceId cụ thể, chặn chọn sai nguồn/ngày và giữ giá của booking khác.
