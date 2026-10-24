@@ -1,0 +1,14 @@
+/* Sidebar owns its scroll area, including dynamically added menu items. */
+@media(min-width:701px){
+ .side{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;align-self:flex-start}
+ .side .brand{flex:0 0 auto}
+ .side .nav{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-color:#666 #171717;padding-bottom:12px}
+}
+@media(max-width:700px){
+ .side{height:auto;overflow:visible;background:#171717}
+ .side .nav{overflow-x:auto;overflow-y:hidden;max-width:100%;padding-bottom:6px}
+ .side .nav button{width:auto;flex:0 0 auto}
+}
+.copy-prices-dialog{width:min(1000px,94vw);max-height:90dvh;overflow:auto;border:0;border-radius:12px;padding:22px;color:#202124}
+.copy-prices-dialog::backdrop{background:#0008}
+.copy-prices-dialog .copy-result{margin:14px 0}

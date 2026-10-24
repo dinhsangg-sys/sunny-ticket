@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.5
+# Sunny Travel Ticket Management — 1.10.6
+
+**1.10.6:** sao chép giá từ đối tác khác có xem trước/chặn ghi đè, và sửa sidebar bị tràn nền. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_6.md). Không reset dữ liệu.
 
 **1.10.5:** phân loại đối tác, quản lý danh mục loại, lọc danh sách/báo cáo/Zalo và gán bảng giá theo loại. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_5.md). Giữ dữ liệu cũ ở Chưa phân loại, không reset.
 

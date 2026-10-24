@@ -1,5 +1,33 @@
 # Lỗi ghi nhận khi kiểm thử online
 
+## Danh sách chờ bản cập nhật tiếp theo
+
+### BUG-010 — Menu bên trái tràn khỏi nền tối
+
+- Cập nhật 1.10.6: đã sửa vùng cuộn sidebar và nền; chờ kiểm tra trên trình duyệt online.
+
+- Trạng thái: đã sửa trong 1.10.6; chờ nghiệm thu giao diện.
+- Bằng chứng: ảnh màn hình Chi phí khác; các mục Nhà cung cấp, Bảng giá chung và Loại đối tác nằm dưới vùng nền tối của sidebar, chữ sáng trên nền sáng nên khó đọc. Phần đầu menu cũng đang ngoài khung nhìn trong ảnh.
+- Biểu hiện: chiều cao menu vượt vùng sidebar nhưng các mục bên dưới không có vùng cuộn/nền phù hợp. Chưa xác minh trên trình duyệt kích thước thực tế hoặc mức zoom của người dùng.
+- Hướng kiểm tra/sửa dự kiến: bố cục sidebar và vùng cuộn menu riêng theo chiều cao viewport; giữ nền tối bao phủ tất cả mục; kiểm tra sticky/height/overflow và các mục được thêm động.
+- Nghiệm thu: toàn bộ menu đọc và bấm được ở màn hình thấp, khi cuộn trang và khi zoom; không chồng nội dung chính; kiểm tra cả giao diện di động và mục đang chọn. Không coi là lỗi mất quyền hoặc mất dữ liệu khi chưa có bằng chứng.
+
+Theo yêu cầu mới nhất của người dùng: chỉ ghi nhận/tổng hợp yêu cầu, chưa sửa code hoặc đẩy GitHub cho đến khi người dùng yêu cầu tạo bản cập nhật.
+
+### FEATURE-004 — Sao chép giá từ đại lý/CTV đã có
+
+- Cập nhật 1.10.6: đã triển khai xem trước, chọn vé/ngày, giá riêng hoặc giá đang áp dụng, bỏ qua trùng/chồng kỳ, sao chép độc lập và lựa chọn gán cùng bảng chung. Có kiểm tra quyền và revision backend. Xem UPGRADE_1_10_6.md; các ghi nhận bên dưới là lịch sử trước triển khai.
+
+- Trạng thái: đã triển khai trong 1.10.6; chờ nghiệm thu online.
+- Vị trí: màn hình Bảng giá của một đối tác, ví dụ Hoàng Linh trong ảnh, hiện các loại vé chưa khai báo giá.
+- Yêu cầu: chọn đại lý/CTV nguồn đã có giá để sao chép sang đối tác đang mở, tránh khai báo từng loại vé.
+- Luồng đề xuất để triển khai: nút Sao chép giá → tìm/chọn đối tác nguồn → chọn các loại vé/dòng giá và ngày hiệu lực → xem trước → xác nhận.
+- Cần hiển thị rõ giá riêng của nguồn hay giá kế thừa từ bảng chung. Không tự chuyển bảng giá được gán cho đối tác đích; phương án mặc định đề xuất là sao chép các dòng giá riêng. Nếu nguồn chỉ có bảng chung, hiển thị rõ và cho chọn gán cùng bảng thay vì âm thầm tạo giá riêng.
+- Bảo vệ dữ liệu: không tự ghi đè giá đích. Mặc định bổ sung dòng còn thiếu; nếu gặp kỳ giá trùng/xung đột, liệt kê và yêu cầu chọn cách xử lý trong bước xem trước. Giữ nguyên giá nguồn, booking, công nợ và lịch sử đã lưu.
+- Kiểm tra quyền đọc giá nguồn và thêm/sửa giá đích tại backend; dùng revision chống ghi đè. Bản sao là dữ liệu độc lập, đổi giá nguồn sau đó không tự đổi giá đích.
+- Các lựa chọn về nguồn giá kế thừa, sao chép kỳ lịch sử hay giá đang hiệu lực và xử lý trùng là thiết kế đề xuất, chưa được người dùng xác nhận chi tiết.
+- Chưa sửa code, chưa tạo migration hoặc đẩy GitHub.
+
 ## 1.10.5 — Phân loại đối tác
 
 - Thêm Loại đối tác và danh mục quản lý, bộ lọc danh sách; giữ hồ sơ cũ chưa phân loại và không đổi giá/lịch sử.

@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.6 — Sao chép giá và sidebar
+
+- Toàn bộ 61 test backend ban đầu của đợt cập nhật đạt; sau bổ sung kiểm tra tên đối tác trùng, chạy lại 10 test của module sao chép đều đạt (tổng 62 ca riêng biệt được kiểm tra trong đợt).
+- Kiểm tra preview không ghi, sao chép độc lập, chỉ vé được chọn, giá riêng/kế thừa, bỏ qua trùng/chồng kỳ, gán bảng chung có chủ đích, quyền nguồn/đích và revision.
+- Kiểm tra cú pháp copy_prices.js/restricted.js và các regression JavaScript giá/đối tác đạt. Không có migration mới. Sidebar sửa bằng CSS responsive, chưa nghiệm thu hình ảnh trên trình duyệt online.
+
 ## 1.10.5 — Loại đối tác
 
 - 52 test backend đạt. Bổ sung phân loại hồ sơ độc lập giá và lịch sử, nhóm mặc định, loại ngừng/không hợp lệ, bảo vệ nhóm có liên kết, kiểm tra quyền quản lý nhóm và phân loại.
