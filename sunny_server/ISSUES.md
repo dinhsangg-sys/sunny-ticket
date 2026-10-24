@@ -1,5 +1,11 @@
 # Lỗi ghi nhận khi kiểm thử online
 
+## 1.10.4 — Sắp xếp danh sách giá vốn và nhãn mặc định
+
+- Thêm nút lên/xuống từng dòng và lưu sortOrder; không đổi mảng gốc, ID giá, mặc định hay snapshot booking.
+- Thêm nhãn xanh ⭐ Mặc định cạnh giá đang được cấu hình mặc định.
+- Có quyền backend cost_price.reorder và migration 0006; không yêu cầu reset dữ liệu.
+
 ## 1.10.2 — Sửa nhiều mức giá vốn đồng thời
 
 - Người dùng xác nhận cùng nhà cung cấp/loại vé/cùng thời gian có thể có nhiều giá vốn. Booking tự chọn dòng hoặc dùng mặc định. Thay thế giả định cũ rằng mọi kỳ giá vốn phải không trùng.

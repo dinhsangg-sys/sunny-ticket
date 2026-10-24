@@ -35,11 +35,13 @@ def operations(request):
             rows=[dict(projected(user,key,r),_index=i) for i,r in enumerate(obj.data.get(key,[]))]
             if key=='ticketTypes':
                 for row in rows: row['_deletable']=not ticket_used(obj.data,row)
+            if key=='costPrices': rows.sort(key=lambda r:(float(r.get('sortOrder',r['_index'])),r['_index']))
             readable=projected(user,key,{f:'' for f in fields})
             def permitted(action):
                 if key=='cashTransactions': return any(can(user,action_permission(key,action,k)) for k in ('capital','income','expense'))
                 return can(user,action_permission(key,action))
             resources[key]={'label':label,'fields':{k:v for k,v in fields.items() if k in readable},'editable':[f for f in fields if f in readable and can_field(user,key,f)],'rows':rows,'create':permitted('create'),'change':permitted('change'),'delete':permitted('delete')}
+            if key=='costPrices': resources[key]['reorder']=can(user,'cost_price.reorder')
         lookups={}
         if resources:
             # Minimal names/IDs for foreign-key selectors; never send costs or contacts here.
@@ -54,7 +56,17 @@ def operations(request):
         if revision!=obj.revision: raise RuntimeError('Dữ liệu đã đổi; tải lại.')
         data=copy.deepcopy(obj.data)
         action=body['action']
-        if action=='payment':
+        if action=='reorder_cost':
+            if not can(user,'cost_price.view') or not can(user,'cost_price.reorder'): return JsonResponse({'error':'Không có quyền sắp xếp giá vốn.'},status=403)
+            rows=data.get('costPrices',[])
+            ordered=sorted(range(len(rows)),key=lambda i:(float(rows[i].get('sortOrder',i)),i))
+            index=int(body['index']); direction=int(body['direction'])
+            if direction not in (-1,1) or index not in ordered: raise ValueError('Vị trí không hợp lệ.')
+            pos=ordered.index(index); target=pos+direction
+            if not 0<=target<len(ordered): raise ValueError('Đã ở đầu hoặc cuối danh sách.')
+            ordered[pos],ordered[target]=ordered[target],ordered[pos]
+            for order,i in enumerate(ordered): rows[i]['sortOrder']=order
+        elif action=='payment':
             index=int(body['bookingIndex']); booking=data.get('bookings',[])[index]
             kind=body['kind']; op=body['operation']
             if kind not in ('receipt','supplier') or op not in ('create','change','delete'): raise ValueError('Thao tác không hợp lệ.')

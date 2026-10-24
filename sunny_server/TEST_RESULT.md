@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.4 — Thứ tự giá vốn và nhãn mặc định
+
+- 45 test backend đạt; bổ sung kiểm tra quyền sắp xếp, vị trí đầu/cuối, giữ mức mặc định và giá booking khi đổi thứ tự.
+- JavaScript kiểm tra thứ tự hiển thị, nhãn ⭐ Mặc định và danh sách chọn giá không đổi đạt; cú pháp pricing.js/restricted.js hợp lệ.
+- Migration bổ sung cost_price.reorder. Chưa nghiệm thu GUI trên trình duyệt online.
+
 ## 1.10.3 — Xóa loại vé có điều kiện
 
 - 42 test backend đạt; bổ sung xóa vé chưa dùng, chặn vé có tham chiếu, chặn xóa dây chuyền trong cùng payload, dừng giữ lịch sử, lưu dấu đã phát sinh và kiểm tra API tài khoản phân quyền.

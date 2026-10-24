@@ -105,6 +105,7 @@ Nhập file không được vượt quyền create/change/delete hoặc phạm v
 | cost_price.create | Khai báo giá vốn |
 | cost_price.change | Sửa mức giá vốn và thời gian hiệu lực |
 | cost_price.set_default | Đặt giá vốn mặc định cho loại vé, bỏ mặc định các dòng khác |
+| cost_price.reorder | Sắp xếp vị trí các dòng trong danh sách quản lý giá vốn |
 | cost_price.delete | Xóa khai báo giá vốn |
 
 Sửa khai báo giá vốn không đồng nghĩa được sửa giá vốn của booking lịch sử.

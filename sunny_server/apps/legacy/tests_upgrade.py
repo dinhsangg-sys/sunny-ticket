@@ -62,6 +62,32 @@ class RestrictedAccessTests(TestCase):
         self.assertEqual(self.client.put('/api/state/','{}',content_type='application/json').status_code,403)
     def test_no_permissions_no_resources(self):
         self.assertEqual(self.client.get('/api/operations/').json()['resources'],{})
+
+    def test_cost_reorder_requires_permission(self):
+        self.grant('cost_price.view')
+        response=self.post({'action':'reorder_cost','index':1,'direction':-1})
+        self.assertEqual(response.status_code,403)
+
+    def test_cost_reorder_preserves_default_and_booking_prices(self):
+        from .pricing import choose_cost
+        data=fixture();data['costPrices'][0]['isDefault']=True
+        Workspace.objects.filter(pk=1).update(data=data)
+        before=copy.deepcopy(data['bookings'])
+        self.grant('cost_price.view','cost_price.reorder')
+        response=self.post({'action':'reorder_cost','index':1,'direction':-1})
+        self.assertEqual(response.status_code,200,response.content)
+        stored=Workspace.objects.get(pk=1).data
+        self.assertEqual(stored['bookings'],before)
+        self.assertEqual(stored['costPrices'][0]['supplierId'],'ah')
+        self.assertTrue(stored['costPrices'][0]['isDefault'])
+        self.assertEqual(choose_cost(stored,'eco','ah','2026-10-16')['price'],350000)
+        rows=self.client.get('/api/operations/').json()['resources']['costPrices']['rows']
+        self.assertEqual([r['_index'] for r in rows],[1,0])
+
+    def test_cost_reorder_bounds(self):
+        self.grant('cost_price.view','cost_price.reorder')
+        self.assertEqual(self.post({'action':'reorder_cost','index':0,'direction':-1}).status_code,400)
+        self.assertEqual(Workspace.objects.get(pk=1).revision,0)
     def test_view_only_cannot_modify(self):
         self.grant('ticket_type.view')
         self.assertEqual(self.post({'action':'create','resource':'ticketTypes','values':{'id':'fake','name':'Fake'}}).status_code,403)

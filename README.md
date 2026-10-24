@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.3
+# Sunny Travel Ticket Management — 1.10.4
+
+**1.10.4:** nút ↑/↓ sắp xếp danh sách giá vốn và nhãn ⭐ Mặc định cạnh số tiền. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_4.md). Migrate để thêm quyền sắp xếp, không reset dữ liệu.
 
 **1.10.3:** xóa loại vé chưa phát sinh dữ liệu; loại vé đã dùng chỉ dừng sử dụng, giữ lịch sử. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_3.md). Cần migrate để bổ sung quyền, không reset dữ liệu.
 
