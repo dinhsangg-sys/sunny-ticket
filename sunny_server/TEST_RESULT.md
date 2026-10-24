@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.8 — Booking gọn và bộ lọc cột
+
+- Kiểm thử trình duyệt Edge headless bằng Playwright trên fixture cục bộ đạt: lọc số, kết hợp điều kiện, kết quả rỗng, xóa toàn bộ bộ lọc, tìm không dấu, tách Xóa, hàng cao 38px và Thanh toán/Sửa nằm trong vùng rộng 850px; mở form về đầu, reset tìm đối tác khi đổi trang, giữ khi cùng trang, chọn đúng ID trong dropdown tích hợp.
+- Script test_ui_1_10_8.cjs cần Playwright và browser tương ứng; dùng BROWSER_CHANNEL=msedge với môi trường Windows đã kiểm tra. Fixture dùng các hàm render/lọc Booking thực tế nhưng không phải nghiệm thu toàn bộ ứng dụng online.
+- Các regression JavaScript về đối tác, giá, nhập tay, picker và thông báo lỗi đạt. Backend không thay đổi trong bản này; 67 test đã đạt ở 1.10.7. Không có migration mới.
+
 ## 1.10.7 — Giá vốn nhập tay và giao diện Booking
 
 - Toàn bộ 67 test Django đạt, gồm giá nhập tay không cần danh mục nguồn, giá 0 hợp lệ, từ chối giá trống/âm/sai định dạng, kiểm tra quyền, tính lại tổng tiền và bảo vệ nguồn đã chi tiền.

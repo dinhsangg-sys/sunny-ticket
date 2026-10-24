@@ -16,11 +16,20 @@
 .partner-quick-results{position:absolute;z-index:20;top:100%;left:0;right:0;max-height:230px;overflow:auto;background:#fff;border:1px solid #cbd5e1;box-shadow:0 5px 14px #0002}
 .partner-quick-results button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #eee;background:#fff;padding:9px;cursor:pointer}
 .partner-quick-results button:hover,.partner-quick-results button.active{background:#fff4bd}
-.booking-table{font-size:12px}
-.booking-table th,.booking-table td{padding:7px 6px;font-size:12px}
-.booking-table th:last-child,.booking-table td:last-child{position:sticky;right:0;z-index:2;background:#fff;min-width:115px;max-width:135px;white-space:normal;box-shadow:-4px 0 5px #0001}
-.booking-table th:last-child{z-index:4;background:#fafafa}
-.booking-table td:last-child .btn{padding:5px 7px;margin:2px;font-size:12px}
-.booking-table td:nth-child(4){white-space:normal;min-width:115px;max-width:190px;overflow-wrap:anywhere}
-.booking-table td:nth-child(10){white-space:normal;max-width:145px}
-@media(min-width:1100px){.booking-tablebox .booking-table{width:100%;min-width:0}.booking-table td:first-child .btn{padding:4px;font-size:11px}}
+/* Compact single-line bookings; delete remains in the scrollable area. */
+[hidden]{display:none!important}
+.booking-table{font-size:11px;width:max-content!important;min-width:100%!important}
+.booking-table th,.booking-table td{padding:6px 5px;font-size:11px;white-space:nowrap}
+.booking-table .btn,.booking-table .badge{font-size:11px!important;padding:4px 6px!important;white-space:nowrap}
+.booking-table .booking-main-actions{position:sticky;right:0;z-index:2;background:#fff;min-width:128px;white-space:nowrap;box-shadow:-4px 0 5px #0001}
+.booking-table th.booking-main-actions{z-index:4;background:#fafafa}
+.booking-table .booking-delete{min-width:48px}
+.booking-cell-ellipsis{display:block;max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.booking-column-filter{font:inherit;font-weight:700;border:0;background:transparent;padding:0;cursor:pointer;white-space:nowrap}
+.booking-column-filter.active{color:#956400;background:#fff1b8}
+.booking-filter-dialog{border:1px solid #cbd5e1;border-radius:12px;padding:20px;width:min(360px,90vw)}
+.booking-filter-dialog::backdrop{background:#0005}
+.booking-filter-dialog label{display:block;margin-bottom:12px}
+.partner-select-trigger{text-align:left;width:100%;cursor:pointer}
+.partner-select-panel{position:absolute;z-index:30;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;padding:8px;box-shadow:0 5px 14px #0002}
+.partner-select-panel .partner-quick-results{position:static;max-height:210px;border:0;box-shadow:none;margin-top:6px}

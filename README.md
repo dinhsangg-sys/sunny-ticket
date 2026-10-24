@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.7
+# Sunny Travel Ticket Management — 1.10.8
+
+**1.10.8:** bảng Booking gọn một hàng, cố định Thanh toán/Sửa, lọc theo cột, mở form từ đầu, xóa tìm đối tác khi quay lại và dropdown tích hợp tìm nhanh. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_8.md). Không reset dữ liệu.
 
 **1.10.7:** nguồn giá vốn nhập tay cho booking, tìm nhanh đối tác khi sao chép giá và cố định cột thao tác Booking. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_7.md). Không reset dữ liệu.
 

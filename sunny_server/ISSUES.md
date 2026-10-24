@@ -2,6 +2,52 @@
 
 ## Các yêu cầu cập nhật gần đây
 
+**Cập nhật 1.10.8:** đã triển khai UX-004 đến UX-008 và kiểm tra bằng trình duyệt cục bộ. Các trạng thái chờ trong phần mô tả dưới đây lưu lại yêu cầu ban đầu; chờ người dùng nghiệm thu online theo UPGRADE_1_10_8.md.
+
+### UX-008 — Lọc tiếp theo cột trong bảng Booking
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Người dùng khoanh hàng tiêu đề bảng Booking và hỏi khả năng lọc tiếp trên kết quả tìm kiếm hiện tại.
+- Đề xuất: mở bộ lọc từ tiêu đề từng cột dữ liệu; mã booking/tên khách hàng hoặc đối tác theo từ khóa, loại vé và thanh toán theo lựa chọn, ngày theo khoảng, số lượng/giá vé/tổng tiền/đã thu/còn nợ theo khoảng số. Cột Thao tác không cần bộ lọc.
+- Các bộ lọc kết hợp đồng thời với tìm kiếm và bộ lọc ngày/thanh toán phía trên; lọc thêm phải thu hẹp tập kết quả, không âm thầm bỏ điều kiện trước. Có dấu hiệu cột đang lọc và cách bỏ từng lọc; Xóa lọc phải xóa toàn bộ điều kiện.
+- Bố trí popup lọc để giữ mỗi booking một hàng và không làm mất vùng nút Thanh toán/Sửa cố định theo UX-004. Xử lý tập rỗng rõ ràng; lọc số theo giá trị số, không theo chuỗi tiền đã định dạng.
+- Gom với các yêu cầu UX-004 đến UX-007; chờ lệnh tạo bản cập nhật. Chi tiết giao diện trên là đề xuất triển khai, chưa phải code đã hoàn tất.
+
+### UX-007 — Gộp chọn và tìm đối tác trong một dropdown
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Phản hồi 1.10.7: ô tìm nhanh và select đối tác hiển thị song song theo chiều dọc gây dư thừa.
+- Yêu cầu: mỗi trường chỉ có một ô chọn; bấm mở danh sách sẽ thấy ô nhập tìm nhanh bên trong dropdown. Áp dụng cho cả Đối tác nguồn và Đối tác đích trong Sao chép giá.
+- Giữ tìm theo tên/mã không dấu, hiển thị tên và mã, chọn đúng ID, báo không có kết quả và hỗ trợ bàn phím. Lựa chọn hiển thị trong ô khi đóng dropdown; không có ô tìm riêng nằm ngoài.
+- Khi thay đối tác phải vô hiệu hóa bản xem trước cũ như hiện tại; đóng dropdown không tự đổi lựa chọn hoặc xóa đối tác đích.
+- Gom cùng UX-004/005/006; triển khai khi người dùng yêu cầu tạo bản cập nhật.
+
+### UX-006 — Mở Tạo booking tại đầu biểu mẫu
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Hiện tại: hộp thoại Tạo booking mở với thanh cuộn dọc ở cuối, các trường đầu biểu mẫu bị khuất.
+- Yêu cầu: mỗi lần mở Tạo booking, đặt vị trí cuộn của hộp thoại về đầu để thấy tiêu đề và ô đầu tiên; không giữ vị trí cuộn của lần mở trước.
+- Kiểm tra thứ tự focus và các hàm khởi tạo sau khi mở, tránh tự focus trường phía dưới khiến trình duyệt kéo xuống lại. Nếu tự focus thì dùng trường đầu và không làm lệch vị trí cuộn.
+- Nghiệm thu: mở mới lần đầu, đóng sau khi cuộn xuống rồi mở lại, mở sau khi lưu booking và ở màn hình thấp/zoom lớn đều bắt đầu trên cùng.
+- Gom cùng UX-004 và UX-005; triển khai khi người dùng yêu cầu tạo bản cập nhật.
+
+### UX-005 — Xóa tìm kiếm đối tác khi quay lại màn hình
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Hiện tại: tìm đại lý/đối tác, chuyển sang chức năng khác rồi quay lại Đối tác & bảng giá vẫn giữ từ khóa cũ, khiến danh sách tiếp tục bị lọc.
+- Yêu cầu: khi điều hướng từ chức năng khác về Đối tác & bảng giá, xóa từ khóa tìm kiếm và hiển thị lại danh sách theo các bộ lọc còn lại. Chưa có yêu cầu reset bộ lọc trạng thái hoặc loại đối tác.
+- Không xóa từ khóa trong lúc đang gõ hoặc khi mở/đóng Hồ sơ/Bảng giá tại cùng màn hình. Kiểm tra cả thao tác lưu hồ sơ không làm mất tìm kiếm giữa chừng.
+- Gom cùng UX-004; triển khai khi người dùng yêu cầu tạo bản cập nhật.
+
+### UX-004 — Booking gọn một hàng, cố định thao tác chính
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh giao diện.
+- Phản hồi sau 1.10.7: nút Xóa xuống dòng làm mỗi booking quá cao.
+- Yêu cầu: giảm cỡ chữ bảng vừa đủ đọc; giữ nội dung và các nút của mỗi booking trên một hàng, không xuống dòng.
+- Thanh toán và Sửa phải luôn nhìn thấy mà không cần cuộn ngang. Tách Xóa khỏi vùng thao tác cố định; nút Xóa được phép nằm ở vùng phải cuộn ngang mới thấy.
+- Kiểm tra với tên đối tác dài, số tiền lớn, zoom và độ rộng màn hình trong ảnh; cột cố định không che sai nội dung, thao tác đúng booking khi cuộn dọc/ngang. Tên quá dài có thể rút gọn bằng dấu ba chấm kèm cách xem đầy đủ.
+- Gom yêu cầu, chỉ triển khai khi người dùng yêu cầu tạo bản cập nhật.
+
 ### FEATURE-005 — Nguồn giá vốn nhập tay
 
 - Đã triển khai trong 1.10.7: giá và tên nguồn riêng từng booking, không cần danh mục nhà cung cấp. Kiểm tra quyền sửa giá vốn và khóa đổi nguồn đã có chi tiền. Không reset dữ liệu.
