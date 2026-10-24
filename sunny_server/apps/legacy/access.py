@@ -6,10 +6,11 @@ def full_access(user): return allowed(user,'workspace.full_access')
 
 # Fields accepted by the restricted editor. Derived/financial fields cannot be injected.
 RESOURCES = {
+ 'partnerTypes':('partner_type','Loại đối tác',{'id':'Mã loại','name':'Tên loại','active':'Đang dùng'}),
  'cashTransactions':('cashbook','Thu chi thủ công',{'id':'Mã','date':'Ngày','kind':'Loại (capital/income/expense)','category':'Nhóm','amount':'Số tiền','note':'Ghi chú'}),
  'zaloCampaigns':('crm','Chiến dịch Zalo',{'id':'Mã','title':'Tên chiến dịch','body':'Nội dung'}),
  'ticketTypes':('ticket_type','Loại vé',{'id':'Mã','name':'Tên','product':'Sản phẩm','active':'Đang dùng','sortOrder':'Thứ tự'}),
- 'agents':('agency','Đại lý',{'id':'Mã','name':'Tên','phone':'Điện thoại','email':'Email','note':'Ghi chú','active':'Hoạt động','priceListId':'Bảng giá','zaloLink':'Link Zalo'}),
+ 'agents':('agency','Đại lý',{'id':'Mã','name':'Tên','partnerTypeId':'Loại đối tác','phone':'Điện thoại','email':'Email','note':'Ghi chú','active':'Hoạt động','priceListId':'Bảng giá','zaloLink':'Link Zalo'}),
  'suppliers':('supplier','Nhà cung cấp',{'id':'Mã','name':'Tên','phone':'Điện thoại','active':'Hoạt động'}),
  'priceLists':('price_list','Bảng giá dùng chung',{'id':'Mã','name':'Tên','active':'Hoạt động'}),
  'priceListItems':('price_list_item','Giá trong bảng chung',{'id':'Mã dòng','priceListId':'Bảng giá','ticketId':'Loại vé','price':'Giá bán','from':'Từ ngày','to':'Đến ngày'}),
@@ -24,7 +25,7 @@ BOOLS={'active','isDefault','hasVat'}
 def field_permission(resource,field):
     return {
       ('ticketTypes','active'):'ticket_type.change_status',('ticketTypes','sortOrder'):'ticket_type.reorder',
-      ('agents','active'):'agency.change_status',('agents','zaloLink'):'agency.change_zalo_link',
+      ('partnerTypes','active'):'partner_type.change_status',('agents','partnerTypeId'):'agency.classify',('agents','active'):'agency.change_status',('agents','zaloLink'):'agency.change_zalo_link',
       ('agents','priceListId'):'agency.assign_price_list',('costPrices','isDefault'):'cost_price.set_default',
       ('bookings','costPriceId'):'booking.change_buy_price',('bookings','sellPrice'):'booking.change_sell_price',('bookings','buyPrice'):'booking.change_buy_price',
       ('bookings','cost'):'booking.change_expense',('bookings','hasVat'):'booking.change_vat',('bookings','vatRate'):'booking.change_vat',

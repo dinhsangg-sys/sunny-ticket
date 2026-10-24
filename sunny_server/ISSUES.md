@@ -1,5 +1,10 @@
 # Lỗi ghi nhận khi kiểm thử online
 
+## 1.10.5 — Phân loại đối tác
+
+- Thêm Loại đối tác và danh mục quản lý, bộ lọc danh sách; giữ hồ sơ cũ chưa phân loại và không đổi giá/lịch sử.
+- Nối bộ lọc vào báo cáo doanh thu/công nợ, Excel, chọn đối tác gán bảng giá và chiến dịch Zalo. Thêm quyền phân loại/quản lý nhóm, hướng dẫn UPGRADE_1_10_5.md.
+
 ## 1.10.4 — Sắp xếp danh sách giá vốn và nhãn mặc định
 
 - Thêm nút lên/xuống từng dòng và lưu sortOrder; không đổi mảng gốc, ID giá, mặc định hay snapshot booking.

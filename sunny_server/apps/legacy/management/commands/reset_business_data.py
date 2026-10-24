@@ -9,6 +9,7 @@ from apps.agencies.models import Agency
 from apps.audit.models import AuditLog
 from apps.legacy.models import Workspace,Attachment
 from apps.legacy.pricing import COLLECTIONS
+from apps.legacy.partners import partner_types
 
 class Command(BaseCommand):
     help='Xóa toàn bộ dữ liệu nghiệp vụ và tệp đính kèm; giữ tài khoản/nhóm/quyền. Mặc định chỉ xem trước.'
@@ -26,6 +27,7 @@ class Command(BaseCommand):
             return
         files=list(Attachment.objects.all())
         fresh={k:[] for k in COLLECTIONS}
+        fresh['partnerTypes']=partner_types({})
         fresh['settings']={'businessName':'Sunny Travel','currency':'VND','version':'1.10.1'}
         fresh['zaloSettings']={'reminderTemplate':'Sunny Travel xin chào {agent}! Booking {code} còn công nợ {due}. Xin cảm ơn!'}
         with transaction.atomic():

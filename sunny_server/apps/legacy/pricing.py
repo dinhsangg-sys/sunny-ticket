@@ -4,7 +4,7 @@ from urllib.parse import urlsplit
 from datetime import date as calendar_date
 import re
 
-COLLECTIONS = ('ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns','suppliers','priceLists','priceListItems')
+COLLECTIONS = ('ticketTypes','agents','agentPrices','costPrices','bookings','expenses','cashTransactions','zaloCampaigns','suppliers','priceLists','priceListItems','partnerTypes')
 
 def amount(value):
     try:
@@ -73,7 +73,7 @@ def validate(data):
     for key in COLLECTIONS:
         rows=data.get(key,[])
         if not isinstance(rows,list) or any(not isinstance(r,dict) for r in rows): raise ValueError('Danh sách không hợp lệ: '+key)
-    for key in ('ticketTypes','agents','suppliers','priceLists'):
+    for key in ('ticketTypes','agents','suppliers','priceLists','partnerTypes'):
         rows=data.get(key,[])
         ids=[r.get('id') for r in rows]
         if any(not isinstance(i,str) or not i for i in ids) or len(ids)!=len(set(ids)): raise ValueError('Mã thiếu hoặc trùng: '+key)
@@ -96,6 +96,9 @@ def validate(data):
         if p.get('ticketId') not in ids or not any(g['id']==p.get('priceListId') for g in data.get('priceLists',[])): raise ValueError('Bảng giá hoặc loại vé không tồn tại.')
     for key in ('suppliers','priceLists'):
         if any(not r.get('name','').strip() for r in data.get(key,[])): raise ValueError('Thiếu tên '+key)
+    type_names=[t.get('name','').strip().casefold() for t in data.get('partnerTypes',[])]
+    if any(not name for name in type_names) or len(type_names)!=len(set(type_names)): raise ValueError('Tên loại đối tác không được trống hoặc trùng.')
+    if any(t['id']=='unclassified' for t in data.get('partnerTypes',[])): raise ValueError('Mã unclassified dành riêng cho đối tác chưa phân loại.')
     # Cost tiers may overlap for the same supplier/ticket: each booking chooses a tier.
     # Reject newly ambiguous sale prices instead of choosing an arbitrary supplier price.
     for key,owner in [('agentPrices','agent'),('priceListItems','priceListId')]:

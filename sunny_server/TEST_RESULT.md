@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.5 — Loại đối tác
+
+- 52 test backend đạt. Bổ sung phân loại hồ sơ độc lập giá và lịch sử, nhóm mặc định, loại ngừng/không hợp lệ, bảo vệ nhóm có liên kết, kiểm tra quyền quản lý nhóm và phân loại.
+- Node test_partners.cjs đạt: lọc hồ sơ, báo cáo/Excel, người nhận Zalo, bổ sung người nhận đúng nhóm và backup danh mục mới. Các kiểm tra JavaScript cũ cũng đạt.
+- Migration bổ sung quyền; không yêu cầu reset. Chưa nghiệm thu giao diện trên trình duyệt online.
+
 ## 1.10.4 — Thứ tự giá vốn và nhãn mặc định
 
 - 45 test backend đạt; bổ sung kiểm tra quyền sắp xếp, vị trí đầu/cuối, giữ mức mặc định và giá booking khi đổi thứ tự.

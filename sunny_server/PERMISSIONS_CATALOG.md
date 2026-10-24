@@ -77,6 +77,7 @@ Từ 1.10.3 có xóa loại vé chưa phát sinh dữ liệu. Không có danh m�
 | agency.view_contact | Xem thông tin liên hệ, điện thoại/Zalo |
 | agency.create | Thêm đại lý |
 | agency.change | Sửa hồ sơ, thông tin liên hệ và ghi chú |
+| agency.classify | Gán hoặc đổi loại đối tác, độc lập bảng giá và vai trò đăng nhập |
 | agency.change_zalo_link | Sửa link Zalo cá nhân của đại lý — tính năng đã đồng ý cho bản tiếp theo, hiện chưa có |
 | agency.change_status | Tạm ngưng/kích hoạt lại đại lý |
 | agency.delete | Xóa đại lý chưa phát sinh giao dịch và bảng giá liên quan theo quy tắc web |
@@ -86,6 +87,8 @@ Từ 1.10.3 có xóa loại vé chưa phát sinh dữ liệu. Không có danh m�
 Nhập file có giá cần thêm quyền nhập bảng giá tương ứng; việc xóa đại lý kéo theo xóa bảng giá cần được kiểm tra cả quyền liên quan. Hồ sơ đại lý có trường đồng ý nhận tin cần được kiểm soát khi sửa, không dùng quyền gửi tin để tự thay đổi sự đồng ý.
 
 ## 7. Bảng giá bán đại lý
+
+Từ 1.10.5, quản lý danh mục loại đối tác dùng partner_type.view/create/change/change_status. Các nhóm có thể ngừng sử dụng nhưng không có thao tác xóa qua giao diện.
 
 | Mã đề xuất | Quyền |
 |---|---|

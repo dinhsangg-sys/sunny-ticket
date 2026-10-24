@@ -12,6 +12,7 @@ from .models import Workspace
 from .access import allowed, full_access, RESOURCES, NUMBERS, BOOLS, can_field, projected, action_permission
 from .pricing import validate, amount, calculate_booking, sell_price, supplier_options, choose_cost
 from .ticket_lifecycle import ticket_used, enforce_ticket_lifecycle
+from .partners import partner_types, enforce_partner_types
 
 def can(user,name): return full_access(user) or allowed(user,name)
 
@@ -32,7 +33,8 @@ def operations(request):
         resources={}
         for key,(prefix,label,fields) in RESOURCES.items():
             if not can(user,prefix+'.view'): continue
-            rows=[dict(projected(user,key,r),_index=i) for i,r in enumerate(obj.data.get(key,[]))]
+            source=partner_types(obj.data) if key=='partnerTypes' else obj.data.get(key,[])
+            rows=[dict(projected(user,key,r),_index=i) for i,r in enumerate(source)]
             if key=='ticketTypes':
                 for row in rows: row['_deletable']=not ticket_used(obj.data,row)
             if key=='costPrices': rows.sort(key=lambda r:(float(r.get('sortOrder',r['_index'])),r['_index']))
@@ -47,6 +49,7 @@ def operations(request):
             # Minimal names/IDs for foreign-key selectors; never send costs or contacts here.
             for key in ('ticketTypes','agents','suppliers','priceLists'):
                 lookups[key]=[{'id':r['id'],'name':r.get('name','')} for r in obj.data.get(key,[]) if r.get('active',True)]
+            lookups['partnerTypes']=[{'id':t['id'],'name':t['name']} for t in partner_types(obj.data) if t.get('active',True)]
             if can(user,'booking.view_buy_price'):
                 lookups['costPrices']=[{'id':p.get('id') or f'cost-row-{i}','name':str(p.get('ticketType') or p.get('ticketId'))+' / '+str(next((s['name'] for s in obj.data.get('suppliers',[]) if s['id']==p.get('supplierId')),p.get('supplierId','')))+' — '+str(p['price'])+(' (mặc định)' if p.get('isDefault') else '')} for i,p in enumerate(obj.data.get('costPrices',[]))]
         return JsonResponse({'revision':obj.revision,'resources':resources,'lookups':lookups,'payments':{'receipt':{p:can(user,'receipt.'+p) for p in ('view','create','change','delete')},'supplier':{p:can(user,'supplier_payment.'+p) for p in ('view','create','delete')}}})
@@ -85,7 +88,7 @@ def operations(request):
         elif action in ('create','change','delete'):
             resource=body['resource']
             prefix,label,fields=RESOURCES[resource]
-            rows=data.setdefault(resource,[])
+            rows=data.setdefault(resource,partner_types(data) if resource=='partnerTypes' else [])
             index=int(body.get('index',-1))
             if action!='create' and (index<0 or index>=len(rows)): raise ValueError('Không tìm thấy bản ghi.')
             old=copy.deepcopy(rows[index]) if action!='create' else {}
@@ -95,6 +98,7 @@ def operations(request):
                 if resource=='bookings' and (old.get('payments') or old.get('supplierPayments')): raise ValueError('Không xóa booking đã có thanh toán ở màn hình phân quyền; cần quản trị đối soát.')
                 if resource=='ticketTypes' and ticket_used(obj.data,old): raise ValueError('Loại vé đã phát sinh dữ liệu; chỉ được dừng sử dụng.')
                 if resource in ('agents','suppliers','priceLists'): raise ValueError('Dùng ngừng hoạt động để giữ liên kết lịch sử; xóa danh mục cần quản trị dữ liệu.')
+                if resource=='partnerTypes': raise ValueError('Ngừng sử dụng loại đối tác thay vì xóa danh mục.')
                 rows.pop(index)
             else:
                 values=body.get('values',{})
@@ -146,6 +150,7 @@ def operations(request):
         else: raise ValueError('Thao tác không hỗ trợ.')
         validate(data)
         enforce_ticket_lifecycle(obj.data,data)
+        enforce_partner_types(obj.data,data)
         with transaction.atomic(): save_workspace(obj,data,user,revision,'operation.'+action)
         return JsonResponse({'revision':revision+1})
     except RuntimeError as e: return JsonResponse({'error':str(e)},status=409)

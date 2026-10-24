@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.4
+# Sunny Travel Ticket Management — 1.10.5
+
+**1.10.5:** phân loại đối tác, quản lý danh mục loại, lọc danh sách/báo cáo/Zalo và gán bảng giá theo loại. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_5.md). Giữ dữ liệu cũ ở Chưa phân loại, không reset.
 
 **1.10.4:** nút ↑/↓ sắp xếp danh sách giá vốn và nhãn ⭐ Mặc định cạnh số tiền. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_4.md). Migrate để thêm quyền sắp xếp, không reset dữ liệu.
 

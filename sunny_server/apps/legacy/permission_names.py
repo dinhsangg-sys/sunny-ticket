@@ -5,6 +5,7 @@ PERMISSIONS = [('dashboard__view', 'Mở Dashboard, xem số vé và booking'), 
 _SUPPORTED_PREFIXES = {'ticket_type','agency','supplier','price_list','price_list_item','agency_price','cost_price','expense_template','booking','receipt','supplier_payment','capital','other_income','other_expense'}
 PERMISSIONS.append(('ticket_type__delete','Xóa loại vé chưa phát sinh dữ liệu'))
 PERMISSIONS.append(('cost_price__reorder','Sắp xếp thứ tự các dòng giá vốn'))
+PERMISSIONS.extend([('partner_type__view','Xem loại đối tác'),('partner_type__create','Thêm loại đối tác'),('partner_type__change','Sửa loại đối tác'),('partner_type__change_status','Ngừng hoặc kích hoạt loại đối tác'),('agency__classify','Phân loại đối tác')])
 _SUPPORTED_ACTIONS = {'view','create','change','delete'}
 _SUPPORTED_EXTRA = {'workspace__full_access','ticket_type__change_status','ticket_type__reorder','agency__view_contact','agency__change_status','agency__change_zalo_link','agency__assign_price_list','cost_price__set_default','booking__change_sell_price','booking__view_buy_price','booking__change_buy_price','booking__change_expense','booking__change_vat','booking__view_profit','cashbook__view','crm__view','crm__create_campaign','crm__change_campaign','crm__view_recipients'}
-PERMISSIONS = [(code,label) for code,label in PERMISSIONS if code=='cost_price__reorder' or code in _SUPPORTED_EXTRA or code.split('__')[0] in _SUPPORTED_PREFIXES and code.split('__')[1] in _SUPPORTED_ACTIONS]
+PERMISSIONS = [(code,label) for code,label in PERMISSIONS if code in {'cost_price__reorder','agency__classify'} or code.startswith('partner_type__') or code in _SUPPORTED_EXTRA or code.split('__')[0] in _SUPPORTED_PREFIXES and code.split('__')[1] in _SUPPORTED_ACTIONS]
