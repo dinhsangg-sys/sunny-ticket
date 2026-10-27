@@ -32,4 +32,7 @@
 .booking-filter-dialog label{display:block;margin-bottom:12px}
 .partner-select-trigger{text-align:left;width:100%;cursor:pointer}
 .partner-select-panel{position:absolute;z-index:30;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;padding:8px;box-shadow:0 5px 14px #0002}
-.partner-select-panel .partner-quick-results{position:static;max-height:210px;border:0;box-shadow:none;margin-top:6px}
+.partner-select-panel .partner-quick-results{position:static;max-height:210px;border:0;box-shadow:none;margin-top:6px}.nav a{display:block;width:100%;text-align:left;border:0;background:none;color:#ccc;padding:13px 12px;cursor:pointer;border-radius:10px;margin-bottom:5px;text-decoration:none;box-sizing:border-box}
+.nav a.on{background:#303030;color:#fff;border-left:3px solid var(--y)}
+.modal-drag-handle{cursor:move;touch-action:none;user-select:none}
+@media(max-width:700px){.side .nav a{width:auto;flex:0 0 auto}}

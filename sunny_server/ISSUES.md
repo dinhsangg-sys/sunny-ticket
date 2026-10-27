@@ -2,6 +2,63 @@
 
 ## Các yêu cầu cập nhật gần đây
 
+**Cập nhật 1.10.9:** triển khai UX-009, BUG-011, UX-010, BUG-012 và UX-011. Các dòng ghi nhận/chờ bên dưới là lịch sử yêu cầu. Đã kiểm tra backend và giao diện cục bộ; chưa xác nhận nguyên nhân riêng của xung đột trên máy online, cần nghiệm thu sau triển khai.
+
+### UX-011 — Kéo di chuyển popup để xem thông tin phía sau
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Bằng chứng: popup Loại vé đang che danh sách nền; người dùng muốn dùng chuột trái di chuyển popup để đối chiếu thông tin.
+- Yêu cầu: giữ chuột trái và kéo vùng tiêu đề popup để di chuyển, thả chuột để đặt tại vị trí mới. Vùng tiêu đề có dấu hiệu kéo được.
+- Không bắt thao tác kéo ở ô nhập, dropdown, nút Lưu/Đóng hoặc vùng cuộn nội dung; giữ nguyên nhập liệu, chọn văn bản và cuộn form.
+- Giới hạn vị trí theo màn hình để tiêu đề/nút đóng luôn truy cập được; mở popup mới trở về vị trí mặc định, xử lý thay đổi kích thước cửa sổ và màn hình nhỏ phù hợp.
+- Kéo chỉ thay vị trí hiển thị, không tự lưu hoặc thay đổi dữ liệu, không tự cho phép thao tác trên trang nền khi popup đang mở.
+- Phạm vi xác nhận từ ảnh là popup Loại vé; xem xét áp dụng nhất quán cho các popup biểu mẫu tương tự khi triển khai.
+- Gom cùng UX-009, BUG-011, UX-010 và BUG-012; chờ người dùng yêu cầu tạo bản cập nhật.
+
+### BUG-012 — Thêm đối tác liên tiếp bị xung đột dữ liệu
+
+- Mở rộng phạm vi theo yêu cầu mới: rà soát và sửa luồng thêm/lưu liên tiếp cho các chức năng tương tự trong toàn dự án, không chỉ Đối tác. Người dùng xác nhận Thêm loại vé cũng gặp cùng biểu hiện.
+- Rà soát cơ chế lưu chung, revision và các wrapper/callback của từng form; kiểm tra các màn hình thêm danh mục/nghiệp vụ dùng cơ chế này như loại vé, đối tác, nhà cung cấp, giá vốn, bảng giá/giá riêng, chi phí và booking. Đây là phạm vi cần kiểm tra, chưa kết luận mọi màn hình đều có lỗi.
+- Nghiệm thu mở rộng: tạo nhiều bản ghi liên tiếp trong từng chức năng liên quan, kiểm tra lưu bền vững sau tải lại, trạng thái form và revision sau mỗi lần server xác nhận; không cần tải lại giữa các lần thêm trong một phiên bình thường. Giữ chặn xung đột thật giữa các tab/người dùng, không tự ghi đè hoặc bỏ kiểm tra revision.
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Người dùng báo: thêm thành công một đối tác, tiếp tục thêm đối tác khác thì bị chặn và phải tải lại trang mới thêm được.
+- Bằng chứng: form đối tác A042, thông báo Dữ liệu đã được người khác thay đổi; thay đổi vừa nhập chưa được xác nhận lưu trên server, yêu cầu tải lại dữ liệu.
+- Chưa xác nhận có người/phiên khác sửa dữ liệu. Không kết luận từ thông báo rằng thực sự có người khác đang thao tác.
+- Hướng điều tra: cập nhật serverRevision sau save thành công, thứ tự và số lần yêu cầu lưu, lưu bất đồng bộ/tác vụ nền, callback đóng form và khởi tạo form tiếp theo; phân biệt revision cũ trong cùng tab với xung đột thật giữa nhiều tab/người dùng.
+- Yêu cầu: thêm nhiều đối tác liên tiếp trong cùng tab mà không tải lại sau mỗi lần; chỉ báo thành công sau khi server xác nhận. Nếu lưu thất bại phải giữ thông tin vừa nhập và không tạo dòng trùng hoặc coi là đã lưu.
+- Giữ cơ chế chống ghi đè: không bỏ kiểm tra revision, không tự ghi đè thay đổi từ phiên khác. Xung đột thật cần thông báo và cách tải lại/đối soát phù hợp.
+- Nghiệm thu: thêm ít nhất ba đối tác liên tiếp, mở lại/tải trang kiểm tra đủ dữ liệu và ID không trùng; thử bấm lưu nhanh, mạng chậm và hai phiên sửa đồng thời. Không mất đối tác trước đó hoặc thay đổi không liên quan.
+- Gom cùng UX-009, BUG-011 và UX-010, chờ lệnh tạo bản cập nhật.
+
+### UX-010 — Tìm nhanh loại vé khi khai báo giá vốn
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Bằng chứng: dropdown Loại vé được khoanh đỏ trong form Khai báo giá vốn.
+- Yêu cầu: khi mở dropdown Loại vé, có ô nhập tìm nhanh bên trong danh sách; không thêm một ô tìm riêng thường trực bên ngoài.
+- Tìm theo tên hoặc mã loại vé, hỗ trợ có dấu/không dấu và bộ gõ tiếng Việt bình thường; giữ đúng ID vé khi chọn. Dùng được chuột và bàn phím, có thông báo không có kết quả.
+- Mở sửa dòng giá vốn phải hiển thị đúng vé đã lưu; chỉ gõ tìm hoặc đóng dropdown không tự thay đổi vé. Không thay giá vốn, nhà cung cấp, kỳ hiệu lực hoặc trạng thái mặc định khi chưa xác nhận lưu.
+- Phạm vi hiện tại là Loại vé trong Khai báo giá vốn, theo vùng khoanh; chưa có yêu cầu thay dropdown Nhà cung cấp.
+- Gom cùng UX-009 và BUG-011, chờ người dùng yêu cầu tạo bản cập nhật.
+
+### BUG-011 — Ô tìm loại vé trong Booking không gõ được tiếng Việt
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Bằng chứng: ảnh form Tạo booking, ô tìm nhanh trong dropdown Loại vé được khoanh đỏ; người dùng báo không viết được tiếng Việt để tìm kiếm.
+- Yêu cầu: nhập và sửa tiếng Việt có dấu bình thường bằng bộ gõ; tìm được loại vé bằng cả từ khóa có dấu và không dấu, vẫn chọn đúng vé.
+- Hướng kiểm tra: các sự kiện input/compositionstart/compositionend và việc dựng lại ô tìm, gán value hoặc tự focus trong khi bộ gõ đang ghép dấu. Chưa xác nhận nguyên nhân từ ảnh; cần tránh thay thế input hoặc xử lý phím chọn kết quả khi đang composition.
+- Nghiệm thu: gõ các từ Cáp, trẻ, người lớn với bộ gõ tiếng Việt; thêm/xóa ký tự, tìm không dấu, chọn bằng chuột/bàn phím và mở lại dropdown. Không mất chữ, dấu, con trỏ hoặc tự chọn vé khi đang ghép dấu.
+- Gom cùng UX-009; chỉ triển khai khi người dùng yêu cầu tạo bản cập nhật.
+
+### UX-009 — Mở chức năng menu trong tab mới
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo theo yêu cầu tổng hợp, chưa chỉnh code.
+- Hiện tại: chuột phải vào mục chức năng bên trái chỉ hiện menu trang, không có Mở liên kết trong tab mới.
+- Yêu cầu: menu chức năng có liên kết riêng để chuột phải chọn mở tab mới; tab mới phải vào đúng chức năng vừa chọn, thay vì quay về Dashboard. Áp dụng các mục menu có quyền truy cập, kể cả mục được thêm động.
+- Giữ click trái điều hướng như hiện tại; hỗ trợ hành vi liên kết chuẩn của trình duyệt như Ctrl+click và nút chuột giữa. Tải lại hoặc dán URL phải mở đúng chức năng, vẫn kiểm tra quyền.
+- Kiểm tra nhiều tab cùng sửa dữ liệu: tiếp tục giữ cơ chế revision/chặn ghi đè hiện có; không coi dữ liệu của tab cũ là mới hoặc tự ghi đè thay đổi từ tab khác.
+- Chỉ tổng hợp, chưa triển khai hoặc đẩy GitHub; chờ người dùng yêu cầu tạo bản cập nhật.
+
 **Cập nhật 1.10.8:** đã triển khai UX-004 đến UX-008 và kiểm tra bằng trình duyệt cục bộ. Các trạng thái chờ trong phần mô tả dưới đây lưu lại yêu cầu ban đầu; chờ người dùng nghiệm thu online theo UPGRADE_1_10_8.md.
 
 ### UX-008 — Lọc tiếp theo cột trong bảng Booking

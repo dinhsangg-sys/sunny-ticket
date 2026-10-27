@@ -13,6 +13,7 @@ from .access import full_access, allowed
 from .pricing import validate, prepare_manual_cost, calculate_booking
 from .ticket_lifecycle import enforce_ticket_lifecycle
 from .partners import enforce_partner_types
+from django.views.decorators.cache import never_cache
 
 def internal(user):
     return user.is_superuser or user.role in ('admin','operator')
@@ -35,6 +36,7 @@ def home(request):
     return render(request,'agency.html',{'agency':agency,'bookings':bookings})
 
 @login_required
+@never_cache
 @require_http_methods(['GET','PUT'])
 def state(request):
     if not internal(request.user) or not full_access(request.user): return JsonResponse({'error':'Cần quyền toàn bộ workspace để dùng API dữ liệu đầy đủ.'},status=403)
@@ -68,7 +70,7 @@ def state(request):
         for a in agents:
             Agency.objects.update_or_create(legacy_id=str(a['id']),defaults={'name':str(a.get('name',''))})
         AuditLog.objects.create(user=request.user,action='workspace.save',revision=revision+1)
-    return JsonResponse({'revision':revision+1})
+    return JsonResponse({'revision':revision+1,'data':data})
 
 @login_required
 @require_http_methods(['GET','POST','DELETE'])

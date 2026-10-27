@@ -1,4 +1,4 @@
-let serverRevision=0, storageReady=false, savingFailed=false;
+let serverRevision=0, storageReady=false, savingFailed=false, confirmedServerData=null;
 function stopServerEditing(message){
  savingFailed=true;storageReady=false;
  document.querySelector('.layout')?.setAttribute('inert','');
@@ -17,18 +17,26 @@ function serverErrorMessage(status,body){
  if(status===413)return 'Dữ liệu hoặc tệp vượt giới hạn dung lượng cho phép.';
  return status===0?'Không kết nối được server. Chưa xác nhận lưu dữ liệu.':'Server chưa xử lý được yêu cầu (HTTP '+status+').';
 }
-function serverRequest(method,url,body=null){
+function serverRequest(method,url,body=null,allowConflict=false){
  if(savingFailed)throw Error('Cần tải lại dữ liệu trước khi tiếp tục.');
  const xhr=new XMLHttpRequest();xhr.open(method,url,false);
  xhr.setRequestHeader('X-CSRFToken',document.cookie.split('; ').find(x=>x.startsWith('csrftoken='))?.split('=')[1]||'');
  if(body!==null)xhr.setRequestHeader('Content-Type','application/json');
  try{xhr.send(body===null?null:JSON.stringify(body))}catch{stopServerEditing(serverErrorMessage(0,''))}
+ if(xhr.status===409&&allowConflict)return {conflict:true};
  if(xhr.status<200||xhr.status>=300)stopServerEditing(serverErrorMessage(xhr.status,xhr.responseText));
  let result;try{result=JSON.parse(xhr.responseText)}catch{stopServerEditing('Phiên đăng nhập có thể đã hết hạn hoặc server trả về dữ liệu không hợp lệ.')}
  if(!result||!Number.isInteger(result.revision))stopServerEditing('Phản hồi server không hợp lệ.');
  return result;
 }
-const serverStorage={getItem(){const r=serverRequest('GET','/api/state/');serverRevision=r.revision;return Object.keys(r.data).length?JSON.stringify(r.data):null},setItem(key,value){if(!storageReady)return;const r=serverRequest('PUT','/api/state/',{revision:serverRevision,data:JSON.parse(value)});serverRevision=r.revision}};
+function stateFingerprint(value){if(Array.isArray(value))return '['+value.map(stateFingerprint).join(',')+']';if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+stateFingerprint(value[k])).join(',')+'}';return JSON.stringify(value)}
+const serverStorage={
+ getItem(){const r=serverRequest('GET','/api/state/');serverRevision=r.revision;confirmedServerData=stateFingerprint(r.data);return Object.keys(r.data).length?JSON.stringify(r.data):null},
+ setItem(key,value){if(!storageReady)return;const data=JSON.parse(value);let r=serverRequest('PUT','/api/state/',{revision:serverRevision,data},true);
+ if(r.conflict){const fresh=serverRequest('GET','/api/state/'),fingerprint=stateFingerprint(fresh.data);if(fingerprint===stateFingerprint(data)){serverRevision=fresh.revision;confirmedServerData=fingerprint;return}if(fingerprint!==confirmedServerData)stopServerEditing(serverErrorMessage(409,''));serverRevision=fresh.revision;r=serverRequest('PUT','/api/state/',{revision:serverRevision,data})}
+ serverRevision=r.revision;confirmedServerData=stateFingerprint(r.data||data);
+ }
+};
 const uiFilters={bookings:null,agents:null,cashbook:null,reports:{},dashboard:null};
 const INITIAL={"ticketTypes":[],"agents":[],"agentPrices":[],"costPrices":[],"bookings":[],"expenses":[],"cashTransactions":[],"settings":{"businessName":"Sunny Travel","currency":"VND","version":"Production 1.9.8"}},KEY="sunny_travel_production_v1";let db=(()=>{try{return JSON.parse(serverStorage.getItem(KEY))||structuredClone(INITIAL)}catch{return structuredClone(INITIAL)}})();
 if(!Array.isArray(db.ticketTypes))db.ticketTypes=Array.isArray(db.tickets)?db.tickets:[];
@@ -160,28 +168,30 @@ function vatBase(x){return Math.max(0,num(x.sellPrice)*num(x.qty)-num(x.buyPrice
 function vatAmount(x){return x.hasVat?Math.round(vatBase(x)*num(x.vatRate)/100):0}
 function refreshVatPreview(){let box=$("fvatbox");if(!box)return;let on=$("fvat").checked;$("fvatrate").disabled=!on;box.style.display=on?"block":"none";let q=num($("fq").value),sell=num($("fsell").value),buy=num($("fbuy").value),rate=$("fvatrate").value==="custom"?num($("fvatcustom").value):num($("fvatrate").value),base=Math.max(0,q*sell-q*buy),vat=Math.round(base*rate/100);if($("fvatpreview"))$("fvatpreview").innerHTML=`Giá trị tính VAT: <b>${money(base)}</b> · VAT ${rate}%: <b>${money(vat)}</b>`}
 function setupTicketSearch(){
- let input=$("ft"),box=$("ftResults"),active=-1;
+ let input=$("ft"),box=$("ftResults"),active=-1,composing=false;
  function render(raw=""){
    input._lastQuery=raw;
    let q=normalizeText(raw.trim());
    let rows=orderedTicketTypes().filter(t=>t.active&&(!q||normalizeText(`${t.id} ${t.name} ${t.product}`).includes(q)));
-   box.innerHTML=`<div class="ticketsearchbox"><input id="ftQuickSearch" autocomplete="off" placeholder="🔎 Tìm nhanh theo tên, mã vé hoặc sản phẩm..."></div><div id="ftTicketList">${rows.length?rows.map((t,i)=>`<div class="agentitem" data-i="${i}" data-id="${esc(t.id)}"><b>${esc(t.name)}</b><div class="muted">Mã: ${esc(t.id)}${t.product?" · "+esc(t.product):""}</div></div>`).join(""):`<div class="agentempty">Không tìm thấy loại vé phù hợp</div>`}</div>`;
+   let existingSearch=$("ftQuickSearch");
+   const markup=`<div class="ticketsearchbox"><input id="ftQuickSearch" autocomplete="off" placeholder="🔎 Tìm nhanh theo tên, mã vé hoặc sản phẩm..."></div><div id="ftTicketList">${rows.length?rows.map((t,i)=>`<div class="agentitem" data-i="${i}" data-id="${esc(t.id)}"><b>${esc(t.name)}</b><div class="muted">Mã: ${esc(t.id)}${t.product?" · "+esc(t.product):""}</div></div>`).join(""):`<div class="agentempty">Không tìm thấy loại vé phù hợp</div>`}</div>`;
+   if(existingSearch){const temp=document.createElement('div');temp.innerHTML=markup;$('ftTicketList').replaceChildren(...temp.querySelector('#ftTicketList').childNodes)}else box.innerHTML=markup;
    let qin=$("ftQuickSearch");
-   qin.value=raw;
-   qin.oninput=()=>render(qin.value);
+   if(!existingSearch)qin.value=raw;
+   if(!existingSearch){qin.addEventListener('compositionstart',()=>{composing=true});qin.addEventListener('compositionend',()=>{composing=false;render(qin.value)})};qin.oninput=e=>{if(!composing&&!e.isComposing)render(qin.value)};
    qin.onkeydown=e=>keyboard(e);
    box.querySelectorAll(".agentitem").forEach(el=>el.onmousedown=e=>{e.preventDefault();choose(el.dataset.id)});
-   setTimeout(()=>{let x=$("ftQuickSearch");if(x){x.value=raw;x.focus();try{x.setSelectionRange(raw.length,raw.length)}catch(_){}}},0)
+   if(!existingSearch)qin.focus({preventScroll:true});
  }
  function openPicker(){
-   box.classList.add("show");active=-1;input._lastQuery="";render("");
+   box.classList.add("show");active=-1;input._lastQuery="";if($("ftQuickSearch"))$("ftQuickSearch").value="";render("");$("ftQuickSearch").focus({preventScroll:true});
  }
  function choose(id){
    let t=db.ticketTypes.find(v=>v.id===id);if(!t)return;
    input.value=t.name;input.dataset.ticketId=t.id;box.classList.remove("show");
    refreshCostChoices(false);refreshSellPrice();refreshVatPreview()
  }
- function keyboard(e){
+ function keyboard(e){if(composing||e.isComposing||e.keyCode===229)return;
    let items=[...box.querySelectorAll(".agentitem")];
    if(e.key==="ArrowDown"&&items.length){e.preventDefault();active=Math.min(active+1,items.length-1)}
    else if(e.key==="ArrowUp"&&items.length){e.preventDefault();active=Math.max(active-1,0)}

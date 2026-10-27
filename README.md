@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.8
+# Sunny Travel Ticket Management — 1.10.9
+
+**1.10.9:** mở chức năng trong tab mới, sửa nhập tiếng Việt khi tìm vé, tìm nhanh vé trong giá vốn, kéo popup và đồng bộ phiên bản sau lưu cho các chức năng dùng chung dữ liệu. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_9.md). Không reset dữ liệu.
 
 **1.10.8:** bảng Booking gọn một hàng, cố định Thanh toán/Sửa, lọc theo cột, mở form từ đầu, xóa tìm đối tác khi quay lại và dropdown tích hợp tìm nhanh. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_8.md). Không reset dữ liệu.
 

@@ -1,5 +1,12 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.9 — Luồng lưu, tiếng Việt và cửa sổ
+
+- 68 test Django đạt. Bổ sung 15 lần lưu liên tiếp qua API cho đối tác, loại vé, nhà cung cấp, chi phí và bảng giá chung; xác nhận dữ liệu chuẩn hóa/revision phản hồi đúng, không cache dữ liệu trạng thái, revision cũ vẫn bị chặn.
+- Edge headless/Playwright tải toàn bộ script giao diện thật trên server giả lập: thêm liên tiếp ba đối tác, ba loại vé và ba nhà cung cấp; lưu giá vốn; phục hồi khi lệch revision nhưng trạng thái không đổi; chặn khi trạng thái đã thay bởi phiên khác và giữ form. Đây không phải kết nối server online thực tế.
+- Kiểm tra composition tiếng Việt bằng sự kiện trình duyệt: không thay node input, giữ chữ Cáp và tìm cap; Enter trong composition không tự chọn. Tìm giá vốn, chọn đúng vé; kéo popup bằng chuột và mở lại về giữa; liên kết chức năng mở đúng trang và tải lại giữ chức năng.
+- Các regression JavaScript hiện có đạt. Không có migration mới. Chưa thử bộ gõ Telex/VNI vật lý trên máy người dùng hoặc reverse proxy online; cần kiểm tra sau cập nhật.
+
 ## 1.10.8 — Booking gọn và bộ lọc cột
 
 - Kiểm thử trình duyệt Edge headless bằng Playwright trên fixture cục bộ đạt: lọc số, kết hợp điều kiện, kết quả rỗng, xóa toàn bộ bộ lọc, tìm không dấu, tách Xóa, hàng cao 38px và Thanh toán/Sửa nằm trong vùng rộng 850px; mở form về đầu, reset tìm đối tác khi đổi trang, giữ khi cùng trang, chọn đúng ID trong dropdown tích hợp.
