@@ -2,6 +2,18 @@
 
 ## Các yêu cầu cập nhật gần đây
 
+### FEATURE-006 — Thu tiền khách hàng cho nhiều booking cùng lúc
+
+- Cập nhật 1.10.10: đã triển khai thu đủ số dư của các booking được tick, chọn đúng đối tác, lọc khoảng ngày, xem trước và xác nhận một lần. Đã kiểm tra backend và frontend cục bộ; các dòng chờ/đề xuất dưới đây là lịch sử. Chưa có phân bổ thanh toán một phần tổng nợ.
+
+- Trạng thái: ghi nhận cho bản tiếp theo; chưa chỉnh code. Người dùng hỏi tick các booking của khách Nhân và ghi nhận một lần khi khách trả toàn bộ.
+- Hiện có thanh toán tiền vé hàng loạt cho phía nhà cung cấp; thu tiền từ khách tại bảng Booking hiện dùng từng booking.
+- Đề xuất: chọn đúng một đối tác/khách hàng, hiển thị các booking còn nợ, tick từng booking hoặc chọn tất cả trong phạm vi đang lọc; hiển thị tổng dư nợ của các dòng đã chọn và nhập ngày/ghi chú thu tiền chung, xem trước trước khi xác nhận.
+- Khi khách trả đủ: ghi nhận phần còn nợ tương ứng cho từng booking, giữ các khoản đã thu trước đó; liên kết các khoản thu vào cùng một đợt để đối soát và không nhân đôi tổng thu trong sổ quỹ/báo cáo.
+- Không dùng kết quả tìm kiếm chữ tự do làm bằng chứng cùng khách: có thể khớp ghi chú hoặc tên khác. Đối tác cần gắn đúng ID; khách lẻ trùng tên hoặc thiếu định danh cần phân biệt trước khi gom.
+- Nếu hỗ trợ trả một phần tổng nợ, cần thể hiện rõ cách phân bổ và cho xem trước từng booking; đây là đề xuất cần chốt thêm, không tự phân bổ khi chưa rõ.
+- Kiểm tra quyền thu tiền, revision, số dư mới nhất; xác nhận một lần và lưu toàn bộ hoặc không lưu gì, chặn bấm lặp, không thu vượt dư nợ, không thu lại booking đã tất toán. Giữ lịch sử và nguồn liên kết khi sửa/xóa giao dịch theo quyền.
+
 **Cập nhật 1.10.9:** triển khai UX-009, BUG-011, UX-010, BUG-012 và UX-011. Các dòng ghi nhận/chờ bên dưới là lịch sử yêu cầu. Đã kiểm tra backend và giao diện cục bộ; chưa xác nhận nguyên nhân riêng của xung đột trên máy online, cần nghiệm thu sau triển khai.
 
 ### UX-011 — Kéo di chuyển popup để xem thông tin phía sau

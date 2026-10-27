@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.10 — Thu tiền khách hàng hàng loạt
+
+- 73 test backend đạt, gồm năm ca mới: danh sách đúng định danh, preview không ghi, thu đúng phần còn nợ và giữ khoản cũ, retry cùng mã đợt không thu trùng, mã đợt trùng nội dung khác bị từ chối, chọn nhầm khách/booking trùng/không tồn tại/đã tất toán bị chặn toàn bộ, ngày sai, revision đổi sau preview và kiểm tra quyền.
+- Edge headless/Playwright chạy toàn bộ frontend với API giả lập: chọn đúng Nhân, tick hai booking, xem trước 280, thay ghi chú hủy preview, xác nhận lưu một lần, booking khách khác không bị ảnh hưởng; tổng đã thu và sổ quỹ cùng là 300 (gồm 20 đã thu trước đó), không tạo khoản thu tổng bị trùng.
+- API dùng transaction/CAS và quyền booking.view + receipt.view + receipt.create. Không có migration mới. Chưa nghiệm thu trực tiếp Ubuntu/online.
+
 ## 1.10.9 — Luồng lưu, tiếng Việt và cửa sổ
 
 - 68 test Django đạt. Bổ sung 15 lần lưu liên tiếp qua API cho đối tác, loại vé, nhà cung cấp, chi phí và bảng giá chung; xác nhận dữ liệu chuẩn hóa/revision phản hồi đúng, không cache dữ liệu trạng thái, revision cũ vẫn bị chặn.
