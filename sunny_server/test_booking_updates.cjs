@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const fields={fbuySelect:{value:'manual'},fbuy:{value:'350000'},manualCostSource:{value:'Anh Nhân'}};
 let saved=0,alerts=[];
-const context={window:{},db:{bookings:[]},$:id=>fields[id],refreshCostChoices(){},saveBooking(){saved++},bookings(){},alert:message=>alerts.push(message),console};
+const context={document:{addEventListener(){}},window:{},db:{bookings:[]},$:id=>fields[id],refreshCostChoices(){},saveBooking(){saved++},bookings(){},alert:message=>alerts.push(message),console};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(__dirname+'/static/js/booking_updates.js','utf8'),context);
 context.saveBooking();assert.equal(saved,1);assert.equal(context.window.v2SelectedCost.costSource,'manual');assert.equal(context.window.v2SelectedCost.supplierId,'__manual__');assert.equal(context.window.v2SelectedCost.manualSourceName,'Anh Nhân');

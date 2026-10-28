@@ -2,6 +2,26 @@
 
 ## Các yêu cầu cập nhật gần đây
 
+**Cập nhật 1.10.13:** đã triển khai UX-013 và BUG-013, kiểm thử giao diện cục bộ đạt. Các dòng chờ phía dưới lưu lịch sử yêu cầu; chờ nghiệm thu online. Chế độ Tất cả nhà cung cấp mở rộng danh sách, mỗi đợt thanh toán vẫn chỉ có một bên nhận.
+
+### BUG-013 — Dropdown Nhà cung cấp không đóng khi click ra ngoài
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Người dùng báo trong Thanh toán tiền vé hàng loạt, danh sách Nhà cung cấp/Nguồn không tự đóng khi click ra ngoài; phải click lại đúng ô mở lựa chọn mới đóng.
+- Yêu cầu: click ngoài cả vùng dropdown và nút mở phải đóng danh sách; giữ nguyên nhà cung cấp đã chọn, điều kiện lọc, các tick booking và popup thanh toán chính.
+- Click bên trong ô tìm, danh sách kết quả hoặc thao tác cuộn không đóng sớm; chọn kết quả vẫn xác nhận đúng ID và đóng danh sách. Click lại nút mở và Escape tiếp tục đóng được.
+- Kiểm tra helper dropdown tìm nhanh dùng chung để xử lý nhất quán tại các màn hình dùng helper, tránh chỉ dựa vào focusout (click vùng không nhận focus có thể không kích hoạt đóng). Không nhân đôi listener khi mở popup nhiều lần; click mở không tự đóng ngay.
+- Gom cùng UX-013 (mặc định Tất cả nhà cung cấp); chờ người dùng yêu cầu tạo bản cập nhật.
+
+### UX-013 — Mặc định Tất cả nhà cung cấp khi chưa chọn nguồn cụ thể
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Người dùng yêu cầu dropdown Nhà cung cấp/Nguồn mặc định Tất cả nhà cung cấp; chưa chọn một nguồn cụ thể vẫn hiển thị các booking còn phải trả, thay vì danh sách trống.
+- Thêm lựa chọn Tất cả nhà cung cấp trong dropdown để có thể quay lại sau khi đã chọn một nguồn cụ thể; kết hợp với sản phẩm, khoảng ngày và loại vé đang chọn. Mỗi dòng tiếp tục hiển thị rõ nhà cung cấp/nguồn.
+- Đổi phạm vi nhà cung cấp vẫn bỏ tick booking cũ để tránh giữ dòng ẩn.
+- Yêu cầu mới xác nhận phạm vi hiển thị/lọc, chưa xác nhận cho phép ghi một đợt chi trộn nhiều bên nhận. Khi triển khai cần giữ kiểm tra một bên nhận cho mỗi đợt như hiện tại, hoặc chốt rõ luồng phân tách nếu người dùng muốn chi cho nhiều nhà cung cấp cùng lúc; không tự bỏ kiểm tra supplierId trên server.
+- Chỉ ghi nhận theo chế độ gom yêu cầu của cuộc trò chuyện; chờ người dùng yêu cầu tạo bản cập nhật.
+
 ### FEATURE-009 — Lọc sản phẩm khi thanh toán tiền vé hàng loạt
 
 - Cập nhật 1.10.12: đã thêm Sản phẩm kết hợp nhà cung cấp/ngày/loại vé; danh sách vé giới hạn theo sản phẩm và bỏ tick booking cũ khi đổi. Xác nhận ghi rõ sản phẩm; có nhóm Chưa xác định. Các dòng chờ dưới đây lưu lịch sử; chờ nghiệm thu online.

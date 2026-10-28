@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.12
+# Sunny Travel Ticket Management — 1.10.13
+
+**1.10.13:** mặc định Tất cả nhà cung cấp trong thanh toán tiền vé hàng loạt; dropdown tìm nhanh tự đóng khi bấm ngoài, giữ lựa chọn. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_13.md). Không reset dữ liệu.
 
 **1.10.12:** lọc sản phẩm trong Thanh toán tiền vé hàng loạt, giới hạn loại vé tương ứng và bỏ tick cũ khi đổi sản phẩm. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_12.md). Không reset dữ liệu.
 

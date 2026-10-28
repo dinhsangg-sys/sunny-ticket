@@ -1,5 +1,12 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.13 — Tất cả nhà cung cấp và click ngoài dropdown
+
+- 77 test backend hồi quy đạt; backend và schema không thay đổi.
+- Edge headless/Playwright với frontend thật/API giả lập đạt: mặc định tất cả nguồn, chọn riêng và quay về tất cả, kết hợp sản phẩm/loại vé, đổi nguồn bỏ tick, tick nhiều bên nhận bị chặn trước khi gọi API, thanh toán một bên từ chế độ tất cả gửi đúng supplier và sổ quỹ ghi đúng một khoản.
+- Kiểm tra click vào tiêu đề không nhận focus hoặc nhãn của dropdown đều đóng được, giữ nguồn đã chọn; danh sách không tự mở lại do label kích hoạt nút. Các regression thu khách hàng hàng loạt, dropdown tích hợp, nhập tay, báo cáo/Excel, picker và bảng Booking đạt.
+- Không có migration mới. Chưa nghiệm thu trên web online.
+
 ## 1.10.12 — Sản phẩm trong chi tiền vé hàng loạt
 
 - 77 test backend hồi quy đạt; không thay đổi API hoặc schema dữ liệu.
