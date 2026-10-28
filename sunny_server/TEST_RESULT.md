@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.12 — Sản phẩm trong chi tiền vé hàng loạt
+
+- 77 test backend hồi quy đạt; không thay đổi API hoặc schema dữ liệu.
+- Edge headless/Playwright với toàn bộ frontend và API giả lập đạt: kết hợp đúng nhà cung cấp/sản phẩm, danh sách loại vé giới hạn theo sản phẩm, chọn Tất cả chỉ trong tập hiển thị; đổi sản phẩm bỏ tick cũ, nhóm Chưa xác định tách riêng; xác nhận có tên sản phẩm và đúng bên nhận, chi đúng một booking và sổ quỹ không cộng trùng.
+- Hồi quy báo cáo/Excel, click ngoài/Escape, nguồn giá, đối tác, nhập tay và date picker đạt. Không có migration mới. Chưa nghiệm thu trên web online.
+
 ## 1.10.11 — Sản phẩm báo cáo và nhà cung cấp thanh toán
 
 - 77 test Django đạt, gồm các regression thu khách và bốn ca mới cho chi nhà cung cấp: lọc đúng supplierId đã lưu, nguồn ngừng hoạt động vẫn trả được, nhiều loại vé/mức giá, tính phần còn nợ, giữ khoản chi cũ và khoản thu khách; trộn nhà cung cấp/nguồn nhập tay hoặc booking trùng bị chặn toàn bộ; revision cũ bị chặn, gửi lại cùng mã đợt không chi trùng, kiểm tra quyền giá vốn và chi tiền.

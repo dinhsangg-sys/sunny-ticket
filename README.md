@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.11
+# Sunny Travel Ticket Management — 1.10.12
+
+**1.10.12:** lọc sản phẩm trong Thanh toán tiền vé hàng loạt, giới hạn loại vé tương ứng và bỏ tick cũ khi đổi sản phẩm. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_12.md). Không reset dữ liệu.
 
 **1.10.11:** lọc sản phẩm trong báo cáo doanh thu/công nợ và Excel; lọc đúng nhà cung cấp khi chi tiền vé hàng loạt; bấm ngoài/Escape đóng riêng bộ lọc loại vé. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_11.md). Không reset dữ liệu.
 

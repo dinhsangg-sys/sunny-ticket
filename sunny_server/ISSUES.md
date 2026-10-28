@@ -2,6 +2,18 @@
 
 ## Các yêu cầu cập nhật gần đây
 
+### FEATURE-009 — Lọc sản phẩm khi thanh toán tiền vé hàng loạt
+
+- Cập nhật 1.10.12: đã thêm Sản phẩm kết hợp nhà cung cấp/ngày/loại vé; danh sách vé giới hạn theo sản phẩm và bỏ tick booking cũ khi đổi. Xác nhận ghi rõ sản phẩm; có nhóm Chưa xác định. Các dòng chờ dưới đây lưu lịch sử; chờ nghiệm thu online.
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Bằng chứng: popup Thanh toán tiền vé hàng loạt hiện có Nhà cung cấp/Nguồn, khoảng ngày và Loại vé; người dùng muốn thêm bộ lọc theo từng sản phẩm.
+- Yêu cầu: dropdown Sản phẩm, mặc định Tất cả sản phẩm, kết hợp đồng thời với nhà cung cấp, khoảng ngày và các loại vé đã chọn.
+- Danh sách chọn Loại vé nên giới hạn theo sản phẩm đang chọn để dễ thao tác. Danh sách booking, số booking đã tick và tổng tiền phải cùng theo tập lọc; Chọn tất cả chỉ áp dụng các dòng đang hiển thị.
+- Khi đổi sản phẩm, bỏ các tick booking thanh toán cũ và xử lý lựa chọn loại vé không thuộc sản phẩm mới để tránh giữ dòng ẩn. Giữ bên nhận tiền rõ ràng trong bước xác nhận và kiểm tra supplierId trên server như hiện tại.
+- Dùng cùng quy tắc xác định sản phẩm với báo cáo: snapshot nếu có, nếu không theo ticketId hoặc tên loại vé duy nhất; tách Chưa xác định khi không thể đối chiếu chắc chắn, không suy đoán sai sản phẩm.
+- Chỉ tổng hợp cho bản tiếp theo theo yêu cầu gom tính năng của người dùng; chưa triển khai hoặc đẩy GitHub.
+
 **Cập nhật 1.10.11:** đã triển khai FEATURE-007, UX-012 và FEATURE-008, kiểm tra backend/frontend cục bộ. Các dòng chờ phía dưới lưu lịch sử ghi nhận; chờ nghiệm thu online theo UPGRADE_1_10_11.md.
 
 ### FEATURE-008 — Lọc nhà cung cấp khi thanh toán tiền vé hàng loạt
