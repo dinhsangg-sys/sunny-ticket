@@ -1,0 +1,36 @@
+let selectedReportProduct='';
+function reportBookingProduct(booking){
+ if(typeof booking.product==='string'&&booking.product.trim())return booking.product.trim();
+ const tickets=booking.ticketId?db.ticketTypes.filter(t=>t.id===booking.ticketId):db.ticketTypes.filter(t=>t.name===booking.ticketType);
+ return tickets.length===1&&tickets[0].product?.trim()?tickets[0].product.trim():null;
+}
+function reportProductMatches(booking){const selected=$('reportProduct')?.value||selectedReportProduct;return !selected||selected===(reportBookingProduct(booking)===null?'unknown':'product:'+reportBookingProduct(booking))}
+const reportBeforeProduct=renderReportPage;
+renderReportPage=function(){reportBeforeProduct();if(reportTab!=='detail')return;const select=document.createElement('select');select.id='reportProduct';select.className='select';select.style.maxWidth='260px';select.setAttribute('aria-label','Lọc sản phẩm');select.append(new Option('Tất cả sản phẩm',''));const products=[...new Set([...db.ticketTypes.map(t=>t.product?.trim()),...db.bookings.map(reportBookingProduct)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));for(const product of products)select.append(new Option(product,'product:'+product));if(db.bookings.some(b=>reportBookingProduct(b)===null))select.append(new Option('Chưa xác định sản phẩm','unknown'));select.value=selectedReportProduct;select.onchange=()=>{selectedReportProduct=select.value;renderDetailedReport()};$('reportPage').querySelector('.toolbar').append(select);renderDetailedReport()};
+
+function supplierBookingParty(booking){if(booking.costSource==='manual'||booking.supplierId==='__manual__')return 'booking:'+booking.id;const matches=db.suppliers.filter(s=>s.id===booking.supplierId);return matches.length===1?'supplier:'+matches[0].id:''}
+function supplierPartyLabel(key){if(key.startsWith('supplier:')){const supplier=db.suppliers.find(s=>'supplier:'+s.id===key);return supplier? supplier.name+' ('+supplier.id+')'+(supplier.active===false?' — ngừng hoạt động':''):key}const b=db.bookings.find(b=>'booking:'+b.id===key);return (b?.supplierName||'Nguồn nhập tay')+' — riêng booking '+(b?.bookingCode||b?.id||'')}
+const supplierFormBeforeFilter=bulkSupplierPaymentForm;
+bulkSupplierPaymentForm=async function(){
+ try{const response=await fetch('/api/state/',{cache:'no-store'});if(!response.ok)throw Error('Không tải được dữ liệu mới.');const fresh=await response.json();db=fresh.data;serverRevision=fresh.revision;confirmedServerData=stateFingerprint(fresh.data)}catch(e){alert(e.message);return}
+ supplierFormBeforeFilter();const label=document.createElement('label');label.textContent='Nhà cung cấp / Nguồn đã chọn trên booking';const select=document.createElement('select');select.className='select';select.id='bsSupplier';select.append(new Option('Chọn bên nhận tiền...',''));const keys=[...new Set(db.bookings.filter(b=>supplierDueAmount(b)>0).map(supplierBookingParty).filter(Boolean))];for(const key of keys)select.append(new Option(supplierPartyLabel(key),key));select.onchange=renderBulkSupplierRows;label.append(select);$('modal').querySelector('.toolbar').prepend(label);attachPartnerQuickSearch(select,keys.map(id=>({id,name:supplierPartyLabel(id)})),{label:p=>p.name,placeholder:'Tìm nhà cung cấp / nguồn...'});const header=document.createElement('th');header.textContent='Nhà cung cấp / Nguồn';$('bsrows').closest('table').querySelector('thead tr').children[3].after(header);const notice=document.createElement('p');notice.className='muted';notice.textContent='Chọn đúng bên nhận trước khi tick. Nguồn nhập tay tách riêng từng booking; booking thiếu nhà cung cấp cần đối soát trước.';label.closest('.toolbar').after(notice);renderBulkSupplierRows();modalInitialState=modalState();
+};
+const supplierRowsBeforeFilter=bulkVisibleSupplierRows;
+bulkVisibleSupplierRows=function(){const key=$('bsSupplier')?.value;return key?supplierRowsBeforeFilter().filter(b=>supplierBookingParty(b)===key):[]};
+const supplierRenderBeforeFilter=renderBulkSupplierRows;
+renderBulkSupplierRows=function(){supplierRenderBeforeFilter();const rows=bulkVisibleSupplierRows();[...$('bsrows').rows].forEach((row,i)=>{if(!rows[i]){row.cells[0].colSpan=6;return}const cell=document.createElement('td');cell.textContent=supplierPartyLabel(supplierBookingParty(rows[i]));row.cells[3].after(cell)})};
+
+// Outside-click listener is registered once and survives repeated modal openings.
+document.addEventListener('click',event=>{const panel=$('bsTicketPanel'),button=$('bsTicketButton');if(panel&&button&&!panel.contains(event.target)&&!button.contains(event.target))panel.style.display='none'});
+document.addEventListener('keydown',event=>{const panel=$('bsTicketPanel');if(event.key==='Escape'&&panel&&panel.style.display!=='none'){panel.style.display='none';$('bsTicketButton')?.focus();event.preventDefault();event.stopPropagation()}},true);
+
+let supplierBatchBusy=false;
+saveBulkSupplierPayment=async function(){
+ if(supplierBatchBusy)return;const party=$('bsSupplier')?.value,allowed=new Set(bulkVisibleSupplierRows().map(b=>String(b.id))),ids=[...document.querySelectorAll('.bscheck:checked')].map(c=>c.dataset.id);if(!party||!ids.length||ids.some(id=>!allowed.has(id)))return alert('Chọn đúng bên nhận và các booking đang hiển thị.');const date=$('bspdate').value,note=$('bspnote').value.trim();if(!date)return alert('Chọn ngày chi.');
+ const modal=$('modal'),controls=[...modal.querySelectorAll('input,select,button')],body={revision:serverRevision,party,ids,date,note};supplierBatchBusy=true;controls.forEach(c=>c.disabled=true);
+ async function send(action,extra={}){const response=await fetch('/api/bulk-supplier-payments/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':priceCopyToken()},body:JSON.stringify({...body,action,...extra})});let data;try{data=await response.json()}catch{throw Error('Không đọc được phản hồi. Kiểm tra phiên đăng nhập/kết nối.')}if(!response.ok)throw Error(data.error||'Không thể ghi khoản chi.');return data}
+ let committed=false;try{const preview=await send('preview');if(!confirm('Thanh toán cho '+supplierPartyLabel(party)+'\n'+preview.rows.map(r=>r.code+' · '+money(r.due)).join('\n')+'\nTổng: '+money(preview.total)+'\nNgày chi: '+date+'\nXác nhận?'))return;
+ const batchId=crypto.randomUUID();let result;try{result=await send('apply',{batchId})}catch(error){if(!confirm(error.message+'\nThử gửi lại cùng mã đợt để kiểm tra kết quả, tránh chi trùng?'))throw error;result=await send('apply',{batchId})}committed=true;alert('Đã thanh toán '+result.count+' booking cho '+supplierPartyLabel(party)+', tổng '+money(result.total)+'. Mã đợt: '+result.batchId);closeM(true);
+ try{const response=await fetch('/api/state/',{cache:'no-store'});if(!response.ok)throw Error();const fresh=await response.json();db=fresh.data;serverRevision=fresh.revision;confirmedServerData=stateFingerprint(fresh.data);cashbook()}catch{alert('Đã chi thành công. Hãy tải lại trang để xem dữ liệu mới.')}
+ }catch(e){alert(e.message+'\nChưa xác nhận kết quả trên màn hình; không tạo lại đợt khác nếu chưa kiểm tra lịch sử.')}finally{supplierBatchBusy=false;controls.forEach(c=>c.disabled=committed)}};
+if(reportTab==='detail'&&$('reportPage'))renderReportPage();

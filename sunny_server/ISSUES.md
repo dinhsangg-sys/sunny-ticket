@@ -2,6 +2,38 @@
 
 ## Các yêu cầu cập nhật gần đây
 
+**Cập nhật 1.10.11:** đã triển khai FEATURE-007, UX-012 và FEATURE-008, kiểm tra backend/frontend cục bộ. Các dòng chờ phía dưới lưu lịch sử ghi nhận; chờ nghiệm thu online theo UPGRADE_1_10_11.md.
+
+### FEATURE-008 — Lọc nhà cung cấp khi thanh toán tiền vé hàng loạt
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Yêu cầu: thêm lựa chọn Nhà cung cấp trong popup Thanh toán tiền vé hàng loạt để tìm đúng các booking/loại vé mua từ nhà cung cấp đó và chi trả đúng bên.
+- Lọc theo supplierId/nguồn thực tế đã lưu trên từng booking, không suy từ tên loại vé, giá vốn hiện hành hoặc nhà cung cấp mặc định hiện tại. Cùng loại vé có thể thuộc nhiều nhà cung cấp.
+- Kết hợp với khoảng ngày và bộ lọc nhiều loại vé; hiển thị rõ Nhà cung cấp/nguồn trên từng dòng, tổng còn phải trả và số dòng đã chọn theo tập lọc. Xem trước/xác nhận phải nêu rõ bên nhận và số tiền.
+- Đổi nhà cung cấp hoặc điều kiện lọc phải bỏ các tick thanh toán trước đó để tránh giữ dòng ẩn. Chỉ thanh toán các booking còn nợ của đúng nhà cung cấp đã chọn; kiểm tra lại trước khi ghi, không chi trùng hoặc vượt dư nợ.
+- Không gộp các nguồn nhập tay khác nhau chỉ vì cùng supplierId __manual__; nguồn nhập tay hoặc booking thiếu định danh nhà cung cấp cần được tách/đối soát rõ trước khi thanh toán hàng loạt. Giữ nhà cung cấp đã ngừng hoạt động nhưng còn công nợ trong danh sách để thanh toán lịch sử.
+- Rà soát quyền chi nhà cung cấp, revision, lịch sử khoản chi và số liệu sổ quỹ; không thêm một khoản chi tổng gây cộng trùng với các khoản chi theo booking.
+- Gom cùng FEATURE-007 và UX-012; chờ lệnh tạo bản cập nhật.
+
+### UX-012 — Đóng bộ lọc loại vé khi bấm ra ngoài
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Bằng chứng: màn hình Thanh toán tiền vé hàng loạt, dropdown Loại vé (chọn nhiều). Hiện muốn đóng phải bấm lại ô mở dropdown.
+- Yêu cầu: khi dropdown đang mở, click ra ngoài dropdown và nút mở sẽ tự đóng; click lại nút mở vẫn đóng/mở được.
+- Click bên trong ô tìm, danh sách checkbox, Chọn tất cả/Bỏ chọn và thao tác cuộn danh sách không đóng dropdown. Đóng bằng click ngoài chỉ ẩn hộp lọc, giữ nguyên từ khóa và lựa chọn, không tự thanh toán hoặc đóng popup chính.
+- Kiểm tra thao tác mở/đóng nhiều lần, tránh nhân đôi listener hoặc click mở bị xử lý thành click ngoài ngay lập tức; có thể hỗ trợ Escape đóng riêng dropdown.
+- Gom cùng FEATURE-007 (lọc sản phẩm trong báo cáo Doanh thu & Công nợ); chờ người dùng yêu cầu tạo bản cập nhật.
+
+### FEATURE-007 — Lọc theo sản phẩm trong báo cáo Doanh thu & Công nợ
+
+- Trạng thái: ghi nhận cho bản cập nhật tiếp theo, chưa chỉnh code.
+- Bằng chứng: màn hình Báo cáo doanh thu & công nợ chi tiết; người dùng muốn lọc theo từng sản phẩm.
+- Yêu cầu: thêm dropdown Sản phẩm với mặc định Tất cả sản phẩm, lấy danh mục sản phẩm từ loại vé (ví dụ Hội An Memories Show, Bà Nà); lọc theo sản phẩm, không nhầm với Loại vé hoặc Loại đối tác.
+- Kết hợp đồng thời với khoảng ngày, đối tượng, từ khóa khách hàng/đại lý, trạng thái thanh toán và loại đối tác đang có.
+- Danh sách booking, Tổng phải thu, Đã thanh toán, Công nợ còn lại, Booking còn nợ, số booking và file Excel phải cùng phản ánh tập dữ liệu đã lọc; phần mô tả báo cáo thể hiện sản phẩm đang chọn.
+- Kiểm tra liên kết ticketId và dữ liệu cũ chỉ có tên loại vé; không tự gán sai sản phẩm khi tên trùng hoặc không tìm thấy danh mục. Cần xử lý rõ nhóm chưa xác định nếu phát sinh.
+- Chỉ tổng hợp cho bản tiếp theo theo yêu cầu gom tính năng trong cuộc trò chuyện; chưa triển khai hoặc đẩy GitHub.
+
 ### FEATURE-006 — Thu tiền khách hàng cho nhiều booking cùng lúc
 
 - Cập nhật 1.10.10: đã triển khai thu đủ số dư của các booking được tick, chọn đúng đối tác, lọc khoảng ngày, xem trước và xác nhận một lần. Đã kiểm tra backend và frontend cục bộ; các dòng chờ/đề xuất dưới đây là lịch sử. Chưa có phân bổ thanh toán một phần tổng nợ.

@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.10
+# Sunny Travel Ticket Management — 1.10.11
+
+**1.10.11:** lọc sản phẩm trong báo cáo doanh thu/công nợ và Excel; lọc đúng nhà cung cấp khi chi tiền vé hàng loạt; bấm ngoài/Escape đóng riêng bộ lọc loại vé. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_11.md). Không reset dữ liệu.
 
 **1.10.10:** thu tiền khách hàng hàng loạt theo đúng đối tác, tick booking còn nợ và xem trước trước khi xác nhận. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_10.md). Không reset dữ liệu.
 

@@ -1,5 +1,12 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.10.11 — Sản phẩm báo cáo và nhà cung cấp thanh toán
+
+- 77 test Django đạt, gồm các regression thu khách và bốn ca mới cho chi nhà cung cấp: lọc đúng supplierId đã lưu, nguồn ngừng hoạt động vẫn trả được, nhiều loại vé/mức giá, tính phần còn nợ, giữ khoản chi cũ và khoản thu khách; trộn nhà cung cấp/nguồn nhập tay hoặc booking trùng bị chặn toàn bộ; revision cũ bị chặn, gửi lại cùng mã đợt không chi trùng, kiểm tra quyền giá vốn và chi tiền.
+- Edge headless/Playwright với toàn bộ frontend và API giả lập: sản phẩm Hội An lọc đúng booking/tổng 300 và Excel cùng tập dữ liệu; nhóm chưa xác định tách riêng và nhớ lựa chọn khi mở lại báo cáo. Nhà cung cấp a chỉ hiển thị các booking a dù có cùng vé Eco ở b; đổi nhà cung cấp bỏ tick; lọc Eco, xác nhận đúng bên nhận và chi đúng 60, sổ quỹ ghi một khoản tương ứng.
+- Kiểm tra click ngoài/Escape đóng dropdown loại vé, giữ tìm kiếm/lựa chọn và popup chính; regression thu khách hàng hàng loạt và các test JavaScript trước đó đạt.
+- Không có migration mới. Chưa nghiệm thu Ubuntu/proxy online. Các bộ lọc mới trên giao diện nghiệp vụ đầy đủ; màn hình hạn chế vẫn dùng editor riêng.
+
 ## 1.10.10 — Thu tiền khách hàng hàng loạt
 
 - 73 test backend đạt, gồm năm ca mới: danh sách đúng định danh, preview không ghi, thu đúng phần còn nợ và giữ khoản cũ, retry cùng mã đợt không thu trùng, mã đợt trùng nội dung khác bị từ chối, chọn nhầm khách/booking trùng/không tồn tại/đã tất toán bị chặn toàn bộ, ngày sai, revision đổi sau preview và kiểm tra quyền.
