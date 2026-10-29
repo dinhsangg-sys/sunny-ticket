@@ -26,6 +26,8 @@ class CounterTicketBatch(models.Model):
     email_state = models.CharField(max_length=16,default='idle')
     emailed_at = models.DateTimeField(null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    booking_version = models.PositiveIntegerField(default=1)
+    superseded_at = models.DateTimeField(null=True,blank=True)
     class Meta:
         constraints=[models.UniqueConstraint(fields=['owner','booking_id','source_hash'],name='unique_counter_source')]
 

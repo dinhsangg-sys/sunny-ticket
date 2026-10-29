@@ -47,9 +47,17 @@ def allowed_batch(request,key,create=False):
     query=CounterTicketBatch.objects.all() if request.user.is_superuser else CounterTicketBatch.objects.filter(owner=request.user)
     batch=get_object_or_404(query,pk=key);booking=booking_for(request.user,batch.booking_id);return batch,booking
 
+def needs_replacement(booking):
+    return CounterTicketBatch.objects.filter(booking_id=booking['id']).exclude(output_hash='').exists()
+
+def require_replacement(user,booking):
+    if needs_replacement(booking) and not permitted(user,'replace_tickets'):
+        raise ValueError('Cần quyền thay bộ vé để tạo phiên bản mới. Bộ vé cũ vẫn được giữ.')
+
 def public_batch(batch,booking):
     return {'id':str(batch.pk),'name':batch.source_name,'bookingId':batch.booking_id,'quantity':booking['qty'],'ready':bool(batch.output_hash),'email':batch.customer_email,'emailState':batch.email_state,
-            'emailEnabled':email_ready(), 'selected':batch.selected,
+            'emailEnabled':email_ready() and not batch.superseded_at and batch.booking_version==booking.get('counterVersion',1), 'selected':batch.selected,
+            'archived':bool(batch.superseded_at) or batch.booking_version!=booking.get('counterVersion',1),'createdAt':batch.created_at.isoformat(),
             'rows':[{'page':r['page'],**{k:r.get(k,'') for k in FIELDS},'qrUrl':f'/api/counter/ticket-batches/{batch.pk}/qr/{r["page"]}/'} for r in batch.rows]}
 
 @login_required
@@ -61,7 +69,7 @@ def booking_tickets(request,booking_id):
     if request.method=='GET':
         batches=CounterTicketBatch.objects.filter(booking_id=booking_id).order_by('-created_at')
         if not request.user.is_superuser:batches=batches.filter(owner=request.user)
-        return JsonResponse({'booking':{'code':booking['bookingCode'],'qty':booking['qty'],'email':booking.get('customerEmail','')},'batches':[public_batch(b,booking) for b in batches]})
+        return JsonResponse({'booking':{'code':booking['bookingCode'],'qty':booking['qty'],'email':booking.get('customerEmail','')},'canReplace':permitted(request.user,'replace_tickets'),'batches':[public_batch(b,booking) for b in batches]})
     uploads=request.FILES.getlist('files') or request.FILES.getlist('file')
     if not uploads or len(uploads)>20 or not 0<sum(f.size for f in uploads)<=20*1024*1024:return JsonResponse({'error':'Chọn tối đa 20 file PDF/JPEG/PNG, tổng tối đa 20 MB.'},status=400)
     sources=[(Path(f.name).name[:255],f.read()) for f in uploads]
@@ -69,11 +77,12 @@ def booking_tickets(request,booking_id):
     existing=CounterTicketBatch.objects.filter(owner=request.user,booking_id=booking_id,source_hash=digest).first()
     if existing:return JsonResponse(public_batch(existing,booking))
     try:
+        require_replacement(request.user,booking)
         rows=[]
-        for name,blob in sources:
+        for source_index,(name,blob) in enumerate(sources,1):
             extracted=extract_tickets(blob)
             for row in extracted:
-                row['source_page']=row['page'];row['source_name']=name;row['page']=len(rows)+1;rows.append(row)
+                row['source_index']=source_index;row['source_page']=row['page'];row['source_name']=name;row['page']=len(rows)+1;rows.append(row)
             if len(rows)>50:raise ValueError('Tối đa 50 vé trong một đợt nhập.')
         if len({r['qr_hash'] for r in rows})!=len(rows):raise ValueError('Các file có QR trùng nhau. Chưa nhập bộ vé.')
         stream=BytesIO()
@@ -82,8 +91,9 @@ def booking_tickets(request,booking_id):
                 for i,(name,blob) in enumerate(sources):archive.writestr('source-'+str(i+1)+Path(name).suffix,blob)
         source_blob=sources[0][1] if len(sources)==1 else stream.getvalue()
         with transaction.atomic():
-            batch=CounterTicketBatch.objects.create(owner=request.user,booking_id=booking_id,source_name=sources[0][0] if len(sources)==1 else str(len(sources))+' files',source_hash=digest,customer_email=booking.get('customerEmail',''))
+            batch=CounterTicketBatch.objects.create(owner=request.user,booking_id=booking_id,booking_version=booking.get('counterVersion',1),source_name=sources[0][0] if len(sources)==1 else str(len(sources))+' files',source_hash=digest,customer_email=booking.get('customerEmail',''))
             folder=directory(batch);write(folder/'source',source_blob)
+            for i,(name,blob) in enumerate(sources):write(folder/('original-'+str(i+1)),blob)
             for row in rows:write(folder/(str(row['page'])+'.png'),row.pop('qr_png'))
             batch.rows=rows;batch.save(update_fields=['rows'])
         return JsonResponse(public_batch(batch,booking),status=201)
@@ -112,6 +122,7 @@ def generate_tickets(request,batch_id):
     batch,booking=allowed_batch(request,batch_id,True)
     try:
         body=json.loads(request.body)
+        if batch.booking_version!=booking.get('counterVersion',1) or batch.superseded_at:raise ValueError('Phiên bản vé cũ. Tạo phiên bản mới theo booking hiện tại.')
         if body.get('confirmed') is not True:raise ValueError('Xác nhận đã kiểm tra QR/thông tin/ngày sử dụng trước khi xuất.')
         requested=body['rows']
         if not isinstance(requested,list) or len(requested)!=int(booking['qty']):raise ValueError('Số vé được chọn phải bằng số lượng booking. Chỉ chọn các trang thuộc booking này.')
@@ -134,12 +145,16 @@ def generate_tickets(request,batch_id):
             if batch.output_hash:
                 if selected!=batch.selected:raise ValueError('Bộ vé đã được xác nhận trong phiên khác.')
             else:
+                require_replacement(request.user,booking)
+                if batch.booking_version!=booking.get('counterVersion',1):raise ValueError('Booking vừa thay đổi. Tạo phiên bản mới.')
                 existing=set(CounterIssuedQR.objects.filter(booking_id=batch.booking_id).values_list('qr_hash',flat=True));hashes={r['qr_hash'] for r in selected}
-                if existing and existing!=hashes:raise ValueError('Booking đã gắn bộ QR khác; không phát hành thêm bộ vé mới cho cùng booking.')
                 for row in selected:
                     issued,created=CounterIssuedQR.objects.get_or_create(qr_hash=row['qr_hash'],defaults={'booking_id':batch.booking_id,'batch':batch})
                     if issued.booking_id!=batch.booking_id:raise ValueError('QR đã được gắn cho booking khác. Chưa xuất bộ vé này.')
                 write(folder/'tickets.pdf',pdf);batch.selected=selected;batch.output_hash=hashlib.sha256(pdf).hexdigest();batch.save(update_fields=['selected','output_hash'])
+                CounterTicketBatch.objects.filter(booking_id=batch.booking_id,superseded_at__isnull=True).exclude(pk=batch.pk).exclude(output_hash='').update(superseded_at=timezone.now())
+                from apps.audit.models import AuditLog
+                AuditLog.objects.create(user=request.user,action='counter.tickets_issue:'+str(batch.pk),revision=Workspace.objects.get(pk=1).revision)
         return JsonResponse({'pdfUrl':f'/api/counter/ticket-batches/{batch.pk}/pdf/'})
     except (ValueError,TypeError,KeyError) as exc:return JsonResponse({'error':str(exc) or 'Dữ liệu vé không hợp lệ.'},status=400)
     except (OperationalError,IntegrityError):return JsonResponse({'error':'Có phiên khác đang xuất vé. Hãy mở lại bộ vé để kiểm tra.'},status=409)
@@ -165,6 +180,7 @@ def tickets_pdf(request,batch_id):
 @require_http_methods(['POST'])
 def email_tickets(request,batch_id):
     batch,booking=allowed_batch(request,batch_id,True)
+    if batch.superseded_at or batch.booking_version!=booking.get('counterVersion',1):return JsonResponse({'error':'Không gửi email phiên bản vé cũ.'},status=409)
     if not email_ready():return JsonResponse({'error':'Chưa cấu hình hộp thư gửi. Bạn vẫn có thể xuất PDF hoặc in vé.'},status=400)
     blob=output_bytes(batch)
     try:
@@ -183,3 +199,16 @@ def email_tickets(request,batch_id):
     except Exception:
         CounterTicketBatch.objects.filter(pk=batch.pk).update(email_state='uncertain')
         return JsonResponse({'error':'Chưa xác nhận máy chủ thư đã tiếp nhận. Liên hệ quản trị kiểm tra trước khi gửi lại để tránh trùng.'},status=502)
+
+@login_required
+@never_cache
+@require_http_methods(['POST'])
+def replace_tickets(request,batch_id):
+    batch,booking=allowed_batch(request,batch_id,True)
+    if not permitted(request.user,'replace_tickets'):return JsonResponse({'error':'Chưa có quyền thay bộ vé.'},status=403)
+    with transaction.atomic():
+        replacement=CounterTicketBatch.objects.create(owner=request.user,booking_id=batch.booking_id,booking_version=booking.get('counterVersion',1),source_name=batch.source_name,source_hash=hashlib.sha256((batch.source_hash+str(uuid.uuid4())).encode()).hexdigest(),rows=batch.rows,customer_email=booking.get('customerEmail',''))
+        target=directory(replacement)
+        for file in directory(batch).iterdir():
+            if file.name=='source' or file.name.startswith('original-') or file.suffix=='.png':write(target/file.name,file.read_bytes())
+    return JsonResponse(public_batch(replacement,booking),status=201)

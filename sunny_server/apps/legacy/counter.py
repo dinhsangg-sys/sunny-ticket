@@ -32,8 +32,11 @@ def default_cost(data,ticket_id,day):
     return top[0]
 
 def public_booking(row):
-    fields=('id','bookingCode','date','ticketId','ticketType','product','qty','sellPrice','revenue','hasVat','note','agent','createdAt','customerEmail')
-    return {key:row.get(key) for key in fields}
+    fields=('id','bookingCode','date','ticketId','ticketType','product','qty','sellPrice','revenue','hasVat','note','agent','createdAt','customerEmail','counterVersion')
+    result={key:row.get(key) for key in fields}
+    paid=sum(amount(p['amount']) for p in row.get('payments',[]))
+    result.update(paid=float(paid),balance=float(amount(row.get('revenue',0))-paid))
+    return result
 
 @login_required
 @never_cache
@@ -60,7 +63,7 @@ def counter_api(request):
             tickets.append({'id':ticket['id'],'name':ticket.get('name',''),'product':ticket.get('product',''),'ready':ready})
         own=[public_booking(b) for b in obj.data.get('bookings',[]) if b.get('source')=='counter' and b.get('counterSellerId')==user.pk]
         own.sort(key=lambda b:b.get('createdAt') or '',reverse=True)
-        return JsonResponse({'today':day,'seller':user.get_username(),'canCreate':permitted(user,'create'),'tickets':tickets,'bookings':own[:100]})
+        return JsonResponse({'today':day,'seller':user.get_username(),'canCreate':permitted(user,'create'),'canChange':permitted(user,'change'),'canReplace':permitted(user,'replace_tickets'),'canReport':permitted(user,'report'),'tickets':tickets,'bookings':own[:100]})
     try:
         body=json.loads(request.body)
         fields={'requestId','ticketId','qty','sellPrice','hasVat','note','customerEmail'}
@@ -90,7 +93,10 @@ def counter_api(request):
              'customerType':'retail','agent':user.get_username(),'customerName':user.get_username(),'ticketId':ticket_id,'ticketType':ticket.get('name',''),'product':ticket.get('product',''),
              'qty':int(qty),'sellPrice':float(price),'buyPrice':float(amount(cost['price'])),'cost':0,'costSource':'supplier','costPriceId':cost['id'],'supplierId':cost['supplierId'],'supplierName':cost['supplierName'],
              'customerEmail':email,'hasVat':vat,'vatRate':15 if vat else 0,'note':note,'status':'completed','payments':[],'supplierPayments':[]}
-        calculate_booking(row);data.setdefault('bookings',[]).append(row);enforce_ticket_lifecycle(obj.data,data)
+        calculate_booking(row)
+        row['counterVersion']=1
+        if row['revenue']>0:row['payments']=[{'id':str(uuid.uuid4()),'date':day,'amount':row['revenue'],'note':'Đã thu tại quầy — '+user.get_username(),'createdBy':user.pk}]
+        data.setdefault('bookings',[]).append(row);enforce_ticket_lifecycle(obj.data,data)
         with transaction.atomic():save_workspace(obj,data,user,obj.revision,'counter.booking_create')
         return JsonResponse({'booking':public_booking(row),'duplicate':False},status=201)
     except (RuntimeError,OperationalError):return JsonResponse({'error':'Có giao dịch khác đang lưu. Hãy thử lại cùng lần lưu; hệ thống sẽ kiểm tra để tránh tạo trùng.'},status=409)

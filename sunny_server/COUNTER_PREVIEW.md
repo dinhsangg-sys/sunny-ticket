@@ -1,5 +1,9 @@
 # Module quầy — bản thử nghiệm riêng
 
+## Bản bổ sung thanh toán, sửa booking và đối chiếu
+
+Đọc [COUNTER_UPDATE_TEST.md](COUNTER_UPDATE_TEST.md). Migration 0010 bổ sung quyền riêng; booking quầy mới ghi nhận thu đủ, phiên bản vé cũ được giữ để đối chiếu.
+
 ## Bản bổ sung nhập vé, PDF/in và email
 
 Đọc [COUNTER_TICKETS_TEST.md](COUNTER_TICKETS_TEST.md) để cập nhật bản bổ sung. Có migration mới 0009 và thư viện xử lý PDF/QR; chỉ cập nhật thư mục `/home/sunny-ticket-counter-test`, không đưa vào main hoặc thư mục live. Các mô tả chưa có chức năng ở phần phạm vi cũ dưới đây là lịch sử bản quầy đầu tiên.
