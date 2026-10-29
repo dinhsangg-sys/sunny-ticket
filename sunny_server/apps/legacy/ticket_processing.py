@@ -16,6 +16,9 @@ def normalize(value):
     return ''.join(c for c in unicodedata.normalize('NFD',value.lower()) if unicodedata.category(c)!='Mn').replace('đ','d')
 
 def text_fields(text):
+    # Keep line boundaries: OCR often places the value before the English label.
+    lines=[line.strip() for line in text.splitlines() if line.strip() and not re.search(r'https?\s*:|www\.|invoiceid|is[_ ]agency|ticket[_ ]export|memoriesland[./?]',line,re.I)]
+    text='\n'.join(lines)
     flat=unicodedata.normalize('NFC',re.sub(r'\s+',' ',text));norm=normalize(flat)
     def after(pattern):
         match=re.search(pattern,norm,re.I)
@@ -24,17 +27,40 @@ def text_fields(text):
         positions=[m.start() for pattern in markers if (m:=re.search(pattern,normalize(value),re.I))]
         return value[:min(positions)].strip(' :') if positions else value.strip(' :')
     expiry=re.search(r'\b\d{1,2}/\d{1,2}/\d{4}\b',after(r'expiration\s*date') or flat)
+    if not expiry:expiry=re.search(r'\b\d{1,2}/\d{1,2}/\d{4}\b',flat)
     package=until(after(r'service\s*package') or after(r'ten\s*goi\s*dich\s*vu'),[r'thoi gian',r'\btime\b',r'\bpark\b'])
     if package.lower().startswith('service'):package=until(re.sub(r'^service\s*package\s*:?\s*','',package,flags=re.I),[r'thoi gian',r'\btime\b',r'\bpark\b'])
     if not package:
         # Only accept a recognizable package printed on its own OCR line, never infer from booking.
         candidates=[line.strip() for line in text.splitlines() if re.fullmatch(r'\s*(?:ECO|HIGH|VIP)(?:[ -][A-Z0-9]+){0,5}\s*',line)]
         if len(candidates)==1:package=candidates[0]
+    packages=re.findall(r'\b(?:ECO|HIGH|VIP)(?:[ -]+[A-Z0-9]+){0,5}\b',text)
+    packages=[p.strip() for p in packages if not any(label in p for label in ('PARK','SHOW','TIME','CODE'))]
+    if len(set(packages))==1:package=packages[0]
     park=re.search(r'P[A4]RK\s*:?\s*(\d{1,2}:\d{2}\s*[-–—]\s*\d{1,2}:\d{2})',flat,re.I)
     show=re.search(r'SHOW\s*:?\s*(\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2})',flat,re.I)
     code=re.search(r'\b\d{8,}(?:-\d+){1,4}\b',flat)
     agent=until(after(r'cooperative\s*agent') or after(r'dai\s*ly\s*hop\s*tac'),[r'https?://',r'\btrang\b',r'\d{1,2}/\d{1,2}/\d{2,4}'])
     agent=re.sub(r'^cooperative\s*agent\s*:?\s*','',agent,flags=re.I)
+    agent=re.split(r'cooperative\s*agent',agent,flags=re.I)[0].strip(' :')
+    def agent_value(value):
+        value=value.strip(' :')
+        return value if re.fullmatch(r'[A-Z][A-Z0-9_. -]{0,23}',value) and len(value.split())<=4 and not re.search(r'COOPERATIVE|AGENT|PARK|SHOW|SERVICE|PACKAGE',value) else ''
+    # Prefer values on the same row as either language's label over later page text.
+    for line in lines:
+        normalized=normalize(line)
+        for pattern in (r'dai\s*ly\s*hop\s*tac',r'cooperative\s*agent'):
+            match=re.search(pattern,normalized)
+            if match:
+                value=re.split(r'cooperative\s*agent',line[match.end():],flags=re.I)[0].strip(' :')
+                if agent_value(value):agent=value
+    if not agent_value(agent):agent=''
+    if not agent and code:
+        # Value-only OCR crop: take a standalone code following the printed ticket code.
+        following=False
+        for line in lines:
+            if code.group(0) in line:following=True;continue
+            if following and agent_value(line):agent=line;break
     return {'expiry':expiry.group(0) if expiry else '', 'package':package[:100], 'park_time':park.group(1) if park else '', 'show_time':show.group(1) if show else '', 'ticket_code':code.group(0) if code else '', 'agent':agent[:60]}
 
 def decode(image):
@@ -57,8 +83,13 @@ def ocr(image):
     except Exception:
         return ''
 
-def image_fields(image):
-    fields=text_fields(ocr(image))
+def image_fields(image,column=False):
+    if column:
+        try:
+            import pytesseract
+            fields=text_fields(pytesseract.image_to_string(image,lang='vie+eng',config='--psm 6',timeout=30))
+        except Exception:fields=text_fields('')
+    else:fields=text_fields(ocr(image))
     if all(fields.values()):return fields
     # Retry a larger view of the text region; the dark artwork can dominate full-image OCR.
     try:
@@ -113,10 +144,18 @@ def region_fields(image):
     # Horizontal ticket artwork is on the left in the supplied layout. Restrict OCR to its
     # information panel only when the QR is clearly on the right; do not infer field values.
     codes=decode(image)
-    if len(codes)==1 and image.width>image.height*1.05:
+    if len(codes)==1:
         left,top,right,bottom=qr_bounds(codes[0])
         if (left+right)/2>image.width*.60:
-            image=image.crop((max(0,int(left-(right-left)*1.7)),max(0,int(bottom)),image.width,image.height))
+            # This layout prints a value column beneath the right-hand QR. Exclude bilingual
+            # labels and cap the bottom using QR size so the browser footer never enters OCR.
+            width=right-left;height=bottom-top
+            values=image.crop((max(0,int(left-width*.12)),max(0,int(bottom+height*.15)),min(image.width,int(right+width*2.1)),min(image.height,int(bottom+height*2.9))))
+            values=ImageOps.autocontrast(values.convert('L'))
+            target=min(1800,max(values.width,1400))
+            values=values.resize((target,round(values.height*target/values.width)))
+            fields=image_fields(values,column=True)
+            return fields
     return image_fields(image)
 
 

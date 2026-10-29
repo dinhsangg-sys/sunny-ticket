@@ -216,3 +216,36 @@ def replace_tickets(request,batch_id):
         for file in directory(batch).iterdir():
             if file.name=='source' or file.name.startswith('original-') or file.suffix=='.png':write(target/file.name,file.read_bytes())
     return JsonResponse(public_batch(replacement,booking),status=201)
+
+@login_required
+@never_cache
+@require_http_methods(['POST'])
+def reread_tickets(request,batch_id):
+    batch,booking=allowed_batch(request,batch_id,True)
+    if batch.output_hash:return JsonResponse({'error':'Bộ vé đã xuất được giữ nguyên. Tạo phiên bản mới trước khi đọc lại.'},status=409)
+    try:
+        require_replacement(request.user,booking)
+        folder=directory(batch);sources=sorted(folder.glob('original-*'),key=lambda p:int(p.name.split('-')[-1]))
+        blobs=[p.read_bytes() for p in sources]
+        if not blobs:
+            blob=(folder/'source').read_bytes()
+            if blob.startswith(b'PK'):
+                with zipfile.ZipFile(BytesIO(blob)) as archive:
+                    if len(archive.infolist())>20 or sum(i.file_size for i in archive.infolist())>20*1024*1024:raise ValueError('Nguồn lưu trữ quá lớn.')
+                    blobs=[archive.read(info) for info in archive.infolist()]
+            else:blobs=[blob]
+        rows=[]
+        for source_index,blob in enumerate(blobs,1):
+            for row in extract_tickets(blob):
+                row.setdefault('source_page',row['page']);row['source_index']=source_index;row['page']=len(rows)+1;row.pop('qr_png')
+                original=next((r for r in batch.rows if r['qr_hash']==row['qr_hash']),{})
+                row['source_name']=original.get('source_name',batch.source_name);rows.append(row)
+                if len(rows)>50:raise ValueError('Tối đa 50 vé.')
+        if [r['qr_hash'] for r in rows]!=[r['qr_hash'] for r in batch.rows]:raise ValueError('QR/thứ tự vé thay đổi khi đọc lại. Chưa cập nhật; cần nhập thành bộ mới để kiểm tra.')
+        with transaction.atomic():
+            current=CounterTicketBatch.objects.select_for_update().get(pk=batch.pk)
+            if current.output_hash:return JsonResponse({'error':'Bộ vé vừa được xuất trong phiên khác. Chưa thay đổi.'},status=409)
+            current.rows=rows;current.save(update_fields=['rows'])
+        return JsonResponse(public_batch(current,booking))
+    except Exception as exc:
+        return JsonResponse({'error':str(exc) if isinstance(exc,ValueError) else 'Không đọc lại được nguồn. Kiểm tra OCR hoặc nhập bộ file mới.'},status=400)

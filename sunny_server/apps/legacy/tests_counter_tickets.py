@@ -58,6 +58,15 @@ class CounterTicketTests(TestCase):
         self.assertEqual(self.upload(b'not a ticket').status_code,400)
         self.assertEqual(self.upload(source_pdf(2,True)).status_code,400);self.assertFalse(CounterTicketBatch.objects.exists())
 
+    def test_reread_unissued_batch_and_protect_issued_version(self):
+        self.upload();batch=CounterTicketBatch.objects.get();original=copy.deepcopy(batch.rows)
+        damaged=copy.deepcopy(batch.rows);damaged[0]['agent']='WRONG';CounterTicketBatch.objects.filter(pk=batch.pk).update(rows=damaged)
+        url=f'/api/counter/ticket-batches/{batch.pk}/reread/'
+        response=self.client.post(url,{},content_type='application/json');self.assertEqual(response.status_code,200,response.content)
+        batch.refresh_from_db();self.assertEqual(batch.rows[0]['agent'],original[0]['agent']);self.assertEqual(CounterIssuedQR.objects.count(),0)
+        self.assertEqual(self.generate(batch).status_code,200)
+        self.assertEqual(self.client.post(url,{},content_type='application/json').status_code,409)
+
     def test_multiple_images_ocr_fallback_and_count_mismatch(self):
         with patch('apps.legacy.ticket_processing.ocr',return_value=''):
             response=self.client.post('/api/counter/booking/tickets/',{'files':[SimpleUploadedFile('a.png',qr_image('PHOTO-1')),SimpleUploadedFile('b.png',qr_image('PHOTO-2'))]})

@@ -60,3 +60,11 @@ Bản bổ sung tách vùng vé theo vị trí QR và khoảng trắng phân cá
 Đã kiểm tra thực tế PDF `3 eco 2510.pdf`: 2 trang tách 3 vé, đúng mã riêng từng vé, hạn 25/10/2026, ECO CL AH, PARK/SHOW và AHBN; xuất được 3 trang 80x110 và kiểm tra QR khớp nguồn. Ảnh `2 eco 2410_001.jpg` tách được 2 QR/vùng riêng. Máy phát triển chưa có Tesseract nên chưa xác nhận OCR chữ thật trên JPEG này; môi trường Ubuntu cần Tesseract vie+eng như hướng dẫn cũ. Các trường thiếu vẫn phải điền và kiểm tra trước khi xuất. Không đưa các file nguồn/QR thật vào GitHub.
 
 Số thứ tự vé có thể khác số trang nguồn: hai vé cùng trang sẽ được đánh số 1, 2 nhưng báo cáo vẫn mở đúng trang nguồn 1. Không cần migration/thư viện mới cho bản sửa này.
+
+## Sửa OCR cột giá trị và đọc lại bộ đã import
+
+Sửa trường hợp ảnh hai vé ngang bị thiếu hạn/gói/mã và ô đại lý chứa nhãn hoặc URL. Với bố cục QR bên phải như mẫu, OCR đọc riêng cột giá trị bên dưới QR, giới hạn đáy theo kích thước QR để loại footer. Chạy chế độ một cột; parser giữ dòng, nhận giá trị trước nhãn tiếng Anh, lọc URL/tham số và chỉ nhận mã đại lý hợp lệ. Không gán AHBN cố định cho mọi file.
+
+Đã chạy Tesseract.js với eng+vie trên hai vùng cắt từ ảnh thật `2 eco 2410_001.jpg`: đọc đủ sáu trường cho hai vé, AHBN/ECO CL AH/ngày 24/10/2026, mã riêng đúng từng vé; đưa kết quả qua parser và renderer, xuất hai trang và kiểm tra QR khớp nguồn. Backend Ubuntu vẫn dùng pytesseract/Tesseract native; cần kiểm tra lại trên máy Ubuntu sau cập nhật vì engine/ngôn ngữ có thể khác phiên bản.
+
+Với bộ đã import nhưng chưa xuất, chọn **Đọc lại thông tin từ file gốc**, xác nhận thay kết quả đang sửa, rồi kiểm tra và xuất. Không tạo booking mới. Bộ đã xuất không được ghi đè: người có quyền cần tạo phiên bản mới trước. QR/thứ tự phải giữ nguyên khi đọc lại, nếu khác sẽ bị chặn. Không có migration hoặc thư viện mới.
