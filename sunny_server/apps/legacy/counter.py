@@ -6,6 +6,8 @@ import uuid
 from django.contrib.auth.decorators import login_required
 from django.db import transaction, OperationalError
 from django.http import JsonResponse, HttpResponseForbidden
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
@@ -30,7 +32,7 @@ def default_cost(data,ticket_id,day):
     return top[0]
 
 def public_booking(row):
-    fields=('id','bookingCode','date','ticketId','ticketType','product','qty','sellPrice','revenue','hasVat','note','agent','createdAt')
+    fields=('id','bookingCode','date','ticketId','ticketType','product','qty','sellPrice','revenue','hasVat','note','agent','createdAt','customerEmail')
     return {key:row.get(key) for key in fields}
 
 @login_required
@@ -61,15 +63,18 @@ def counter_api(request):
         return JsonResponse({'today':day,'seller':user.get_username(),'canCreate':permitted(user,'create'),'tickets':tickets,'bookings':own[:100]})
     try:
         body=json.loads(request.body)
-        fields={'requestId','ticketId','qty','sellPrice','hasVat','note'}
+        fields={'requestId','ticketId','qty','sellPrice','hasVat','note','customerEmail'}
         if not isinstance(body,dict) or set(body)-fields: raise ValueError('Không được thay ngày, người bán, giá vốn hoặc các trường ngoài biểu mẫu quầy.')
+        email=body.get('customerEmail','').strip()
+        if email:validate_email(email)
+        if len(email)>254:raise ValueError('Email quá dài.')
         request_id=str(uuid.UUID(body['requestId']))
         ticket_id=body['ticketId'];qty=amount(body['qty']);price=amount(body['sellPrice']);vat=body.get('hasVat',False);note=body.get('note','')
         if qty<=0 or qty!=qty.to_integral_value() or qty>10000: raise ValueError('Số lượng phải là số nguyên từ 1 đến 10000.')
         if price!=price.to_integral_value(): raise ValueError('Giá bán nhập theo đồng, không có phần thập phân.')
         amount(price*qty)
         if not isinstance(vat,bool) or not isinstance(note,str) or len(note)>2000 or not isinstance(ticket_id,str):raise ValueError('VAT/ghi chú/loại vé không hợp lệ.')
-        fingerprint=hashlib.sha256(json.dumps({'ticketId':ticket_id,'qty':str(qty.normalize()),'price':str(price.normalize()),'vat':vat,'note':note},sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+        fingerprint=hashlib.sha256(json.dumps({'ticketId':ticket_id,'qty':str(qty.normalize()),'price':str(price.normalize()),'vat':vat,'note':note,'email':email},sort_keys=True,ensure_ascii=False).encode()).hexdigest()
         data=copy.deepcopy(obj.data)
         existing=next((b for b in data.get('bookings',[]) if b.get('counterRequestId')==request_id and b.get('counterSellerId')==user.pk),None)
         if existing:
@@ -84,9 +89,9 @@ def counter_api(request):
              'source':'counter','counterSellerId':user.pk,'counterRequestId':request_id,'counterRequestHash':fingerprint,
              'customerType':'retail','agent':user.get_username(),'customerName':user.get_username(),'ticketId':ticket_id,'ticketType':ticket.get('name',''),'product':ticket.get('product',''),
              'qty':int(qty),'sellPrice':float(price),'buyPrice':float(amount(cost['price'])),'cost':0,'costSource':'supplier','costPriceId':cost['id'],'supplierId':cost['supplierId'],'supplierName':cost['supplierName'],
-             'hasVat':vat,'vatRate':15 if vat else 0,'note':note,'status':'completed','payments':[],'supplierPayments':[]}
+             'customerEmail':email,'hasVat':vat,'vatRate':15 if vat else 0,'note':note,'status':'completed','payments':[],'supplierPayments':[]}
         calculate_booking(row);data.setdefault('bookings',[]).append(row);enforce_ticket_lifecycle(obj.data,data)
         with transaction.atomic():save_workspace(obj,data,user,obj.revision,'counter.booking_create')
         return JsonResponse({'booking':public_booking(row),'duplicate':False},status=201)
     except (RuntimeError,OperationalError):return JsonResponse({'error':'Có giao dịch khác đang lưu. Hãy thử lại cùng lần lưu; hệ thống sẽ kiểm tra để tránh tạo trùng.'},status=409)
-    except (ValueError,TypeError,KeyError):return JsonResponse({'error':'Dữ liệu chưa hợp lệ hoặc giá vốn mặc định chưa sẵn sàng. Kiểm tra số lượng/giá bán và liên hệ quản trị nếu loại vé chưa có mặc định rõ ràng.'},status=400)
+    except (ValueError,TypeError,KeyError,AttributeError,ValidationError):return JsonResponse({'error':'Dữ liệu chưa hợp lệ hoặc giá vốn mặc định chưa sẵn sàng. Kiểm tra số lượng/giá bán và liên hệ quản trị nếu loại vé chưa có mặc định rõ ràng.'},status=400)

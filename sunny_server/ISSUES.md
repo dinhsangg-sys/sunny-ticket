@@ -2,6 +2,37 @@
 
 ## Các yêu cầu cập nhật gần đây
 
+**Nhánh thử nghiệm quầy:** FEATURE-010 và FEATURE-011 đã có bản bổ sung để test import PDF/JPEG/PNG, QR riêng từng vé, kiểm tra/chọn trang, xuất PDF 80x110, preview/in và email có cấu hình. Template đầu ra đã duyệt được dùng cố định. Không gộp main, không gửi email thật trong kiểm thử; các ghi nhận chưa triển khai phía dưới là lịch sử yêu cầu. Xem COUNTER_TICKETS_TEST.md.
+
+### FEATURE-011 — Email khách và gửi vé đầu ra qua email
+
+- Trạng thái: ghi nhận cho module quầy đang thử nghiệm, chưa triển khai hoặc gửi email thật.
+- Yêu cầu mới: thêm trường Email khách hàng khi tạo booking khách lẻ và chức năng gửi vé xuất theo mẫu 80x110 mm đã duyệt cho khách.
+- Đề xuất luồng: email không bắt buộc để tạo booking; khi bấm Gửi vé qua email thì phải có địa chỉ hợp lệ. Lưu địa chỉ theo booking, kiểm tra phía server, cho kiểm tra người nhận và vé PDF trước khi xác nhận gửi.
+- Chỉ đính kèm PDF vé đầu ra đã tạo/kiểm tra cho đúng booking và các QR tương ứng; không tự gửi file vé nhà cung cấp gốc, dữ liệu giá vốn hoặc booking khác. Không gửi khi file xuất còn lỗi, thiếu vé hoặc đang chờ đối soát QR.
+- Gửi bằng nút xác nhận riêng, không mặc định tự gửi mỗi lần tạo booking khi chưa có yêu cầu đó. Nhân viên chỉ gửi vé của booking mình được phép truy cập; kiểm tra lại quyền tại thao tác tải file/gửi.
+- Lưu trạng thái chờ/đang gửi/đã được hệ thống thư tiếp nhận/lỗi, thời điểm và kết quả; không coi SMTP tiếp nhận là chứng minh khách đã nhận/đọc. Chống bấm lặp/gửi trùng; nếu chưa rõ kết quả cần đối soát trước khi gửi lại. Lỗi gửi không làm tạo trùng booking hoặc xóa booking đã lưu.
+- Cần cấu hình hộp thư gửi/SMTP hoặc dịch vụ email trên server thử nghiệm trước khi gửi thật; không hardcode mật khẩu vào mã nguồn hoặc yêu cầu gửi mật khẩu qua chat. Chưa xác định địa chỉ gửi và cấu hình mail trong yêu cầu hiện tại.
+- Phụ thuộc FEATURE-010 (import QR/thông tin, xuất PDF đúng template). Mẫu đầu ra đã có, không cần người dùng gửi lại.
+
+### FEATURE-010 — Nhập vé gốc PDF/JPEG và dàn vào mẫu vé cố định tại quầy
+
+- Bổ sung yêu cầu đầu ra: sau import PDF hoặc ảnh và kiểm tra từng vé, có hai nút Xuất PDF và In vé. Dùng chung bản PDF đã dàn theo template được duyệt 80x110 mm; mỗi vé một trang, giữ đúng QR/thông tin của vé đó. Có thể chọn các vé cần xuất/in, xem số lượng và preview trước khi thao tác.
+- Xuất PDF tải file mới, không sửa/ghi đè file nguồn. In vé mở hộp thoại in của trình duyệt để người dùng chọn máy in, số bản, khổ 80x110 mm và tỉ lệ 100%/Actual size. Không mặc định in âm thầm hoặc tự chọn máy in; in trực tiếp không hộp thoại cần giải pháp/cấu hình riêng nếu được yêu cầu sau.
+- Cần kiểm tra khổ giấy/lề/vùng in thực tế theo máy in người dùng. Bấm In hoặc trình duyệt mở hộp thoại chưa chứng minh vé đã in thành công; không tự ghi nhận đã in chỉ từ sự kiện gọi lệnh in. Xuất/in lại không tạo QR mới hoặc tự tạo booking mới.
+
+- Người dùng đã chốt file PDF đầu ra khổ 80x110 mm, một trang, giống bản nền đã tạo. Đã lưu bản gốc được duyệt tại ticket_templates/counter_80x110.pdf trên workspace nhánh thử nghiệm. Mẫu chừa QR và các giá trị động, giữ nhãn song ngữ/nền/logo; không cần xin lại mẫu đầu ra. Chưa triển khai import/trích QR/điền mẫu hoặc cập nhật server thử nghiệm.
+
+- Trạng thái: đã khảo sát PDF mẫu, chưa triển khai; thiếu mẫu vé đầu ra do người dùng muốn upload sẵn. Giữ trên nhánh thử nghiệm quầy, không gộp main.
+- Luồng yêu cầu: tại booking khách lẻ, upload file vé gốc; lấy QR và các trường thông tin từng vé để điền vào các vùng được khai báo trên template; xem trước trước khi xuất PDF/in.
+- PDF mẫu người dùng cung cấp có 12 trang, hai bố cục khác nhau: 11 trang dọc và trang cuối vé ngang nằm trên trang giấy. Text lấy trực tiếp được, chưa cần OCR với mẫu này. Mỗi trang có ảnh vuông QR nhúng riêng 256x256; chỉ khảo sát khả năng trích ảnh, chưa xác minh payload/quét QR.
+- Các trường đọc được: hạn sử dụng, tên gói dịch vụ, giờ PARK, giờ SHOW, mã vé, đại lý hợp tác. Mẫu có hai giá trị gói dịch vụ/đại lý khác nhau; không áp cùng một chuỗi thông tin cho toàn bộ file chỉ vì tên file hoặc loại vé booking giống nhau.
+- QR phải lấy đúng ảnh của từng vé, không lấy QR trang đầu nhân bản; giữ nội dung gốc và vùng trắng, không tự tái tạo từ mã vé in chữ khi chưa xác minh payload. Không tự coi QR còn hiệu lực hoặc đã được nhà cung cấp chấp nhận chỉ vì trích ảnh thành công.
+- Xử lý nhiều trang/nhiều vé: tách từng vé, cho kiểm tra số lượng so với booking, cảnh báo QR/mã vé trùng, thiếu trường hoặc chưa đọc được; giữ file gốc để đối soát. Không tự tăng số lượng booking hoặc phát hành vé khi chưa xác nhận.
+- Tách ngày tạo booking hiện tại khỏi ngày sử dụng/hạn trên vé gốc; không đổi ngày sử dụng theo ngày tạo booking. Không nhầm đại lý gốc trên vé với tên nhân viên đăng nhập.
+- JPEG/PDF scan cần nhận dạng ảnh/OCR và bước xác nhận khi chưa chắc chắn; không suy đoán thông tin thiếu. Cần thêm mẫu ảnh khi triển khai định dạng này.
+- File vé/QR và file xuất phải có quyền truy cập theo booking/nhân viên, không đẩy mẫu gốc chứa QR thật lên GitHub công khai. Mẫu đầu ra cần người dùng cung cấp để chốt vị trí QR/các trường, khổ giấy và cách bố trí nhiều vé.
+
 **Cập nhật 1.10.13:** đã triển khai UX-013 và BUG-013, kiểm thử giao diện cục bộ đạt. Các dòng chờ phía dưới lưu lịch sử yêu cầu; chờ nghiệm thu online. Chế độ Tất cả nhà cung cấp mở rộng danh sách, mỗi đợt thanh toán vẫn chỉ có một bên nhận.
 
 ### BUG-013 — Dropdown Nhà cung cấp không đóng khi click ra ngoài

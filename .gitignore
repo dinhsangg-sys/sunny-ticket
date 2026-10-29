@@ -4,6 +4,7 @@
 *.sqlite3
 sunny_server/media/
 sunny_server/staticfiles/
+sunny_server/private_counter/
 *.zip
 *.env
 !*.env.example

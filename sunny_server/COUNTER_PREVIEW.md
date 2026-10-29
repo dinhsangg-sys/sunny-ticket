@@ -1,5 +1,9 @@
 # Module quầy — bản thử nghiệm riêng
 
+## Bản bổ sung nhập vé, PDF/in và email
+
+Đọc [COUNTER_TICKETS_TEST.md](COUNTER_TICKETS_TEST.md) để cập nhật bản bổ sung. Có migration mới 0009 và thư viện xử lý PDF/QR; chỉ cập nhật thư mục `/home/sunny-ticket-counter-test`, không đưa vào main hoặc thư mục live. Các mô tả chưa có chức năng ở phần phạm vi cũ dưới đây là lịch sử bản quầy đầu tiên.
+
 ## Bản sửa chạy thử HTTP nội bộ
 
 Đã sửa trường hợp truy cập bằng HTTP qua IP/cổng 8001 không lưu được giá vốn hoặc không tạo được booking quầy vì trình duyệt thiếu crypto.randomUUID trong ngữ cảnh không bảo mật. Script UUID tương thích được nạp trước các luồng nghiệp vụ, dùng crypto.getRandomValues để tạo UUID v4; không thay hàm native nếu trình duyệt đã hỗ trợ, không dùng Math.random.
