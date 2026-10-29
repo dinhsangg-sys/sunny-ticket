@@ -24,7 +24,7 @@ Giữ terminal mở, Ctrl+F5 trên trang thử nghiệm. Không reset database. 
 
 - Có thêm Email khách hàng (không bắt buộc) và file PDF/JPEG/PNG khi tạo booking. Cho chọn nhiều file ảnh/PDF trong cùng lần, tối đa 20 file, tổng 20 MB và 50 trang/vé.
 - Booking được lưu trước; nếu nhập vé lỗi thì booking vẫn tồn tại, không tạo lại. Dùng nút **Nhập / In / Gửi vé** trong Booking của tôi để nhập lại hoặc nhập sau.
-- Mỗi trang PDF/ảnh cần đúng một QR đọc được. PDF nhiều QR trong cùng trang cần được tách trước; không tự đoán vị trí của nhiều vé. File bị khóa, QR mờ/không đọc được hoặc QR trùng trong lần nhập bị từ chối.
+- PDF/ảnh có thể có nhiều vé với QR riêng nếu có khoảng trắng phân cách rõ giữa các vùng vé. Nếu không tách rõ, cần cắt từng vé trước; không tự đoán thông tin của nhiều QR. File bị khóa, QR mờ/không đọc được hoặc QR trùng trong lần nhập bị từ chối.
 - PDF có text đọc trực tiếp. Ảnh/PDF scan dùng Tesseract vie+eng nếu cài được; nếu OCR thiếu/sai, các trường để trống hoặc cần sửa ở bước kiểm tra. Không có cam kết đọc tự động mọi bố cục. JPEG/PNG chỉ mang QR cũng được nhập, nhưng phải điền đủ trường trước khi xuất.
 
 ## Xem trước và xuất/in

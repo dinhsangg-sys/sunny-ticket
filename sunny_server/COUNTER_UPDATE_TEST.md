@@ -52,3 +52,11 @@ Báo cáo không xác minh hiệu lực QR tại cổng soát vé. OCR nguồn c
 ## Bản sửa OCR ảnh và thông báo thiếu trường
 
 Nếu QR đã đọc được nhưng chưa xuất PDF, điền đủ sáu trường ở màn hình kiểm tra. Khi bấm tạo PDF, ô thiếu được viền đỏ và nêu tên cụ thể; không phải import lại. Ảnh import mới thử OCR vùng chữ phóng lớn nếu lượt đầu thiếu, bổ sung nhận nhãn tiếng Việt và P4RK do OCR. Không tự đoán giá trị. Đợt vé đã import vẫn giữ dữ liệu gốc để đối soát; điền bổ sung trong bản xuất. Ảnh thực tế có thể cần sửa tay; chưa kiểm nghiệm Tesseract thật với mọi ảnh.
+
+## Nhiều vé ngang/dọc trên cùng trang
+
+Bản bổ sung tách vùng vé theo vị trí QR và khoảng trắng phân cách, đọc text PDF riêng trong từng vùng; ảnh/scan OCR riêng mỗi vùng. Hỗ trợ các vé xếp trên/dưới hoặc cạnh nhau nếu vùng phân cách rõ. Nếu không tách chắc chắn thì báo lỗi yêu cầu cắt từng vé, không dùng chung thông tin cả trang cho nhiều QR. Mỗi QR tạo một trang đầu ra 80x110; số vé được chọn vẫn phải bằng số lượng booking. Tối đa 50 vé/đợt nhập và không cho QR trùng.
+
+Đã kiểm tra thực tế PDF `3 eco 2510.pdf`: 2 trang tách 3 vé, đúng mã riêng từng vé, hạn 25/10/2026, ECO CL AH, PARK/SHOW và AHBN; xuất được 3 trang 80x110 và kiểm tra QR khớp nguồn. Ảnh `2 eco 2410_001.jpg` tách được 2 QR/vùng riêng. Máy phát triển chưa có Tesseract nên chưa xác nhận OCR chữ thật trên JPEG này; môi trường Ubuntu cần Tesseract vie+eng như hướng dẫn cũ. Các trường thiếu vẫn phải điền và kiểm tra trước khi xuất. Không đưa các file nguồn/QR thật vào GitHub.
+
+Số thứ tự vé có thể khác số trang nguồn: hai vé cùng trang sẽ được đánh số 1, 2 nhưng báo cáo vẫn mở đúng trang nguồn 1. Không cần migration/thư viện mới cho bản sửa này.

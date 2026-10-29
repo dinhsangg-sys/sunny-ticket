@@ -72,36 +72,79 @@ def image_fields(image):
     except Exception:pass
     return fields
 
+def qr_bounds(code):
+    points=[code.position.top_left,code.position.top_right,code.position.bottom_left,code.position.bottom_right]
+    return (min(p.x for p in points),min(p.y for p in points),max(p.x for p in points),max(p.y for p in points))
+
+
+def ticket_regions(image,codes):
+    """Split on visible paper gutters, never assign a whole page's text to multiple QRs."""
+    if not codes:raise ValueError('Không đọc được QR. Dùng ảnh rõ hơn hoặc PDF gốc.')
+    if len(codes)>50:raise ValueError('Tối đa 50 vé trong một đợt nhập.')
+    gray=image.convert('L');width,height=image.size
+    def split(box,group):
+        if len(group)==1:return [(box,group[0])]
+        candidates=[]
+        for axis in (0,1):
+            ordered=sorted(group,key=lambda c:qr_bounds(c)[axis])
+            for index in range(1,len(ordered)):
+                first,second=ordered[:index],ordered[index:]
+                end=max(qr_bounds(c)[axis+2] for c in first);start=min(qr_bounds(c)[axis] for c in second)
+                if start-end<8:continue
+                # Search the full row/column so gaps inside the information panel do not cut artwork.
+                runs=[];begin=None
+                for pos in range(int(end)+2,int(start)-2):
+                    line=gray.crop((box[0],pos,box[2],pos+1) if axis==1 else (pos,box[1],pos+1,box[3]))
+                    histogram=line.histogram();blank=sum(histogram[:238])<=line.width*line.height*.012
+                    if blank and begin is None:begin=pos
+                    if not blank and begin is not None:runs.append((begin,pos));begin=None
+                if begin is not None:runs.append((begin,int(start)-2))
+                runs=[r for r in runs if r[1]-r[0]>=max(3,(height if axis else width)*.002)]
+                if runs:
+                    run=max(runs,key=lambda r:r[1]-r[0]);candidates.append((float(run[1]-run[0])/(height if axis else width),axis,(run[0]+run[1])//2,first,second))
+        if not candidates:raise ValueError('Có nhiều QR nhưng không tách rõ vùng từng vé. Hãy cắt từng vé hoặc dùng PDF có khoảng trắng giữa các vé.')
+        _,axis,cut,first,second=max(candidates,key=lambda c:c[0])
+        left=list(box);right=list(box);left[axis+2]=cut;right[axis]=cut
+        return split(tuple(left),first)+split(tuple(right),second)
+    return sorted(split((0,0,width,height),codes),key=lambda pair:(pair[0][1],pair[0][0]))
+
+
+def region_fields(image):
+    # Horizontal ticket artwork is on the left in the supplied layout. Restrict OCR to its
+    # information panel only when the QR is clearly on the right; do not infer field values.
+    codes=decode(image)
+    if len(codes)==1 and image.width>image.height*1.05:
+        left,top,right,bottom=qr_bounds(codes[0])
+        if (left+right)/2>image.width*.60:
+            image=image.crop((max(0,int(left-(right-left)*1.7)),max(0,int(bottom)),image.width,image.height))
+    return image_fields(image)
+
+
 def extract_tickets(blob):
     result=[];seen=set()
+    def append(image,page_number,page=None,scale=1):
+        codes=decode(image)
+        for region,code in ticket_regions(image,codes):
+            png,digest=qr_from(image,code)
+            if digest in seen:raise ValueError('QR trùng trong file; chưa nhập bộ vé.')
+            seen.add(digest)
+            if len(result)>=50:raise ValueError('Tối đa 50 vé trong một đợt nhập.')
+            crop=image.crop(region)
+            text=page.get_text('text',clip=fitz.Rect(*(v/scale for v in region))) if page is not None else ''
+            fields=text_fields(text) if text.strip() else region_fields(crop)
+            result.append({'page':len(result)+1,'source_page':page_number,'source_region':list(region),**fields,'qr_hash':digest,'qr_png':png})
     if blob.startswith(b'%PDF-'):
-        document=fitz.open(stream=blob,filetype='pdf')
-        if document.needs_pass or not 1<=len(document)<=50:raise ValueError('PDF phải mở được và có từ 1 đến 50 trang.')
-        for index,page in enumerate(document):
-            found=[]
-            for reference in page.get_images(full=True):
-                raw=document.extract_image(reference[0])['image']
-                with Image.open(BytesIO(raw)) as image:
-                    if image.width*image.height>25000000:raise ValueError('Ảnh trong PDF quá lớn.')
-                    for code in decode(image):found.append(qr_from(image,code))
-            text=page.get_text('text')
-            if not found or not text.strip():
+        with fitz.open(stream=blob,filetype='pdf') as document:
+            if document.needs_pass or not 1<=len(document)<=50:raise ValueError('PDF phải mở được và có từ 1 đến 50 trang.')
+            for index,page in enumerate(document):
                 if page.rect.width*page.rect.height>2000000:raise ValueError('Khổ trang PDF quá lớn.')
-                pix=page.get_pixmap(matrix=fitz.Matrix(2,2),alpha=False);image=Image.frombytes('RGB',[pix.width,pix.height],pix.samples)
-                if not found:found=[qr_from(image,b) for b in decode(image)]
-                if not text.strip():text=None
-            unique={digest:png for png,digest in found}
-            if len(unique)!=1:raise ValueError(f'Trang {index+1}: cần đúng một QR đọc được. Hãy tách trang có nhiều QR hoặc dùng ảnh rõ hơn.')
-            digest,png=next(iter(unique.items()))
-            if digest in seen:raise ValueError(f'Trang {index+1}: QR trùng trang trước, chưa nhập file.')
-            seen.add(digest);result.append({'page':index+1,**(text_fields(text) if text is not None else image_fields(image)),'qr_hash':digest,'qr_png':png})
-        document.close()
+                pix=page.get_pixmap(matrix=fitz.Matrix(2,2),alpha=False)
+                image=Image.frombytes('RGB',[pix.width,pix.height],pix.samples)
+                append(image,index+1,page,2)
     else:
-        with Image.open(BytesIO(blob)) as image:
-            if image.format not in ('JPEG','PNG') or image.width*image.height>25000000:raise ValueError('Chỉ hỗ trợ PDF, JPEG/PNG, tối đa 25 triệu điểm ảnh.')
-            image=ImageOps.exif_transpose(image).convert('RGB');codes=decode(image)
-            if len(codes)!=1:raise ValueError('Ảnh cần đúng một mã QR đọc được. Hãy chụp rõ hoặc tách từng vé.')
-            png,digest=qr_from(image,codes[0]);result=[{'page':1,**image_fields(image),'qr_hash':digest,'qr_png':png}]
+        with Image.open(BytesIO(blob)) as original:
+            if original.format not in ('JPEG','PNG') or original.width*original.height>25000000:raise ValueError('Chỉ hỗ trợ PDF, JPEG/PNG, tối đa 25 triệu điểm ảnh.')
+            append(ImageOps.exif_transpose(original).convert('RGB'),1)
     return result
 
 def checked_fields(row):

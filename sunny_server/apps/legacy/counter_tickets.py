@@ -58,7 +58,7 @@ def public_batch(batch,booking):
     return {'id':str(batch.pk),'name':batch.source_name,'bookingId':batch.booking_id,'quantity':booking['qty'],'ready':bool(batch.output_hash),'email':batch.customer_email,'emailState':batch.email_state,
             'emailEnabled':email_ready() and not batch.superseded_at and batch.booking_version==booking.get('counterVersion',1), 'selected':batch.selected,
             'archived':bool(batch.superseded_at) or batch.booking_version!=booking.get('counterVersion',1),'createdAt':batch.created_at.isoformat(),
-            'rows':[{'page':r['page'],**{k:r.get(k,'') for k in FIELDS},'qrUrl':f'/api/counter/ticket-batches/{batch.pk}/qr/{r["page"]}/'} for r in batch.rows]}
+            'rows':[{'page':r['page'],'sourcePage':r.get('source_page',r['page']),**{k:r.get(k,'') for k in FIELDS},'qrUrl':f'/api/counter/ticket-batches/{batch.pk}/qr/{r["page"]}/'} for r in batch.rows]}
 
 @login_required
 @never_cache
@@ -82,7 +82,7 @@ def booking_tickets(request,booking_id):
         for source_index,(name,blob) in enumerate(sources,1):
             extracted=extract_tickets(blob)
             for row in extracted:
-                row['source_index']=source_index;row['source_page']=row['page'];row['source_name']=name;row['page']=len(rows)+1;rows.append(row)
+                row['source_index']=source_index;row.setdefault('source_page',row['page']);row['source_name']=name;row['page']=len(rows)+1;rows.append(row)
             if len(rows)>50:raise ValueError('Tối đa 50 vé trong một đợt nhập.')
         if len({r['qr_hash'] for r in rows})!=len(rows):raise ValueError('Các file có QR trùng nhau. Chưa nhập bộ vé.')
         stream=BytesIO()
