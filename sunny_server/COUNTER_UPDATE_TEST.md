@@ -48,3 +48,7 @@ Báo cáo không xác minh hiệu lực QR tại cổng soát vé. OCR nguồn c
 ## Kiểm tra
 
 96 test backend đạt, gồm kiểm tra thanh toán/idempotency, quyền sửa/thu hoàn, lịch sử và xung đột phiên bản, QR/PDF thực tế, sửa thông tin được phát hiện, phân quyền báo cáo toàn bộ, quyền thay vé và giữ bản cũ. Playwright/Edge với frontend thật và API giả lập đạt luồng tạo booking, nhập/xuất PDF, xác nhận điều chỉnh và đối chiếu hai khung. Chưa kiểm thử máy in hoặc SMTP thật; cấu hình email vẫn theo COUNTER_TICKETS_TEST.md.
+
+## Bản sửa OCR ảnh và thông báo thiếu trường
+
+Nếu QR đã đọc được nhưng chưa xuất PDF, điền đủ sáu trường ở màn hình kiểm tra. Khi bấm tạo PDF, ô thiếu được viền đỏ và nêu tên cụ thể; không phải import lại. Ảnh import mới thử OCR vùng chữ phóng lớn nếu lượt đầu thiếu, bổ sung nhận nhãn tiếng Việt và P4RK do OCR. Không tự đoán giá trị. Đợt vé đã import vẫn giữ dữ liệu gốc để đối soát; điền bổ sung trong bản xuất. Ảnh thực tế có thể cần sửa tay; chưa kiểm nghiệm Tesseract thật với mọi ảnh.
