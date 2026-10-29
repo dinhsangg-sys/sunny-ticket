@@ -79,9 +79,10 @@ class CounterTicketTests(TestCase):
 
     def test_qr_cannot_be_attached_to_another_booking(self):
         self.upload();self.assertEqual(self.generate().status_code,200)
-        data=copy.deepcopy(self.data);data['bookings'].append({**data['bookings'][0],'id':'other'});Workspace.objects.filter(pk=1).update(data=data)
+        data=copy.deepcopy(self.data);data['bookings'].append({**data['bookings'][0],'id':'other','bookingCode':'ST-OTHER'});Workspace.objects.filter(pk=1).update(data=data)
         self.assertEqual(self.upload(booking='other').status_code,201)
-        batch=CounterTicketBatch.objects.get(booking_id='other');self.assertEqual(self.generate(batch).status_code,400)
+        batch=CounterTicketBatch.objects.get(booking_id='other');response=self.generate(batch);self.assertEqual(response.status_code,400)
+        self.assertEqual(response.json()['error'],'QR đã được gắn cho booking ST-TEST. Chưa xuất bộ vé này.')
         self.assertEqual(CounterIssuedQR.objects.count(),2);batch.refresh_from_db();self.assertFalse(batch.output_hash)
 
     def test_other_staff_cannot_access_source_qr_pdf_generate_or_email(self):

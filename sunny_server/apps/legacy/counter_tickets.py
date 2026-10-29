@@ -150,7 +150,11 @@ def generate_tickets(request,batch_id):
                 existing=set(CounterIssuedQR.objects.filter(booking_id=batch.booking_id).values_list('qr_hash',flat=True));hashes={r['qr_hash'] for r in selected}
                 for row in selected:
                     issued,created=CounterIssuedQR.objects.get_or_create(qr_hash=row['qr_hash'],defaults={'booking_id':batch.booking_id,'batch':batch})
-                    if issued.booking_id!=batch.booking_id:raise ValueError('QR đã được gắn cho booking khác. Chưa xuất bộ vé này.')
+                    if issued.booking_id!=batch.booking_id:
+                        workspace=Workspace.objects.get(pk=1).data
+                        linked=next((b for b in workspace.get('bookings',[]) if b.get('id')==issued.booking_id),None)
+                        label=linked.get('bookingCode') if linked else None
+                        raise ValueError('QR đã được gắn cho booking '+str(label or issued.booking_id)+'. Chưa xuất bộ vé này.')
                 write(folder/'tickets.pdf',pdf);batch.selected=selected;batch.output_hash=hashlib.sha256(pdf).hexdigest();batch.save(update_fields=['selected','output_hash'])
                 CounterTicketBatch.objects.filter(booking_id=batch.booking_id,superseded_at__isnull=True).exclude(pk=batch.pk).exclude(output_hash='').update(superseded_at=timezone.now())
                 from apps.audit.models import AuditLog
