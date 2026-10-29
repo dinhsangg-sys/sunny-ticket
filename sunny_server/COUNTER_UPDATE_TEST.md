@@ -74,3 +74,11 @@ Với bộ đã import nhưng chưa xuất, chọn **Đọc lại thông tin t�
 Hiển thị liên tục Booking / Đã import / Đã chọn. Khi số import khác số lượng booking, cảnh báo ngay và không tự tick chọn. Cho phép dùng một file nguồn nhiều vé để chọn đúng số cần xuất; không tăng số lượng booking theo file. Nút tạo PDF bị khóa khi chọn thiếu/thừa. Máy chủ vẫn kiểm tra lại trước và trong giao dịch; renderer kiểm tra số trang PDF bằng số vé chọn.
 
 Đã kiểm tra booking 4 vé/import 5 vé: chọn 3 hoặc 5 bị từ chối; chọn các vé 1,2,4,5 xuất đúng 4 trang, chỉ 4 QR được gắn. Frontend kiểm tra bộ đếm, khóa khi chọn 0/5 và chỉ bật khi chọn 4. Danh sách 5 vé nguồn sau xuất vẫn giữ để đối soát, không có nghĩa PDF chứa 5 vé. Không có migration mới.
+
+## Cập nhật file đúng và tạo lại vé
+
+Trong cửa sổ Vé của booking, chọn PDF/ảnh đúng ở ô file phía trên, bấm **Cập nhật file và tạo lại vé**. Hệ thống nhập một bản nháp mới, chọn đúng bộ vừa nhập và mở các trường để kiểm tra. Chọn đủ số vé, sửa ô thiếu/sai, tick xác nhận, bấm **Xác nhận cập nhật và tạo lại vé 80 × 110 mm** nếu booking từng xuất PDF. Không xuất tự động ngay khi upload, vì OCR có thể cần kiểm tra.
+
+Nếu chỉ import sai và chưa xuất, nhân viên có quyền tạo vẫn được nhập file đúng. Nếu đã xuất bất kỳ bộ vé nào, phải có cả quyền tạo và **counter__replace_tickets — Thay bộ vé và phát hành phiên bản mới của booking quầy**. Nếu thiếu, nút được khóa và có hướng dẫn liên hệ quản trị. Quyền mới không tự cấp. Cũng có thể dùng file cũ nhưng chủ động nhập lại thành phiên bản mới để sửa thông tin.
+
+Bộ cũ vẫn giữ nguyên khi file mới chưa xuất hoặc bị lỗi. Chỉ sau khi PDF mới tạo thành công, bộ cũ mới chuyển lưu trữ và không gửi email được nữa. Lưu lại nguồn/PDF/QR để đối chiếu; QR cũ không tự bị hủy tại nhà cung cấp và không được dùng cho booking khác. Thử lại cùng lần upload không tạo thêm bản nháp trùng. Không đổi số lượng hoặc thanh toán booking trong luồng này. Không có migration mới.

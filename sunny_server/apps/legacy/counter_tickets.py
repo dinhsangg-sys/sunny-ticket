@@ -69,11 +69,18 @@ def booking_tickets(request,booking_id):
     if request.method=='GET':
         batches=CounterTicketBatch.objects.filter(booking_id=booking_id).order_by('-created_at')
         if not request.user.is_superuser:batches=batches.filter(owner=request.user)
-        return JsonResponse({'booking':{'code':booking['bookingCode'],'qty':booking['qty'],'email':booking.get('customerEmail','')},'canReplace':permitted(request.user,'replace_tickets'),'batches':[public_batch(b,booking) for b in batches]})
+        return JsonResponse({'booking':{'code':booking['bookingCode'],'qty':booking['qty'],'email':booking.get('customerEmail','')},'canImport':permitted(request.user,'create'),'hasIssued':needs_replacement(booking),'canReplace':permitted(request.user,'replace_tickets'),'batches':[public_batch(b,booking) for b in batches]})
+    replacing=request.POST.get('replace')=='1'
+    if needs_replacement(booking) and not permitted(request.user,'replace_tickets'):
+        return JsonResponse({'error':'Chưa được cấp quyền thay bộ vé (counter.replace_tickets). Liên hệ quản trị cấp quyền để cập nhật file và tạo lại vé.'},status=403)
     uploads=request.FILES.getlist('files') or request.FILES.getlist('file')
     if not uploads or len(uploads)>20 or not 0<sum(f.size for f in uploads)<=20*1024*1024:return JsonResponse({'error':'Chọn tối đa 20 file PDF/JPEG/PNG, tổng tối đa 20 MB.'},status=400)
     sources=[(Path(f.name).name[:255],f.read()) for f in uploads]
     digest=hashlib.sha256(json.dumps([(name,hashlib.sha256(blob).hexdigest()) for name,blob in sources]).encode()).hexdigest()
+    if replacing:
+        try:request_id=str(uuid.UUID(request.POST['requestId']))
+        except (KeyError,ValueError,AttributeError):return JsonResponse({'error':'Thiếu mã lần cập nhật. Mở lại cửa sổ vé và thử lại.'},status=400)
+        digest=hashlib.sha256((digest+':replacement:'+request_id).encode()).hexdigest()
     existing=CounterTicketBatch.objects.filter(owner=request.user,booking_id=booking_id,source_hash=digest).first()
     if existing:return JsonResponse(public_batch(existing,booking))
     try:

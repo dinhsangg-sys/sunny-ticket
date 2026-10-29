@@ -3,6 +3,7 @@ from io import BytesIO
 import json
 from pathlib import Path
 import tempfile
+import uuid
 from unittest.mock import patch
 import pymupdf as fitz
 from PIL import Image
@@ -57,6 +58,25 @@ class CounterTicketTests(TestCase):
     def test_bad_sources_and_duplicate_qr_rejected(self):
         self.assertEqual(self.upload(b'not a ticket').status_code,400)
         self.assertEqual(self.upload(source_pdf(2,True)).status_code,400);self.assertFalse(CounterTicketBatch.objects.exists())
+
+    def test_update_source_reissues_only_after_review_and_preserves_old_pdf(self):
+        self.upload();old=CounterTicketBatch.objects.get();self.generate(old);old.refresh_from_db();old_hash=old.output_hash
+        url='/api/counter/booking/tickets/';request_id=str(uuid.uuid4());correct_blob=source_pdf(3)
+        def update(blob=None):return self.client.post(url,{'replace':'1','requestId':request_id,'files':SimpleUploadedFile('correct.pdf',correct_blob if blob is None else blob)})
+        self.assertEqual(update().status_code,403)
+        self.user.user_permissions.add(Permission.objects.get(content_type__app_label='legacy',codename='counter__replace_tickets'))
+        self.assertEqual(update(b'bad source').status_code,400)
+        old.refresh_from_db();self.assertIsNone(old.superseded_at)
+        result=update();self.assertEqual(result.status_code,201,result.content)
+        replacement=CounterTicketBatch.objects.get(pk=result.json()['id']);self.assertFalse(replacement.output_hash)
+        self.assertEqual(update().json()['id'],str(replacement.pk));self.assertEqual(CounterTicketBatch.objects.count(),2)
+        old.refresh_from_db();self.assertIsNone(old.superseded_at)
+        self.assertEqual(self.generate(replacement,replacement.rows[1:]).status_code,200)
+        old.refresh_from_db();self.assertIsNotNone(old.superseded_at);self.assertEqual(old.output_hash,old_hash)
+        self.assertEqual(CounterIssuedQR.objects.count(),3)
+        # Selecting the same physical file explicitly still starts a new reviewable version.
+        again=self.client.post(url,{'replace':'1','requestId':str(uuid.uuid4()),'files':SimpleUploadedFile('sample.pdf',self.source)})
+        self.assertEqual(again.status_code,201);self.assertNotEqual(again.json()['id'],str(old.pk));self.assertFalse(again.json()['ready'])
 
     def test_booking_four_import_five_only_four_selected_pages_are_exported(self):
         data=copy.deepcopy(self.data);data['bookings'][0]['qty']=4;Workspace.objects.filter(pk=1).update(data=data)
