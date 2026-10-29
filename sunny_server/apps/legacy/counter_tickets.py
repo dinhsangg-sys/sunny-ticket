@@ -125,7 +125,8 @@ def generate_tickets(request,batch_id):
         if batch.booking_version!=booking.get('counterVersion',1) or batch.superseded_at:raise ValueError('Phiên bản vé cũ. Tạo phiên bản mới theo booking hiện tại.')
         if body.get('confirmed') is not True:raise ValueError('Xác nhận đã kiểm tra QR/thông tin/ngày sử dụng trước khi xuất.')
         requested=body['rows']
-        if not isinstance(requested,list) or len(requested)!=int(booking['qty']):raise ValueError('Số vé được chọn phải bằng số lượng booking. Chỉ chọn các trang thuộc booking này.')
+        if not isinstance(requested,list):raise ValueError('Danh sách vé được chọn không hợp lệ.')
+        if len(requested)!=int(booking['qty']):raise ValueError(f"Booking {booking.get('bookingCode',booking['id'])}: {booking['qty']} vé, đã chọn {len(requested)} vé. Chỉ xuất khi chọn đúng số lượng booking.")
         by_page={r['page']:r for r in batch.rows};seen=set();selected=[]
         for row in requested:
             page=row['page']

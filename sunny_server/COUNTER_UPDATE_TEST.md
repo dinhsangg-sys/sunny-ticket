@@ -68,3 +68,9 @@ Sửa trường hợp ảnh hai vé ngang bị thiếu hạn/gói/mã và ô đ�
 Đã chạy Tesseract.js với eng+vie trên hai vùng cắt từ ảnh thật `2 eco 2410_001.jpg`: đọc đủ sáu trường cho hai vé, AHBN/ECO CL AH/ngày 24/10/2026, mã riêng đúng từng vé; đưa kết quả qua parser và renderer, xuất hai trang và kiểm tra QR khớp nguồn. Backend Ubuntu vẫn dùng pytesseract/Tesseract native; cần kiểm tra lại trên máy Ubuntu sau cập nhật vì engine/ngôn ngữ có thể khác phiên bản.
 
 Với bộ đã import nhưng chưa xuất, chọn **Đọc lại thông tin từ file gốc**, xác nhận thay kết quả đang sửa, rồi kiểm tra và xuất. Không tạo booking mới. Bộ đã xuất không được ghi đè: người có quyền cần tạo phiên bản mới trước. QR/thứ tự phải giữ nguyên khi đọc lại, nếu khác sẽ bị chặn. Không có migration hoặc thư viện mới.
+
+## Cảnh báo số lượng vé nguồn và vé xuất
+
+Hiển thị liên tục Booking / Đã import / Đã chọn. Khi số import khác số lượng booking, cảnh báo ngay và không tự tick chọn. Cho phép dùng một file nguồn nhiều vé để chọn đúng số cần xuất; không tăng số lượng booking theo file. Nút tạo PDF bị khóa khi chọn thiếu/thừa. Máy chủ vẫn kiểm tra lại trước và trong giao dịch; renderer kiểm tra số trang PDF bằng số vé chọn.
+
+Đã kiểm tra booking 4 vé/import 5 vé: chọn 3 hoặc 5 bị từ chối; chọn các vé 1,2,4,5 xuất đúng 4 trang, chỉ 4 QR được gắn. Frontend kiểm tra bộ đếm, khóa khi chọn 0/5 và chỉ bật khi chọn 4. Danh sách 5 vé nguồn sau xuất vẫn giữ để đối soát, không có nghĩa PDF chứa 5 vé. Không có migration mới.

@@ -58,6 +58,17 @@ class CounterTicketTests(TestCase):
         self.assertEqual(self.upload(b'not a ticket').status_code,400)
         self.assertEqual(self.upload(source_pdf(2,True)).status_code,400);self.assertFalse(CounterTicketBatch.objects.exists())
 
+    def test_booking_four_import_five_only_four_selected_pages_are_exported(self):
+        data=copy.deepcopy(self.data);data['bookings'][0]['qty']=4;Workspace.objects.filter(pk=1).update(data=data)
+        self.assertEqual(self.upload(source_pdf(5)).status_code,201);batch=CounterTicketBatch.objects.get()
+        self.assertEqual(self.generate(batch,batch.rows).status_code,400)
+        self.assertEqual(self.generate(batch,batch.rows[:3]).status_code,400)
+        selected=[batch.rows[i] for i in (0,1,3,4)]
+        response=self.generate(batch,selected);self.assertEqual(response.status_code,200,response.content)
+        pdf=self.client.get(response.json()['pdfUrl']);blob=b''.join(pdf.streaming_content);pdf.close()
+        with fitz.open(stream=blob,filetype='pdf') as document:self.assertEqual(len(document),4)
+        batch.refresh_from_db();self.assertEqual([r['page'] for r in batch.selected],[1,2,4,5]);self.assertEqual(CounterIssuedQR.objects.count(),4)
+
     def test_reread_unissued_batch_and_protect_issued_version(self):
         self.upload();batch=CounterTicketBatch.objects.get();original=copy.deepcopy(batch.rows)
         damaged=copy.deepcopy(batch.rows);damaged[0]['agent']='WRONG';CounterTicketBatch.objects.filter(pk=batch.pk).update(rows=damaged)

@@ -229,6 +229,7 @@ def render_tickets(rows,qr_files):
         overlay.close()
     blob=output.tobytes(garbage=3,deflate=True);output.close();template.close()
     with fitz.open(stream=blob,filetype='pdf') as check:
+        if len(check)!=len(rows):raise ValueError('Số trang PDF không khớp số vé đã chọn; chưa xuất vé.')
         for page,row in zip(check,rows):
             pix=page.get_pixmap(matrix=fitz.Matrix(4,4),alpha=False);image=Image.frombytes('RGB',[pix.width,pix.height],pix.samples)
             hashes=[hashlib.sha256(b.bytes).hexdigest() for b in decode(image)]
