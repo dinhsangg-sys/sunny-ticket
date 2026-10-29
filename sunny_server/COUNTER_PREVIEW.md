@@ -1,4 +1,6 @@
-# Module quầy — bản thử nghiệm riêng
+# Module quầy — lịch sử bản thử nghiệm
+
+Đã được người dùng nghiệm thu và phát hành chính thức 1.11.0 trên main. Vận hành bản chính theo [UPGRADE_1_11_0.md](UPGRADE_1_11_0.md); các hướng dẫn cổng 8001/nhánh test dưới đây chỉ giữ làm lịch sử.
 
 ## Bản bổ sung thanh toán, sửa booking và đối chiếu
 

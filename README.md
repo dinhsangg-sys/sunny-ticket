@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.10.13
+# Sunny Travel Ticket Management — 1.11.0
+
+**1.11.0 chính thức:** đưa bản quầy đã nghiệm thu vào main: thanh toán, nhập/xuất/in vé 80x110, sửa và thay vé theo quyền, báo cáo đối chiếu trong mục Báo cáo, menu dọc nhân viên. [Hướng dẫn nâng cấp bản chính](sunny_server/UPGRADE_1_11_0.md). Sao lưu trước khi pull; không reset và không chép dữ liệu test sang bản chính.
 
 **1.10.13:** mặc định Tất cả nhà cung cấp trong thanh toán tiền vé hàng loạt; dropdown tìm nhanh tự đóng khi bấm ngoài, giữ lựa chọn. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_10_13.md). Không reset dữ liệu.
 

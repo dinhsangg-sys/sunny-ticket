@@ -1,6 +1,10 @@
-# Sunny Travel — bản chuyển đổi để kiểm thử
+# Sunny Travel — bản chính thức 1.11.0
 
-**Hiện tại 1.10.1:** bỏ module ánh xạ, khởi tạo dữ liệu mới theo yêu cầu. Đọc UPGRADE_1_10_1.md và chạy reset_business_data trên máy Ubuntu để xóa nghiệp vụ cũ nhưng giữ tài khoản/quyền. Các hướng dẫn gộp dữ liệu ở phiên bản trước không còn áp dụng.
+Bản quầy đã được nghiệm thu và phát hành trên main. Đọc [UPGRADE_1_11_0.md](UPGRADE_1_11_0.md) để sao lưu và nâng cấp bản chính. Không chạy các hướng dẫn reset dữ liệu thuộc lịch sử cũ bên dưới khi nâng cấp 1.11.0.
+
+## Lịch sử các bản chuyển đổi
+
+**Lịch sử 1.10.1:** bỏ module ánh xạ, khởi tạo dữ liệu mới theo yêu cầu. Đọc UPGRADE_1_10_1.md và chạy reset_business_data trên máy Ubuntu để xóa nghiệp vụ cũ nhưng giữ tài khoản/quyền. Các hướng dẫn gộp dữ liệu ở phiên bản trước không còn áp dụng.
 
 Bản test 1.10.0 có thay đổi database permissions và bảo toàn quyền người dùng cũ qua migration. Đọc UPGRADE_1_10_0.md trước nâng cấp; không áp dụng mô tả operator/quyền rộng của bản cũ cho tài khoản mới không có quyền đầy đủ.
 
