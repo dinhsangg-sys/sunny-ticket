@@ -708,16 +708,18 @@ function renderCashbook(){
 }
 function customerDue(x){return Math.max(0,num(x.revenue)-paidAmount(x))}
 function supplierDueAmount(x){return Math.max(0,supplierDueTotal(x)-supplierPaidAmount(x))}
-let reportTab="overview";
+let reportTab=new URLSearchParams(location.search).get("report")==="tickets"?"tickets":"overview";
 function reports(tab){reportTab=tab||reportTab||"overview";$("app").innerHTML=`<div class="card" style="padding:10px 14px"><div class="toolbar" style="margin:0">
 <button class="btn ${reportTab==="overview"?"primary":""}" onclick="reports('overview')">Tổng quan</button>
 <button class="btn ${reportTab==="detail"?"primary":""}" onclick="reports('detail')">Doanh thu & Công nợ</button>
 <button class="btn ${reportTab==="vat"?"primary":""}" onclick="reports('vat')">VAT</button>
 <button class="btn ${reportTab==="monthly"?"primary":""}" onclick="reports('monthly')">Theo tháng</button>
 <button class="btn ${reportTab==="supplier"?"primary":""}" onclick="reports('supplier')">Công nợ tiền vé</button>
+<button class="btn ${reportTab==="tickets"?"primary":""}" onclick="reports('tickets')">Đối chiếu vé nhập / xuất</button>
 </div></div><div id="reportPage" class="section"></div>`;renderReportPage()}
 function renderReportPage(){
  let d=today(),box=$("reportPage");
+ if(reportTab==="tickets"){box.innerHTML='<iframe title="Báo cáo đối chiếu vé nhập / xuất" src="/counter/report/?embed=1" style="display:block;width:100%;height:calc(100vh - 180px);min-height:650px;border:0;border-radius:12px;background:white"></iframe>';return}
  if(reportTab==="overview"){
    let rows=db.bookings.filter(x=>x.date===d),t=sum(rows),paid=rows.reduce((a,x)=>a+paidAmount(x),0),debt=rows.reduce((a,x)=>a+customerDue(x),0),vat=rows.reduce((a,x)=>a+vatAmount(x),0);
    box.innerHTML=`<div class="card"><h3>Tổng quan báo cáo</h3><div class="toolbar" style="margin:0 0 14px"><div class="field"><label>Ngày</label><input id="rovdate" class="input" type="date" value="${d}"></div><button class="btn primary" onclick="renderReportOverview()">Xem</button></div><div id="roverview"></div></div>`;renderReportOverview();return

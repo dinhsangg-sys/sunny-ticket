@@ -86,3 +86,9 @@ Bộ cũ vẫn giữ nguyên khi file mới chưa xuất hoặc bị lỗi. Ch�
 ## Lối vào từ tài khoản quản trị
 
 Bổ sung liên kết Đối chiếu vé nhập / xuất ở thanh đầu giao diện chính, giao diện nghiệp vụ theo quyền và header Django admin. Báo cáo nằm tại /counter/report/ của bản test cổng 8001. Trang thiếu quyền hiển thị username và quyền cần cấp, API vẫn trả 403. Staff/role admin không tự có quyền báo cáo; cần counter__view + counter__report, thêm counter__report_all nếu xem toàn bộ. Superuser active được xem toàn bộ. Đã kiểm tra cả superuser và staff thiếu quyền; không thay đổi dữ liệu/tự cấp quyền.
+
+## Bố trí báo cáo và menu nhân viên
+
+Trong Ticket Management đầy đủ: chọn **Báo cáo** ở menu trái → tab **Đối chiếu vé nhập / xuất**. Báo cáo hiển thị ngay trong mục này; gỡ liên kết riêng ở thanh đầu. Đường dẫn thẳng tới tab: `/?view=reports&report=tickets#reports`. Liên kết từ Django admin cũng trỏ vào tab này. Giao diện nghiệp vụ theo quyền có nhóm Báo cáo riêng, vẫn kiểm tra quyền trên server.
+
+Trang bán vé nhân viên và trang đối chiếu độc lập có menu dọc bên trái gồm Bán vé tại quầy và Báo cáo đối chiếu vé, mục đang mở được đánh dấu. Menu báo cáo nhân viên chỉ hiện khi có quyền report. Trên màn hình nhỏ menu xếp gọn phía trên để không che nội dung. Quyền xem dữ liệu không thay đổi; chế độ nhúng chỉ bỏ menu lặp, vẫn kiểm tra quyền và chỉ cho iframe cùng origin. Không có migration mới.

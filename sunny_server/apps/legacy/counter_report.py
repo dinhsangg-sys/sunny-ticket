@@ -60,9 +60,10 @@ def comparison(batch,booking,verify=False):
 
 @login_required
 @never_cache
+@xframe_options_sameorigin
 def report_page(request):
     if not report_allowed(request.user):return render(request,'counter_report_denied.html',status=403)
-    return render(request,'counter_report.html')
+    return render(request,'counter_report.html',{'embedded':request.GET.get('embed')=='1'})
 
 @login_required
 @never_cache
