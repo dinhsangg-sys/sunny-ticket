@@ -61,7 +61,7 @@ def comparison(batch,booking,verify=False):
 @login_required
 @never_cache
 def report_page(request):
-    if not report_allowed(request.user):return HttpResponseForbidden('Chưa có quyền báo cáo đối chiếu vé.')
+    if not report_allowed(request.user):return render(request,'counter_report_denied.html',status=403)
     return render(request,'counter_report.html')
 
 @login_required

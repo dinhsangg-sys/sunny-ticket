@@ -82,3 +82,7 @@ Trong cửa sổ Vé của booking, chọn PDF/ảnh đúng ở ô file phía tr
 Nếu chỉ import sai và chưa xuất, nhân viên có quyền tạo vẫn được nhập file đúng. Nếu đã xuất bất kỳ bộ vé nào, phải có cả quyền tạo và **counter__replace_tickets — Thay bộ vé và phát hành phiên bản mới của booking quầy**. Nếu thiếu, nút được khóa và có hướng dẫn liên hệ quản trị. Quyền mới không tự cấp. Cũng có thể dùng file cũ nhưng chủ động nhập lại thành phiên bản mới để sửa thông tin.
 
 Bộ cũ vẫn giữ nguyên khi file mới chưa xuất hoặc bị lỗi. Chỉ sau khi PDF mới tạo thành công, bộ cũ mới chuyển lưu trữ và không gửi email được nữa. Lưu lại nguồn/PDF/QR để đối chiếu; QR cũ không tự bị hủy tại nhà cung cấp và không được dùng cho booking khác. Thử lại cùng lần upload không tạo thêm bản nháp trùng. Không đổi số lượng hoặc thanh toán booking trong luồng này. Không có migration mới.
+
+## Lối vào từ tài khoản quản trị
+
+Bổ sung liên kết Đối chiếu vé nhập / xuất ở thanh đầu giao diện chính, giao diện nghiệp vụ theo quyền và header Django admin. Báo cáo nằm tại /counter/report/ của bản test cổng 8001. Trang thiếu quyền hiển thị username và quyền cần cấp, API vẫn trả 403. Staff/role admin không tự có quyền báo cáo; cần counter__view + counter__report, thêm counter__report_all nếu xem toàn bộ. Superuser active được xem toàn bộ. Đã kiểm tra cả superuser và staff thiếu quyền; không thay đổi dữ liệu/tự cấp quyền.
