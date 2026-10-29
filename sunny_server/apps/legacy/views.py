@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import F
 from django.http import JsonResponse, HttpResponseForbidden, FileResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from apps.agencies.models import Agency
@@ -21,6 +21,7 @@ def internal(user):
 @login_required
 @ensure_csrf_cookie
 def home(request):
+    if request.user.role=='counter': return redirect('counter-page')
     if internal(request.user):
         return render(request, 'legacy.html' if full_access(request.user) else 'restricted.html')
     data = Workspace.objects.filter(pk=1).values_list('data',flat=True).first() or {}
