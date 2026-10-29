@@ -1,5 +1,20 @@
 # Module quầy — bản thử nghiệm riêng
 
+## Bản sửa chạy thử HTTP nội bộ
+
+Đã sửa trường hợp truy cập bằng HTTP qua IP/cổng 8001 không lưu được giá vốn hoặc không tạo được booking quầy vì trình duyệt thiếu crypto.randomUUID trong ngữ cảnh không bảo mật. Script UUID tương thích được nạp trước các luồng nghiệp vụ, dùng crypto.getRandomValues để tạo UUID v4; không thay hàm native nếu trình duyệt đã hỗ trợ, không dùng Math.random.
+
+Đã kiểm tra frontend thật trên origin HTTP: lưu giá vốn và tạo booking quầy thành công; các trường hợp lỗi/xung đột trước đó vẫn giữ kiểm tra. Kiểm thử riêng xác nhận định dạng/bit UUID v4, mẫu 1000 mã không trùng và việc nạp lặp không thay hàm đã có.
+
+Lấy bản sửa tại **thư mục thử nghiệm** bằng một phiên SSH khác, không tạo thêm server trên cùng cổng:
+
+```bash
+cd /home/sunny-ticket-counter-test
+sudo git pull --ff-only origin codex/counter-sales
+```
+
+Giữ terminal server 8001 đang chạy, ghi lại nội dung chưa lưu rồi Ctrl+F5 trên trình duyệt, nhập lại form và lưu. Chỉ thay frontend nên không cần migration hoặc reset dữ liệu cho bản sửa này. Nhánh main và tag stable giữ nguyên.
+
 Nhánh: `codex/counter-sales`. Chưa gộp vào main hoặc triển khai Ubuntu. Tag ổn định `stable-1.10.13` giữ nguyên; main vẫn là bản ổn định kèm công cụ sao lưu. Chưa xác nhận đã sao lưu dữ liệu web thật.
 
 ## Phạm vi đã làm
