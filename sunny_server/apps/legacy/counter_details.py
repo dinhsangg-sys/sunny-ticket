@@ -30,7 +30,9 @@ def booking_detail(request,booking_id):
         return JsonResponse({'error':'Chưa được cấp quyền xem/sửa booking quầy.'},status=403)
     obj=Workspace.objects.get(pk=1);data=copy.deepcopy(obj.data);row=own_booking(data,user,booking_id)
     if request.method=='GET':
-        return JsonResponse({'booking':public_booking(row),'version':row.get('counterVersion',1),'canConfirmPayment':permitted(user,'create'),'canChange':permitted(user,'change'),'canSettle':permitted(user,'settle_adjustment'),'history':row.get('counterHistory',[])})
+        from .sepay import active_intent
+        sepay_active=bool(row.get('sepayIntentId') and active_intent(row))
+        return JsonResponse({'sepayActive':sepay_active,'booking':public_booking(row),'version':row.get('counterVersion',1),'canConfirmPayment':permitted(user,'create'),'canChange':permitted(user,'change'),'canSettle':permitted(user,'settle_adjustment'),'history':row.get('counterHistory',[])})
     try:
         body=json.loads(request.body)
         if set(body)-{'version','values','settled'}:raise ValueError('Có trường không được phép.')
@@ -73,9 +75,15 @@ def booking_detail(request,booking_id):
         calculate_booking(row)
         if pending_before:row['status']='pending_payment'
         row['counterVersion']=row.get('counterVersion',1)+1
+        cancelled_intent=row.get('sepayIntentId') if pending_before else None
+        if cancelled_intent:row['sepayIntentId']=None
         row.setdefault('counterHistory',[]).append({'at':timezone.now().isoformat(),'by':user.get_username(),'before':before,'after':public_booking(row),'paymentAdjustment':adjustment,'paymentsBefore':old_payments,'paymentsAfter':copy.deepcopy(row['payments'])})
         enforce_ticket_lifecycle(obj.data,data)
-        with transaction.atomic():save_workspace(obj,data,user,obj.revision,'counter.booking_change')
+        with transaction.atomic():
+            if cancelled_intent:
+                from .models import SePayIntent
+                SePayIntent.objects.filter(pk=cancelled_intent,state='pending').update(state='cancelled')
+            save_workspace(obj,data,user,obj.revision,'counter.booking_change')
         return JsonResponse({'booking':public_booking(row),'version':row['counterVersion']})
     except (RuntimeError,OperationalError):return JsonResponse({'error':'Dữ liệu đã đổi. Mở lại chi tiết, không lưu đè.'},status=409)
     except (ValueError,KeyError,TypeError,AttributeError,ValidationError) as exc:return JsonResponse({'error':str(exc) or 'Thông tin chưa hợp lệ.'},status=400)

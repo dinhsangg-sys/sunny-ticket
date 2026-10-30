@@ -1,0 +1,11 @@
+let counterSePayTimer=null,counterSePayBusy=false;
+async function counterOpenSePay(id){
+ const popup=window.open('about:blank','sunny-sepay-display','popup,width=760,height=900');
+ try{const intent=await ticketRequest('/api/counter/bookings/'+encodeURIComponent(id)+'/sepay/','POST',{});if(!intent.displayUrl)throw Error('SePay chưa sẵn sàng.');if(popup)popup.location.replace(intent.displayUrl);else{const link=document.createElement('a');link.href=intent.displayUrl;link.target='_blank';link.rel='noopener';link.textContent='Mở màn hình thanh toán';counterElement('counterMessage').replaceChildren(document.createTextNode('Trình duyệt chặn cửa sổ mới. '),link)}await counterLoad();if(popup)counterElement('counterMessage').textContent='Đã mở QR cho '+intent.bookingCode+'. Kéo cửa sổ sang màn hình phụ; trạng thái sẽ tự cập nhật khi SePay xác nhận.'}
+ catch(e){if(popup)popup.close();counterElement('counterMessage').textContent=e.message}
+}
+async function counterCancelSePay(intentId){await ticketRequest('/api/counter/sepay/intents/'+encodeURIComponent(intentId)+'/','POST',{action:'cancel'});await counterLoad()}
+function counterStartSePayPolling(){if(counterSePayTimer||!counterState?.sepayEnabled)return;counterSePayTimer=setTimeout(counterPollSePay,3000)}
+async function counterPollSePay(){counterSePayTimer=null;if(counterSePayBusy||!counterState?.sepayEnabled)return;counterSePayBusy=true;try{const old=new Map((counterState.bookings||[]).map(row=>[row.id,row]));const fresh=await counterRequest('GET');counterState={...counterState,...fresh};if(JSON.stringify([...old.values()])!==JSON.stringify(fresh.bookings))counterRenderRows(fresh.bookings);for(const row of fresh.bookings){if(!row.paymentPending&&String(row.paymentConfirmedBy||'').startsWith('SePay')){if(old.get(row.id)?.paymentPending)counterElement('counterMessage').textContent='Đã nhận thanh toán '+row.bookingCode+' qua '+row.paymentConfirmedBy+'.';window.dispatchEvent(new CustomEvent('counter-payment-updated',{detail:{id:row.id}}))}}}
+catch{counterElement('counterMessage').textContent='Chưa đồng bộ được trạng thái SePay. Kiểm tra kết nối; không xác nhận tiền chỉ dựa vào ảnh chụp.'}finally{counterSePayBusy=false;counterStartSePayPolling()}}
+counterStartSePayPolling();

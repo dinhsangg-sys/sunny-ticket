@@ -38,3 +38,39 @@ class CounterIssuedQR(models.Model):
     booking_id = models.CharField(max_length=120)
     batch = models.ForeignKey(CounterTicketBatch,on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
+
+class SePayIntent(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    owner = models.ForeignKey('accounts.User',on_delete=models.PROTECT)
+    booking_id = models.CharField(max_length=120)
+    booking_code = models.CharField(max_length=120)
+    booking_version = models.PositiveIntegerField()
+    booking_fingerprint = models.CharField(max_length=64)
+    code = models.CharField(max_length=40,unique=True)
+    amount = models.DecimalField(max_digits=18,decimal_places=2)
+    bank_code = models.CharField(max_length=64)
+    gateway = models.CharField(max_length=64)
+    account_number = models.CharField(max_length=64)
+    account_name = models.CharField(max_length=160)
+    mode = models.CharField(max_length=8,default='test')
+    state = models.CharField(max_length=20,default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    paid_at = models.DateTimeField(null=True,blank=True)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['booking_id'],condition=models.Q(state='pending'),name='one_pending_sepay_intent')]
+
+class SePayTransaction(models.Model):
+    transaction_id = models.CharField(max_length=64,primary_key=True)
+    intent = models.ForeignKey(SePayIntent,null=True,blank=True,on_delete=models.PROTECT)
+    amount = models.DecimalField(max_digits=18,decimal_places=2)
+    gateway = models.CharField(max_length=64)
+    account_number = models.CharField(max_length=64)
+    content = models.TextField(blank=True)
+    reference_code = models.CharField(max_length=160,blank=True)
+    transaction_at = models.DateTimeField(null=True,blank=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+    state = models.CharField(max_length=20,default='review')
+    reason = models.CharField(max_length=240,blank=True)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['intent'],condition=models.Q(state='applied'),name='one_applied_sepay_transaction')]

@@ -37,7 +37,7 @@ def default_cost(data,ticket_id,day):
     return top[0]
 
 def public_booking(row):
-    fields=('id','bookingCode','date','ticketId','ticketType','product','qty','sellPrice','revenue','hasVat','note','agent','createdAt','customerEmail','counterVersion')
+    fields=('id','bookingCode','date','ticketId','ticketType','product','qty','sellPrice','revenue','hasVat','note','agent','createdAt','customerEmail','counterVersion','sepayIntentId')
     result={key:row.get(key) for key in fields}
     paid=sum(amount(p['amount']) for p in row.get('payments',[]))
     result.update(paid=float(paid),balance=float(amount(row.get('revenue',0))-paid))
@@ -69,7 +69,8 @@ def counter_api(request):
             tickets.append({'id':ticket['id'],'name':ticket.get('name',''),'product':ticket.get('product',''),'ready':ready})
         own=[public_booking(b) for b in obj.data.get('bookings',[]) if b.get('source')=='counter' and b.get('counterSellerId')==user.pk]
         own.sort(key=lambda b:b.get('createdAt') or '',reverse=True)
-        return JsonResponse({'today':day,'seller':user.get_username(),'canCreate':permitted(user,'create'),'canConfirmPayment':permitted(user,'create'),'canChange':permitted(user,'change'),'canReplace':permitted(user,'replace_tickets'),'canReport':permitted(user,'report'),'tickets':tickets,'bookings':own[:100]})
+        from .sepay import ready
+        return JsonResponse({'sepayEnabled':ready(),'today':day,'seller':user.get_username(),'canCreate':permitted(user,'create'),'canConfirmPayment':permitted(user,'create'),'canChange':permitted(user,'change'),'canReplace':permitted(user,'replace_tickets'),'canReport':permitted(user,'report'),'tickets':tickets,'bookings':own[:100]})
     try:
         body=json.loads(request.body)
         fields={'requestId','ticketId','qty','sellPrice','hasVat','note','customerEmail','paymentMethod'}

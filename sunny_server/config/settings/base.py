@@ -40,3 +40,11 @@ EMAIL_USE_TLS = os.environ.get('DJANGO_EMAIL_USE_TLS','1') == '1'
 EMAIL_USE_SSL = os.environ.get('DJANGO_EMAIL_USE_SSL','0') == '1'
 EMAIL_TIMEOUT = 20
 DEFAULT_FROM_EMAIL = os.environ.get('DJANGO_DEFAULT_FROM_EMAIL','')
+SEPAY_ENABLED = os.environ.get('SEPAY_ENABLED','0') == '1'
+SEPAY_MODE = os.environ.get('SEPAY_MODE','test')
+SEPAY_WEBHOOK_SECRET = os.environ.get('SEPAY_WEBHOOK_SECRET','')
+SEPAY_BANK_CODE = os.environ.get('SEPAY_BANK_CODE','')
+SEPAY_GATEWAY = os.environ.get('SEPAY_GATEWAY','')
+SEPAY_ACCOUNT_NUMBER = os.environ.get('SEPAY_ACCOUNT_NUMBER','')
+SEPAY_ACCOUNT_NAME = os.environ.get('SEPAY_ACCOUNT_NAME','')
+SEPAY_TTL_SECONDS = int(os.environ.get('SEPAY_TTL_SECONDS','900'))

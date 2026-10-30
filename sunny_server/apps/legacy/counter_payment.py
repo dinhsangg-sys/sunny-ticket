@@ -27,6 +27,9 @@ def confirm_payment(request,booking_id):
         method=body.get('paymentMethod',row.get('paymentMethod','cash'))
         if not isinstance(method,str) or method not in PAYMENT_METHODS:raise ValueError('Phương thức thanh toán không hợp lệ.')
         if row.get('counterPaymentFlow')!='manual_confirmation_v1':raise ValueError('Booking cũ giữ cách ghi nhận thanh toán hiện có; quản trị đối soát nếu cần.')
+        if row.get('sepayIntentId'):
+            from .sepay import active_intent
+            if active_intent(row):raise ValueError('Đang chờ SePay xác nhận. Nếu đổi cách thu, hủy phiên QR trước; QR ngân hàng cũ không tự vô hiệu.')
         paid=sum(amount(p['amount']) for p in row.get('payments',[]));total=amount(row['revenue'])
         if row.get('counterPaymentConfirmedAt') and paid>=total:
             if row.get('paymentMethod')!=method:raise ValueError('Booking đã xác nhận bằng phương thức khác. Không thay lịch sử thu tiền.')
