@@ -1,4 +1,6 @@
-# Sunny Travel — bản chính thức 1.11.1
+# Sunny Travel — bản chính thức 1.11.2
+
+1.11.2 áp dụng mẫu nét đen trắng/logo đen trên trắng đã được duyệt; xem [UPGRADE_1_11_2.md](UPGRADE_1_11_2.md). Không đổi dữ liệu hoặc PDF cũ.
 
 1.11.1 thay ảnh mẫu vé; xem [UPGRADE_1_11_1.md](UPGRADE_1_11_1.md). Giữ kích thước 80x110, PDF cũ không bị ghi đè.
 

@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.11.1
+# Sunny Travel Ticket Management — 1.11.2
+
+**1.11.2:** áp dụng mẫu nét đen trắng và logo chữ đen/nền trắng đã được duyệt để in nhiệt. Giữ khổ 80x110 và vị trí QR/thông tin; PDF cũ giữ nguyên. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_11_2.md). Không có migration mới.
 
 **1.11.1:** thay ảnh mẫu vé đầu ra bằng ảnh mới do người dùng cung cấp, giữ khổ 80x110 và QR/thông tin. PDF đã xuất được giữ nguyên. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_11_1.md). Không cần migration mới.
 
