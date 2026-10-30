@@ -1,6 +1,6 @@
 # SePay — bản thử riêng, chưa bật ngân hàng thật
 
-Nhánh `codex/sepay`, dựa trên bản chính thức 1.12.0. Mặc định tắt tính năng. Không chép database thử lên bản chính. Cần migration 0012; không cần gói Python mới.
+Luồng thử đã được người dùng xác nhận hoạt động và đưa vào bản 1.12.1. Tính năng trên bản chính vẫn tắt mặc định, chưa kích hoạt ngân hàng thật. Nhánh `codex/sepay` giữ hướng dẫn mô phỏng dưới đây để tham khảo. Không chép database thử lên bản chính. Cần migration 0012; không cần gói Python mới. Xem UPGRADE_1_12_1.md khi cập nhật bản chính.
 
 ## Cài trên môi trường thử Ubuntu
 
@@ -73,7 +73,7 @@ Chưa được kiểm chứng với giao dịch ngân hàng thật. Chỉ bật 
 
 Hệ thống kiểm tra chữ ký, thời gian yêu cầu, mã phiên, ngân hàng, tài khoản, đúng số tiền còn nợ và nội dung booking. Trùng ID giao dịch không ghi thu lần hai. Sai/thừa/thiếu tiền, phiên đã hủy, booking đã sửa hoặc không xác định được mã sẽ lưu để đối soát, không tự hoàn thành booking. Chỉ hỗ trợ thanh toán đủ trong một lần chuyển cho mỗi phiên. Webhook đến chậm vẫn có thể được ghi nhận nếu thời điểm ngân hàng nằm trong hạn và booking/phiên chưa đổi.
 
-Quản trị xem giao dịch cần kiểm tra tại **Quản trị → Legacy → Se pay transactions**, hoặc `/admin/legacy/sepaytransaction/?state=review`. Danh sách chỉ đọc; không có nút tự duyệt thu tiền. Bản chính 1.12.0 và dữ liệu cũ không bị di chuyển tự động.
+Quản trị xem giao dịch cần kiểm tra tại **Quản trị → Legacy → Se pay transactions**, hoặc `/admin/legacy/sepaytransaction/?state=review`. Danh sách chỉ đọc; không có nút tự duyệt thu tiền. Dữ liệu thử không bị di chuyển tự động vào bản chính.
 
 ## Tài liệu nhà cung cấp
 

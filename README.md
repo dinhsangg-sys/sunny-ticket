@@ -1,6 +1,6 @@
-# Sunny Travel Ticket Management — 1.12.0
+# Sunny Travel Ticket Management — 1.12.1
 
-**Nhánh thử `codex/sepay`:** bổ sung QR chuyển khoản cho từng booking, màn hình phụ và xác nhận tự động qua webhook SePay. Tắt mặc định; chế độ thử dùng QR minh họa và lệnh mô phỏng, chưa cần liên kết ngân hàng. Cần migration 0012. [Hướng dẫn thử SePay](sunny_server/SEPAY_TEST.md). Chưa đưa vào bản chính thức.
+**1.12.1:** đưa tích hợp SePay đã nghiệm thu trên bản thử vào mã chính thức. **Giữ tắt mặc định**, chưa bật thanh toán ngân hàng thật; tiếp tục thu tiền thủ công như 1.12.0. Cần migration 0012. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_1.md). Khi có tài khoản SePay sẽ tiếp tục cấu hình ngân hàng và webhook.
 
 **1.12.0:** thêm Tiền mặt/Thẻ thanh toán/Chuyển khoản (mặc định Tiền mặt). Booking quầy mới chờ nhân viên xác nhận thực thu rồi mới hoàn thành và xuất vé; không tự ghi thu khi tạo. Thêm khu vực soạn mẫu email, xem/chỉnh nội dung trước gửi kèm PDF. Giữ nguyên dữ liệu cũ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_0.md). Cần migrate 0011 để lưu nội dung email.
 

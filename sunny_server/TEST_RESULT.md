@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.12.1 — SePay đã thử, giữ tắt trên bản chính
+
+- 130 kiểm tra backend đạt, migration 0012 khớp model. Trình duyệt kiểm tra hai màn hình, mất mạng/phục hồi, cập nhật thanh toán và các luồng quầy hiện có đạt.
+- Người dùng xác nhận thử xong và yêu cầu đưa vào phiên bản chính. Mặc định SEPAY_ENABLED=0; chưa liên kết ngân hàng, chưa thực hiện thanh toán thật.
+- Không chuyển dữ liệu test sang production. Xem UPGRADE_1_12_1.md.
+
 ## 1.10.13 — Tất cả nhà cung cấp và click ngoài dropdown
 
 - 77 test backend hồi quy đạt; backend và schema không thay đổi.
