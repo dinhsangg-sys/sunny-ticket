@@ -1,4 +1,6 @@
-# Sunny Travel — bản chính thức 1.11.0
+# Sunny Travel — bản chính thức 1.11.1
+
+1.11.1 thay ảnh mẫu vé; xem [UPGRADE_1_11_1.md](UPGRADE_1_11_1.md). Giữ kích thước 80x110, PDF cũ không bị ghi đè.
 
 Bản quầy đã được nghiệm thu và phát hành trên main. Đọc [UPGRADE_1_11_0.md](UPGRADE_1_11_0.md) để sao lưu và nâng cấp bản chính. Không chạy các hướng dẫn reset dữ liệu thuộc lịch sử cũ bên dưới khi nâng cấp 1.11.0.
 

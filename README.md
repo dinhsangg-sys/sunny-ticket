@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.11.0
+# Sunny Travel Ticket Management — 1.11.1
+
+**1.11.1:** thay ảnh mẫu vé đầu ra bằng ảnh mới do người dùng cung cấp, giữ khổ 80x110 và QR/thông tin. PDF đã xuất được giữ nguyên. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_11_1.md). Không cần migration mới.
 
 **1.11.0 chính thức:** đưa bản quầy đã nghiệm thu vào main: thanh toán, nhập/xuất/in vé 80x110, sửa và thay vé theo quyền, báo cáo đối chiếu trong mục Báo cáo, menu dọc nhân viên. [Hướng dẫn nâng cấp bản chính](sunny_server/UPGRADE_1_11_0.md). Sao lưu trước khi pull; không reset và không chép dữ liệu test sang bản chính.
 
