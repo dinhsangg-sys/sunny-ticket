@@ -1,4 +1,6 @@
-# Sunny Travel — bản chính thức 1.11.2
+# Sunny Travel — bản chính thức 1.11.3
+
+1.11.3 tăng QR thêm 30%; xem [UPGRADE_1_11_3.md](UPGRADE_1_11_3.md). PDF cũ giữ nguyên.
 
 1.11.2 áp dụng mẫu nét đen trắng/logo đen trên trắng đã được duyệt; xem [UPGRADE_1_11_2.md](UPGRADE_1_11_2.md). Không đổi dữ liệu hoặc PDF cũ.
 
