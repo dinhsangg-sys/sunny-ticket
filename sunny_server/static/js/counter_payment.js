@@ -15,7 +15,7 @@ async function counterConfirmPayment(id){
   dialog.oncancel=event=>{if(busy)event.preventDefault()};dialog.querySelector('.payment-cancel').onclick=()=>{if(!busy)dialog.close()};
   dialog.querySelector('.payment-confirm').onclick=async()=>{
    if(busy)return;busy=true;dialog.querySelectorAll('button,select').forEach(el=>el.disabled=true);
-   try{await ticketRequest('/api/counter/bookings/'+encodeURIComponent(id)+'/confirm-payment/','POST',{version:state.version,paymentMethod:method.value,confirmed:true});completed=true;dialog.close();await counterLoad();counterElement('counterMessage').textContent='Đã xác nhận thanh toán và hoàn thành '+row.bookingCode+'.'}
+   try{await ticketRequest('/api/counter/bookings/'+encodeURIComponent(id)+'/confirm-payment/','POST',{version:state.version,paymentRevision:row.paymentRevision||0,paymentMethod:method.value,confirmed:true});completed=true;dialog.close();await counterLoad();counterElement('counterMessage').textContent='Đã xác nhận thanh toán và hoàn thành '+row.bookingCode+'.'}
    catch(e){dialog.querySelector('.payment-status').textContent=e.message+' Nếu chưa rõ kết quả, đóng cửa sổ và tải lại booking để kiểm tra.'}
    finally{busy=false;dialog.querySelectorAll('button,select').forEach(el=>el.disabled=false)}
   };

@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.12.2
+# Sunny Travel Ticket Management — 1.12.3
+
+**1.12.3:** quyền riêng để hủy xác nhận thu thủ công nhầm, đưa booking quầy về chờ thanh toán và chọn lại phương thức; lưu lý do/người sửa/lịch sử khoản thu. Không hủy khoản thu SePay đã xác nhận. Cần migrate 0013 và cấp quyền rõ ràng cho nhân viên. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_3.md).
 
 **1.12.2:** QR VietinBank tự thêm `SEVQR ` trước mã thanh toán; màn hình phụ hiển thị đúng toàn bộ nội dung chuyển khoản. Ngân hàng khác giữ mã hiện có. SePay vẫn tắt mặc định, chưa cấu hình thanh toán thật trên máy chủ. [Hướng dẫn cập nhật và lưu cấu hình](sunny_server/UPGRADE_1_12_2.md). Không migration mới.
 

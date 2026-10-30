@@ -1,5 +1,12 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.12.3 — Hủy xác nhận thu thủ công nhầm
+
+- 138 kiểm tra backend đạt, migration khớp model. Playwright đạt luồng hủy xác nhận, quyền/lý do, chọn phương thức, xác nhận thủ công và sửa booking.
+- Quyền riêng counter__reopen_payment, mặc định không cấp nhóm. Giữ lịch sử khoản thu trước/sau và lý do, chặn khoản thu SePay/dữ liệu cũ.
+- Kiểm tra sửa/xác nhận lại, retry, xung đột, phiên thanh toán cũ, quyền riêng/CSRF và khóa PDF khi chờ thu lại.
+- Không thay đổi nội dung vé; migration 0013 chỉ thêm quyền.
+
 ## 1.12.2 — Tiền tố VietinBank
 
 - Kiểm tra QR thật bằng phân tích URL, không gọi dịch vụ QR/ngân hàng: des khớp paymentContent và có SEVQR cho VietinBank/ICB/970415; ngân hàng khác không đổi.

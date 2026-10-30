@@ -40,7 +40,7 @@ def public_booking(row):
     fields=('id','bookingCode','date','ticketId','ticketType','product','qty','sellPrice','revenue','hasVat','note','agent','createdAt','customerEmail','counterVersion','sepayIntentId')
     result={key:row.get(key) for key in fields}
     paid=sum(amount(p['amount']) for p in row.get('payments',[]))
-    result.update(paid=float(paid),balance=float(amount(row.get('revenue',0))-paid))
+    result.update(paid=float(paid),balance=float(amount(row.get('revenue',0))-paid),paymentRevision=row.get('counterPaymentRevision',0))
     result.update(paymentMethod=row.get('paymentMethod',''),paymentPending=payment_pending(row),paymentStatus='pending_payment' if payment_pending(row) else 'completed' if paid>=amount(row.get('revenue',0)) else 'unpaid',paymentConfirmedAt=row.get('counterPaymentConfirmedAt'),paymentConfirmedBy=row.get('counterPaymentConfirmedBy'))
     return result
 

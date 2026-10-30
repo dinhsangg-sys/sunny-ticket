@@ -32,7 +32,7 @@ def booking_detail(request,booking_id):
     if request.method=='GET':
         from .sepay import active_intent
         sepay_active=bool(row.get('sepayIntentId') and active_intent(row))
-        return JsonResponse({'sepayActive':sepay_active,'booking':public_booking(row),'version':row.get('counterVersion',1),'canConfirmPayment':permitted(user,'create'),'canChange':permitted(user,'change'),'canSettle':permitted(user,'settle_adjustment'),'history':row.get('counterHistory',[])})
+        return JsonResponse({'sepayActive':sepay_active,'booking':public_booking(row),'version':row.get('counterVersion',1),'canReopenPayment':permitted(user,'reopen_payment') and row.get('counterPaymentFlow')=='manual_confirmation_v1' and not payment_pending(row) and bool(row.get('counterPaymentConfirmedAt')) and not any(p.get('provider') for p in row.get('payments',[])) and not str(row.get('counterPaymentConfirmedBy','')).startswith('SePay'),'canConfirmPayment':permitted(user,'create'),'canChange':permitted(user,'change'),'canSettle':permitted(user,'settle_adjustment'),'history':row.get('counterHistory',[])})
     try:
         body=json.loads(request.body)
         if set(body)-{'version','values','settled'}:raise ValueError('Có trường không được phép.')
