@@ -23,6 +23,8 @@ class CounterTicketBatch(models.Model):
     selected = models.JSONField(default=list)
     output_hash = models.CharField(max_length=64,blank=True)
     customer_email = models.EmailField(blank=True)
+    email_subject = models.CharField(max_length=200,blank=True)
+    email_body = models.TextField(blank=True)
     email_state = models.CharField(max_length=16,default='idle')
     emailed_at = models.DateTimeField(null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

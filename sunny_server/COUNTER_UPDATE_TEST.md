@@ -1,5 +1,7 @@
 # Bản test: thanh toán, sửa booking và đối chiếu vé
 
+Lưu ý 1.12.0: quy tắc tự thu khi tạo của lịch sử bên dưới đã được thay bằng xác nhận thanh toán thủ công cho booking mới. Xem UPGRADE_1_12_0.md để vận hành bản hiện tại.
+
 Chỉ nhánh `codex/counter-sales`. Không thay main, stable hoặc dữ liệu máy chủ chính.
 
 ## Cập nhật

@@ -10,7 +10,7 @@ from django.http import JsonResponse, Http404
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
-from .counter import permitted, public_booking, default_cost
+from .counter import permitted, public_booking, default_cost, payment_pending, PAYMENT_METHODS
 from .models import Workspace
 from .operations import save_workspace
 from .pricing import amount, calculate_booking
@@ -30,14 +30,18 @@ def booking_detail(request,booking_id):
         return JsonResponse({'error':'Chưa được cấp quyền xem/sửa booking quầy.'},status=403)
     obj=Workspace.objects.get(pk=1);data=copy.deepcopy(obj.data);row=own_booking(data,user,booking_id)
     if request.method=='GET':
-        return JsonResponse({'booking':public_booking(row),'version':row.get('counterVersion',1),'canChange':permitted(user,'change'),'canSettle':permitted(user,'settle_adjustment'),'history':row.get('counterHistory',[])})
+        return JsonResponse({'booking':public_booking(row),'version':row.get('counterVersion',1),'canConfirmPayment':permitted(user,'create'),'canChange':permitted(user,'change'),'canSettle':permitted(user,'settle_adjustment'),'history':row.get('counterHistory',[])})
     try:
         body=json.loads(request.body)
         if set(body)-{'version','values','settled'}:raise ValueError('Có trường không được phép.')
         if body['version']!=row.get('counterVersion',1):return JsonResponse({'error':'Booking đã thay đổi. Mở lại chi tiết trước khi sửa.'},status=409)
         values=body['values']
-        if not isinstance(values,dict) or set(values)-{'ticketId','qty','sellPrice','hasVat','note','customerEmail'}:raise ValueError('Có trường không được phép.')
+        if not isinstance(values,dict) or set(values)-{'ticketId','qty','sellPrice','hasVat','note','customerEmail','paymentMethod'}:raise ValueError('Có trường không được phép.')
         before=public_booking(row);old_payments=copy.deepcopy(row.get('payments',[]))
+        pending_before=payment_pending(row)
+        if 'paymentMethod' in values:
+            if not isinstance(values['paymentMethod'],str) or values['paymentMethod'] not in PAYMENT_METHODS:raise ValueError('Phương thức thanh toán không hợp lệ.')
+            if not pending_before and values['paymentMethod']!=row.get('paymentMethod',''):raise ValueError('Không đổi phương thức của khoản thu đã ghi nhận.')
         row.update(values)
         qty=amount(row['qty']);price=amount(row['sellPrice'])
         if qty<=0 or qty>10000 or qty!=int(qty) or price!=int(price):raise ValueError('Số lượng/giá bán không hợp lệ.')
@@ -56,17 +60,19 @@ def booking_detail(request,booking_id):
         paid=sum(amount(p['amount']) for p in old_payments);delta=amount(row['revenue'])-paid
         total_changed=row['revenue']!=before['revenue']
         adjustment=0
-        if total_changed and delta:
+        if total_changed and delta and not pending_before:
             if not permitted(user,'settle_adjustment') or body.get('settled') is not True:
                 raise ValueError('Tổng tiền thay đổi: cần quyền điều chỉnh thanh toán và xác nhận đã thu thêm/hoàn lại thực tế.')
             adjustment=float(delta)
-            if delta>0:row['payments'].append({'id':str(uuid.uuid4()),'date':timezone.localdate().isoformat(),'amount':float(delta),'note':'Thu thêm khi sửa tại quầy','createdBy':user.pk})
+            if delta>0:row['payments'].append({'id':str(uuid.uuid4()),'date':timezone.localdate().isoformat(),'amount':float(delta),'method':row.get('paymentMethod',''),'note':'Thu thêm khi sửa tại quầy','createdBy':user.pk})
             else:
                 remaining=-delta
                 for payment in reversed(row['payments']):
                     reduction=min(amount(payment['amount']),remaining);payment['amount']=float(amount(payment['amount'])-reduction);remaining-=reduction
                 row['payments']=[p for p in row['payments'] if p['amount']>0]
-        calculate_booking(row);row['counterVersion']=row.get('counterVersion',1)+1
+        calculate_booking(row)
+        if pending_before:row['status']='pending_payment'
+        row['counterVersion']=row.get('counterVersion',1)+1
         row.setdefault('counterHistory',[]).append({'at':timezone.now().isoformat(),'by':user.get_username(),'before':before,'after':public_booking(row),'paymentAdjustment':adjustment,'paymentsBefore':old_payments,'paymentsAfter':copy.deepcopy(row['payments'])})
         enforce_ticket_lifecycle(obj.data,data)
         with transaction.atomic():save_workspace(obj,data,user,obj.revision,'counter.booking_change')

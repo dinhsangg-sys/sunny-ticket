@@ -26,7 +26,7 @@ class CounterTests(TestCase):
         response=self.post();self.assertEqual(response.status_code,201,response.content)
         row=Workspace.objects.get(pk=1).data['bookings'][0]
         self.assertEqual(row['date'],'2026-10-29');self.assertEqual(row['agent'],'counter-one');self.assertEqual(row['customerName'],'counter-one');self.assertEqual(row['customerType'],'retail')
-        self.assertEqual(row['buyPrice'],400000);self.assertEqual(row['revenue'],1100000);self.assertEqual(row['vatRate'],15);self.assertEqual(row['vatAmount'],45000);self.assertEqual(sum(p['amount'] for p in row['payments']),row['revenue'])
+        self.assertEqual(row['buyPrice'],400000);self.assertEqual(row['revenue'],1100000);self.assertEqual(row['vatRate'],15);self.assertEqual(row['vatAmount'],45000);self.assertEqual(row['payments'],[]);self.assertEqual(row['status'],'pending_payment');self.assertEqual(row['paymentMethod'],'cash')
         self.assertEqual(row['supplierId'],'s');self.assertTrue(Workspace.objects.get(pk=1).data['ticketTypes'][0]['hasActivity'])
         for source in [response,self.client.get('/api/counter/')]:
             for hidden in ['buyPrice','profit','vatAmount','vatBase','supplierId','costPriceId','Nguồn bí mật','400000']:

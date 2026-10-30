@@ -18,9 +18,10 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.clickjacking import xframe_options_sameorigin
-from .counter import permitted
+from .counter import permitted, payment_pending
 from .models import Workspace, CounterTicketBatch, CounterIssuedQR
 from .ticket_processing import extract_tickets, checked_fields, render_tickets, FIELDS
+from .counter_email_template import render_email, checked_message
 
 def email_ready():
     return bool(getattr(settings,'COUNTER_EMAIL_ENABLED',False) and settings.DEFAULT_FROM_EMAIL and (settings.EMAIL_BACKEND!='django.core.mail.backends.smtp.EmailBackend' or settings.EMAIL_HOST))
@@ -55,8 +56,12 @@ def require_replacement(user,booking):
         raise ValueError('Cần quyền thay bộ vé để tạo phiên bản mới. Bộ vé cũ vẫn được giữ.')
 
 def public_batch(batch,booking):
+    draft_error=''
+    try:draft={'subject':batch.email_subject,'body':batch.email_body} if batch.email_state!='idle' else render_email(booking,batch.customer_email or booking.get('customerEmail',''))
+    except (ValueError,TypeError,KeyError):draft={'subject':'','body':''};draft_error='Mẫu email chưa hợp lệ. Quản trị kiểm tra mẫu hoặc điền tiêu đề/nội dung riêng trước khi gửi.'
     return {'id':str(batch.pk),'name':batch.source_name,'bookingId':batch.booking_id,'quantity':booking['qty'],'ready':bool(batch.output_hash),'email':batch.customer_email,'emailState':batch.email_state,
-            'emailEnabled':email_ready() and not batch.superseded_at and batch.booking_version==booking.get('counterVersion',1), 'selected':batch.selected,
+            'emailDraft':draft,'emailDraftError':draft_error,
+            'emailEnabled':email_ready() and not payment_pending(booking) and not batch.superseded_at and batch.booking_version==booking.get('counterVersion',1), 'selected':batch.selected,
             'archived':bool(batch.superseded_at) or batch.booking_version!=booking.get('counterVersion',1),'createdAt':batch.created_at.isoformat(),
             'rows':[{'page':r['page'],'sourcePage':r.get('source_page',r['page']),**{k:r.get(k,'') for k in FIELDS},'qrUrl':f'/api/counter/ticket-batches/{batch.pk}/qr/{r["page"]}/'} for r in batch.rows]}
 
@@ -69,7 +74,7 @@ def booking_tickets(request,booking_id):
     if request.method=='GET':
         batches=CounterTicketBatch.objects.filter(booking_id=booking_id).order_by('-created_at')
         if not request.user.is_superuser:batches=batches.filter(owner=request.user)
-        return JsonResponse({'booking':{'code':booking['bookingCode'],'qty':booking['qty'],'email':booking.get('customerEmail','')},'canImport':permitted(request.user,'create'),'hasIssued':needs_replacement(booking),'canReplace':permitted(request.user,'replace_tickets'),'batches':[public_batch(b,booking) for b in batches]})
+        return JsonResponse({'booking':{'code':booking['bookingCode'],'qty':booking['qty'],'email':booking.get('customerEmail',''),'paymentPending':payment_pending(booking)},'canConfirmPayment':permitted(request.user,'create'),'canImport':permitted(request.user,'create'),'hasIssued':needs_replacement(booking),'canReplace':permitted(request.user,'replace_tickets'),'batches':[public_batch(b,booking) for b in batches]})
     replacing=request.POST.get('replace')=='1'
     if needs_replacement(booking) and not permitted(request.user,'replace_tickets'):
         return JsonResponse({'error':'Chưa được cấp quyền thay bộ vé (counter.replace_tickets). Liên hệ quản trị cấp quyền để cập nhật file và tạo lại vé.'},status=403)
@@ -127,6 +132,7 @@ def ticket_qr(request,batch_id,page):
 @require_http_methods(['POST'])
 def generate_tickets(request,batch_id):
     batch,booking=allowed_batch(request,batch_id,True)
+    if payment_pending(booking):return JsonResponse({'error':'Booking đang chờ thanh toán. Nhân viên cần xác nhận đã nhận đủ tiền trước khi xuất vé.'},status=409)
     try:
         body=json.loads(request.body)
         if batch.booking_version!=booking.get('counterVersion',1) or batch.superseded_at:raise ValueError('Phiên bản vé cũ. Tạo phiên bản mới theo booking hiện tại.')
@@ -148,6 +154,7 @@ def generate_tickets(request,batch_id):
             # Lock workspace with a no-op write, serializing assignments even on SQLite.
             Workspace.objects.filter(pk=1).update(updated_at=timezone.now())
             booking=booking_for(request.user,batch.booking_id)
+            if payment_pending(booking):raise ValueError('Booking chưa được xác nhận thanh toán; chưa xuất vé.')
             if len(selected)!=int(booking['qty']):raise ValueError('Số lượng booking vừa thay đổi. Hãy mở lại bộ vé.')
             batch=CounterTicketBatch.objects.select_for_update().get(pk=batch.pk)
             if batch.output_hash:
@@ -184,26 +191,45 @@ def output_bytes(batch):
 @xframe_options_sameorigin
 def tickets_pdf(request,batch_id):
     from io import BytesIO
-    batch,_=allowed_batch(request,batch_id);blob=output_bytes(batch)
+    batch,booking=allowed_batch(request,batch_id)
+    if payment_pending(booking):return JsonResponse({'error':'Booking chưa xác nhận thanh toán; chưa tải/in vé.'},status=409)
+    blob=output_bytes(batch)
     return FileResponse(BytesIO(blob),content_type='application/pdf',as_attachment=request.GET.get('download')=='1',filename='ve-80x110-'+str(batch.pk)+'.pdf')
+
+@login_required
+@never_cache
+@require_http_methods(['GET'])
+def email_draft(request,batch_id):
+    batch,booking=allowed_batch(request,batch_id)
+    try:
+        email=request.GET.get('email',batch.customer_email or booking.get('customerEmail','')).strip()
+        if email:validate_email(email)
+        if len(email)>254:raise ValueError('Email quá dài.')
+        return JsonResponse(render_email(booking,email))
+    except (ValueError,ValidationError):return JsonResponse({'error':'Kiểm tra email người nhận hoặc mẫu email dùng chung.'},status=400)
 
 @login_required
 @never_cache
 @require_http_methods(['POST'])
 def email_tickets(request,batch_id):
     batch,booking=allowed_batch(request,batch_id,True)
+    if payment_pending(booking):return JsonResponse({'error':'Booking chưa xác nhận thanh toán; chưa gửi vé.'},status=409)
     if batch.superseded_at or batch.booking_version!=booking.get('counterVersion',1):return JsonResponse({'error':'Không gửi email phiên bản vé cũ.'},status=409)
     if not email_ready():return JsonResponse({'error':'Chưa cấu hình hộp thư gửi. Bạn vẫn có thể xuất PDF hoặc in vé.'},status=400)
     blob=output_bytes(batch)
     try:
-        body=json.loads(request.body);email=body['email'].strip();validate_email(email)
+        body=json.loads(request.body)
+        if not isinstance(body,dict) or set(body)-{'email','confirmed','subject','body'}:raise ValueError('Dữ liệu email không hợp lệ.')
+        email=body['email'].strip();validate_email(email)
         if len(email)>254:raise ValueError('Email quá dài.')
         if body.get('confirmed') is not True:raise ValueError('Xác nhận địa chỉ người nhận trước khi gửi.')
-    except (ValueError,KeyError,TypeError,AttributeError,ValidationError):return JsonResponse({'error':'Kiểm tra địa chỉ email và xác nhận người nhận.'},status=400)
-    if batch.email_state=='sent' and batch.customer_email==email:return JsonResponse({'status':'sent','alreadySent':True})
-    if not CounterTicketBatch.objects.filter(pk=batch.pk,email_state='idle').update(email_state='sending',customer_email=email):return JsonResponse({'error':'Đợt này đã gửi hoặc kết quả gửi đang cần đối soát. Không gửi lại tự động.'},status=409)
+        draft=checked_message(body.get('subject'),body.get('body')) if 'subject' in body or 'body' in body else render_email(booking,email)
+    except ValueError as exc:return JsonResponse({'error':str(exc) or 'Email chưa hợp lệ.'},status=400)
+    except (KeyError,TypeError,AttributeError,ValidationError):return JsonResponse({'error':'Kiểm tra địa chỉ email, tiêu đề/nội dung và xác nhận người nhận.'},status=400)
+    if batch.email_state=='sent' and batch.customer_email==email and batch.email_subject==draft['subject'] and batch.email_body==draft['body']:return JsonResponse({'status':'sent','alreadySent':True})
+    if not CounterTicketBatch.objects.filter(pk=batch.pk,email_state='idle').update(email_state='sending',customer_email=email,email_subject=draft['subject'],email_body=draft['body']):return JsonResponse({'error':'Đợt này đã gửi hoặc kết quả gửi đang cần đối soát. Không gửi lại tự động.'},status=409)
     try:
-        message=EmailMessage('Vé '+booking['bookingCode']+' - Sunny Travel','Kính gửi Quý khách,\n\nVé của Quý khách được đính kèm trong email này. Vui lòng kiểm tra thông tin và ngày sử dụng trên vé.\n\nSunny Travel',to=[email])
+        message=EmailMessage(draft['subject'],draft['body'],to=[email])
         message.attach('ve-'+booking['bookingCode']+'.pdf',blob,'application/pdf')
         if message.send(fail_silently=False)!=1:raise RuntimeError('Not accepted')
         CounterTicketBatch.objects.filter(pk=batch.pk).update(email_state='sent',emailed_at=timezone.now())

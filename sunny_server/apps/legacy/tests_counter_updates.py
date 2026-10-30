@@ -16,7 +16,7 @@ class CounterEditTests(TestCase):
     def edit(self,key,values,version=1,settled=False):return self.client.post('/api/counter/bookings/'+key+'/',json.dumps({'version':version,'values':values,'settled':settled}),content_type='application/json')
 
     def test_paid_creation_idempotence_and_authorized_edits(self):
-        created=self.post().json()['booking'];key=created['id'];self.assertEqual(created['paid'],created['revenue']);self.assertEqual(created['balance'],0)
+        created=self.post().json()['booking'];key=created['id'];created=self.client.post('/api/counter/bookings/'+key+'/confirm-payment/',json.dumps({'version':1,'paymentMethod':'cash','confirmed':True}),content_type='application/json').json()['booking'];self.assertEqual(created['paid'],created['revenue']);self.assertEqual(created['balance'],0)
         self.post();self.assertEqual(len(Workspace.objects.get(pk=1).data['bookings'][0]['payments']),1)
         self.assertEqual(self.edit(key,{'note':'new'}).status_code,403)
         grant(self.user,'counter__change')

@@ -1,4 +1,6 @@
-# Sunny Travel — bản chính thức 1.11.4
+# Sunny Travel — bản chính thức 1.12.0
+
+1.12.0: booking quầy mới chờ nhân viên xác nhận thanh toán, có ba phương thức (mặc định Tiền mặt); xem [UPGRADE_1_12_0.md](UPGRADE_1_12_0.md). Quy tắc tự ghi thu của bản cũ không áp dụng cho booking mới. Có thêm khu vực mẫu email gửi vé và migration 0011 lưu nội dung email.
 
 1.11.4 dời QR sang trái để không che tay nhân vật; xem [UPGRADE_1_11_4.md](UPGRADE_1_11_4.md).
 

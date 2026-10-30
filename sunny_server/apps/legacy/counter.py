@@ -19,6 +19,11 @@ from .operations import save_workspace
 from .pricing import amount, calculate_booking, supplier_options
 from .ticket_lifecycle import enforce_ticket_lifecycle
 
+PAYMENT_METHODS={'cash':'Tiền mặt','card':'Thẻ thanh toán','bank_transfer':'Chuyển khoản'}
+
+def payment_pending(row):
+    return row.get('counterPaymentFlow')=='manual_confirmation_v1' and (not row.get('counterPaymentConfirmedAt') or sum(amount(p['amount']) for p in row.get('payments',[]))<amount(row.get('revenue',0)))
+
 def permitted(user,action):
     return user.is_active and (user.is_superuser or user.role in ('counter','admin','operator') and allowed(user,'counter.'+action))
 
@@ -36,6 +41,7 @@ def public_booking(row):
     result={key:row.get(key) for key in fields}
     paid=sum(amount(p['amount']) for p in row.get('payments',[]))
     result.update(paid=float(paid),balance=float(amount(row.get('revenue',0))-paid))
+    result.update(paymentMethod=row.get('paymentMethod',''),paymentPending=payment_pending(row),paymentStatus='pending_payment' if payment_pending(row) else 'completed' if paid>=amount(row.get('revenue',0)) else 'unpaid',paymentConfirmedAt=row.get('counterPaymentConfirmedAt'),paymentConfirmedBy=row.get('counterPaymentConfirmedBy'))
     return result
 
 @login_required
@@ -63,21 +69,23 @@ def counter_api(request):
             tickets.append({'id':ticket['id'],'name':ticket.get('name',''),'product':ticket.get('product',''),'ready':ready})
         own=[public_booking(b) for b in obj.data.get('bookings',[]) if b.get('source')=='counter' and b.get('counterSellerId')==user.pk]
         own.sort(key=lambda b:b.get('createdAt') or '',reverse=True)
-        return JsonResponse({'today':day,'seller':user.get_username(),'canCreate':permitted(user,'create'),'canChange':permitted(user,'change'),'canReplace':permitted(user,'replace_tickets'),'canReport':permitted(user,'report'),'tickets':tickets,'bookings':own[:100]})
+        return JsonResponse({'today':day,'seller':user.get_username(),'canCreate':permitted(user,'create'),'canConfirmPayment':permitted(user,'create'),'canChange':permitted(user,'change'),'canReplace':permitted(user,'replace_tickets'),'canReport':permitted(user,'report'),'tickets':tickets,'bookings':own[:100]})
     try:
         body=json.loads(request.body)
-        fields={'requestId','ticketId','qty','sellPrice','hasVat','note','customerEmail'}
+        fields={'requestId','ticketId','qty','sellPrice','hasVat','note','customerEmail','paymentMethod'}
         if not isinstance(body,dict) or set(body)-fields: raise ValueError('Không được thay ngày, người bán, giá vốn hoặc các trường ngoài biểu mẫu quầy.')
         email=body.get('customerEmail','').strip()
         if email:validate_email(email)
         if len(email)>254:raise ValueError('Email quá dài.')
         request_id=str(uuid.UUID(body['requestId']))
+        method=body.get('paymentMethod','cash')
+        if method not in PAYMENT_METHODS:raise ValueError('Phương thức thanh toán không hợp lệ.')
         ticket_id=body['ticketId'];qty=amount(body['qty']);price=amount(body['sellPrice']);vat=body.get('hasVat',False);note=body.get('note','')
         if qty<=0 or qty!=qty.to_integral_value() or qty>10000: raise ValueError('Số lượng phải là số nguyên từ 1 đến 10000.')
         if price!=price.to_integral_value(): raise ValueError('Giá bán nhập theo đồng, không có phần thập phân.')
         amount(price*qty)
         if not isinstance(vat,bool) or not isinstance(note,str) or len(note)>2000 or not isinstance(ticket_id,str):raise ValueError('VAT/ghi chú/loại vé không hợp lệ.')
-        fingerprint=hashlib.sha256(json.dumps({'ticketId':ticket_id,'qty':str(qty.normalize()),'price':str(price.normalize()),'vat':vat,'note':note,'email':email},sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+        fingerprint=hashlib.sha256(json.dumps({'ticketId':ticket_id,'qty':str(qty.normalize()),'price':str(price.normalize()),'vat':vat,'note':note,'email':email,'paymentMethod':method},sort_keys=True,ensure_ascii=False).encode()).hexdigest()
         data=copy.deepcopy(obj.data)
         existing=next((b for b in data.get('bookings',[]) if b.get('counterRequestId')==request_id and b.get('counterSellerId')==user.pk),None)
         if existing:
@@ -92,10 +100,9 @@ def counter_api(request):
              'source':'counter','counterSellerId':user.pk,'counterRequestId':request_id,'counterRequestHash':fingerprint,
              'customerType':'retail','agent':user.get_username(),'customerName':user.get_username(),'ticketId':ticket_id,'ticketType':ticket.get('name',''),'product':ticket.get('product',''),
              'qty':int(qty),'sellPrice':float(price),'buyPrice':float(amount(cost['price'])),'cost':0,'costSource':'supplier','costPriceId':cost['id'],'supplierId':cost['supplierId'],'supplierName':cost['supplierName'],
-             'customerEmail':email,'hasVat':vat,'vatRate':15 if vat else 0,'note':note,'status':'completed','payments':[],'supplierPayments':[]}
+             'customerEmail':email,'hasVat':vat,'vatRate':15 if vat else 0,'note':note,'status':'pending_payment','paymentMethod':method,'counterPaymentFlow':'manual_confirmation_v1','payments':[],'supplierPayments':[]}
         calculate_booking(row)
         row['counterVersion']=1
-        if row['revenue']>0:row['payments']=[{'id':str(uuid.uuid4()),'date':day,'amount':row['revenue'],'note':'Đã thu tại quầy — '+user.get_username(),'createdBy':user.pk}]
         data.setdefault('bookings',[]).append(row);enforce_ticket_lifecycle(obj.data,data)
         with transaction.atomic():save_workspace(obj,data,user,obj.revision,'counter.booking_create')
         return JsonResponse({'booking':public_booking(row),'duplicate':False},status=201)

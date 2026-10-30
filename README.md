@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.11.4
+# Sunny Travel Ticket Management — 1.12.0
+
+**1.12.0:** thêm Tiền mặt/Thẻ thanh toán/Chuyển khoản (mặc định Tiền mặt). Booking quầy mới chờ nhân viên xác nhận thực thu rồi mới hoàn thành và xuất vé; không tự ghi thu khi tạo. Thêm khu vực soạn mẫu email, xem/chỉnh nội dung trước gửi kèm PDF. Giữ nguyên dữ liệu cũ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_0.md). Cần migrate 0011 để lưu nội dung email.
 
 **1.11.4:** dịch QR sang trái để không che tay nhân vật, giữ QR 23.4 mm và khổ 80x110; bỏ ô trắng tại vị trí cũ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_11_4.md). Không migration mới.
 
