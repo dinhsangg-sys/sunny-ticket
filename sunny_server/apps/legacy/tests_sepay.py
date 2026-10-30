@@ -120,6 +120,27 @@ class SePayTests(TestCase):
         self.assertEqual(self.hook(self.payload(intent)).json()['state'],'review')
         self.assertEqual(Workspace.objects.get(pk=1).data['bookings'][0]['payments'],[])
 
+    @override_settings(SEPAY_MODE='live',SEPAY_BANK_CODE='VietinBank',SEPAY_GATEWAY='VietinBank')
+    def test_vietinbank_qr_display_and_webhook_use_same_prefixed_content(self):
+        _,intent,result=self.new_intent()
+        memo='SEVQR '+intent.code
+        self.assertEqual(parse_qs(urlparse(result['qrUrl']).query)['des'],[memo])
+        self.assertEqual(result['paymentContent'],memo)
+        # Bank may prepend its reference; SePay may leave code empty.
+        payload=self.payload(intent,gateway='VietinBank',code=None,content='CT DEN:484T26 TEST '+memo)
+        self.assertEqual(self.hook(payload).json()['state'],'applied')
+        self.assertTrue(self.hook(payload).json()['duplicate'])
+
+    def test_bank_aliases_use_prefix_and_other_banks_keep_existing_content(self):
+        from .sepay import payment_content
+        _,intent,result=self.new_intent()
+        self.assertEqual(result['paymentContent'],intent.code)
+        for bank in ('VietinBank','ICB','970415','vietinbank'):
+            intent.bank_code=bank
+            self.assertEqual(payment_content(intent),'SEVQR '+intent.code)
+        intent.bank_code='TestBank';intent.gateway='VietinBank'
+        self.assertEqual(payment_content(intent),'SEVQR '+intent.code)
+
     def test_simulation_command_is_test_only(self):
         from io import StringIO
         from django.core.management import call_command, CommandError

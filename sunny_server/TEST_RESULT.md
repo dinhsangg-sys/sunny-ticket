@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.12.2 — Tiền tố VietinBank
+
+- Kiểm tra QR thật bằng phân tích URL, không gọi dịch vụ QR/ngân hàng: des khớp paymentContent và có SEVQR cho VietinBank/ICB/970415; ngân hàng khác không đổi.
+- Webhook có tham chiếu ngân hàng và SEVQR, code trống vẫn đối chiếu đúng; gửi trùng không ghi thu lần hai. Màn hình phụ hiển thị toàn bộ nội dung chuyển khoản.
+- SePay vẫn tắt mặc định; chưa kích hoạt ngân hàng thật/triển khai Ubuntu.
+
 ## 1.12.1 — SePay đã thử, giữ tắt trên bản chính
 
 - 130 kiểm tra backend đạt, migration 0012 khớp model. Trình duyệt kiểm tra hai màn hình, mất mạng/phục hồi, cập nhật thanh toán và các luồng quầy hiện có đạt.

@@ -42,12 +42,19 @@ def active_intent(booking):
 def intent_state(intent):
     return 'expired' if intent.state=='pending' and timezone.now()>intent.expires_at else intent.state
 
+def payment_content(intent):
+    # VietinBank personal accounts only notify SePay for transfers starting SEVQR.
+    vietinbank={'VIETINBANK','ICB','970415'}
+    prefix='SEVQR ' if bank_key(intent.bank_code) in vietinbank or bank_key(intent.gateway) in vietinbank else ''
+    return prefix+intent.code
+
 def customer_data(intent):
     state=intent_state(intent)
     if state=='pending' and (not ready() or intent.mode!=settings.SEPAY_MODE):state='unavailable'
-    result={'state':state,'code':intent.code,'bookingCode':intent.booking_code,'amount':float(intent.amount),'bank':intent.bank_code,'account':intent.account_number,'accountName':intent.account_name,'mode':intent.mode,'expiresAt':intent.expires_at.isoformat(),'qrUrl':None}
+    memo=payment_content(intent)
+    result={'state':state,'code':intent.code,'paymentContent':memo,'bookingCode':intent.booking_code,'amount':float(intent.amount),'bank':intent.bank_code,'account':intent.account_number,'accountName':intent.account_name,'mode':intent.mode,'expiresAt':intent.expires_at.isoformat(),'qrUrl':None}
     if state=='pending':
-        if intent.mode=='live':result['qrUrl']='https://vietqr.app/img?'+urlencode({'acc':intent.account_number,'bank':intent.bank_code,'amount':int(intent.amount),'des':intent.code,'template':'qronly'})
+        if intent.mode=='live':result['qrUrl']='https://vietqr.app/img?'+urlencode({'acc':intent.account_number,'bank':intent.bank_code,'amount':int(intent.amount),'des':memo,'template':'qronly'})
         else:
             # Deliberately not a bank QR in test mode: scanning cannot initiate real payment.
             import zxingcpp

@@ -63,6 +63,8 @@ Muốn đổi sang thu thủ công khi QR còn hạn, vào **Xác nhận đã th
 
 ## Bật thanh toán thật sau khi đã liên kết ngân hàng
 
+Với VietinBank, từ 1.12.2 QR và màn hình phụ tự dùng nội dung `SEVQR STP<mã phiên>`. Không bỏ `SEVQR`. Xem UPGRADE_1_12_2.md để lưu cấu hình riêng trên Ubuntu; không nạp cấu hình thử vào bản chính.
+
 Chưa được kiểm chứng với giao dịch ngân hàng thật. Chỉ bật sau khi thử trên dữ liệu riêng và kiểm tra cấu hình:
 
 - Liên kết tài khoản ngân hàng trong SePay; khai báo đúng mã ngân hàng, `gateway`, số tài khoản và tên nhận. Đổi `SEPAY_MODE=live` mới tạo QR chuyển khoản thật qua `vietqr.app`.

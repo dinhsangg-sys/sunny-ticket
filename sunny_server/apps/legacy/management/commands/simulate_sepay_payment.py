@@ -9,7 +9,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.test import RequestFactory
 from django.utils import timezone
 from apps.legacy.models import SePayIntent
-from apps.legacy.sepay import ready, webhook
+from apps.legacy.sepay import ready, webhook, payment_content
 
 
 class Command(BaseCommand):
@@ -27,7 +27,7 @@ class Command(BaseCommand):
         payload={'id':int(uuid.uuid4().int%10**18)+1,'gateway':intent.gateway,
                  'accountNumber':intent.account_number,'transferType':'in',
                  'transferAmount':int(intent.amount),'code':intent.code,
-                 'content':'SIMULATION '+intent.code,'referenceCode':'LOCAL-TEST',
+                 'content':payment_content(intent),'referenceCode':'LOCAL-TEST',
                  'transactionDate':timezone.now().astimezone(ZoneInfo('Asia/Ho_Chi_Minh')).strftime('%Y-%m-%d %H:%M:%S')}
         raw=json.dumps(payload).encode();stamp=str(int(timezone.now().timestamp()))
         signature='sha256='+hmac.new(settings.SEPAY_WEBHOOK_SECRET.encode(),stamp.encode()+b'.'+raw,hashlib.sha256).hexdigest()
