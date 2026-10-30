@@ -1,4 +1,6 @@
-# Sunny Travel — bản chính thức 1.11.3
+# Sunny Travel — bản chính thức 1.11.4
+
+1.11.4 dời QR sang trái để không che tay nhân vật; xem [UPGRADE_1_11_4.md](UPGRADE_1_11_4.md).
 
 1.11.3 tăng QR thêm 30%; xem [UPGRADE_1_11_3.md](UPGRADE_1_11_3.md). PDF cũ giữ nguyên.
 

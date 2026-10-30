@@ -13,6 +13,7 @@ from django.conf import settings
 FIELDS=('expiry','package','park_time','show_time','ticket_code','agent')
 QR_SIZE_MM=23.4  # 18 mm x 1.30; grow upward, keeping the bottom above ticket details.
 QR_PADDING_MM=2
+QR_LEFT_MM=8
 
 def normalize(value):
     return ''.join(c for c in unicodedata.normalize('NFD',value.lower()) if unicodedata.category(c)!='Mn').replace('đ','d')
@@ -219,7 +220,7 @@ def render_tickets(rows,qr_files):
     positions={'expiry':(25,75.2,52,8),'package':(25,82.6,52,8),'park_time':(25,89.4,52,7.7),'show_time':(25,93,52,7.7),'ticket_code':(25,98,52,7.4),'agent':(25,104.3,52,8)}
     for row,png in zip(rows,qr_files):
         stream=BytesIO();c=canvas.Canvas(stream,pagesize=(80*mm,height))
-        qr_left=(80-QR_SIZE_MM)/2;qr_bottom=height-67.5*mm
+        qr_left=QR_LEFT_MM;qr_bottom=height-67.5*mm
         c.setFillColorRGB(1,1,1)
         c.rect((qr_left-QR_PADDING_MM)*mm,qr_bottom-QR_PADDING_MM*mm,(QR_SIZE_MM+2*QR_PADDING_MM)*mm,(QR_SIZE_MM+2*QR_PADDING_MM)*mm,fill=1,stroke=0)
         c.drawImage(ImageReader(BytesIO(png)),qr_left*mm,qr_bottom,width=QR_SIZE_MM*mm,height=QR_SIZE_MM*mm,preserveAspectRatio=True,anchor='c')

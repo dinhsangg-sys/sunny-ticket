@@ -53,7 +53,7 @@ class CounterTicketTests(TestCase):
             self.assertAlmostEqual(document[0].rect.width*25.4/72,80,places=3);self.assertAlmostEqual(document[0].rect.height*25.4/72,110,places=3)
             self.assertIn('ECO TEST',document[0].get_text())
             image_rects=[rect for image in document[0].get_images(full=True) for rect in document[0].get_image_rects(image[0])]
-            self.assertTrue(any(abs(rect.width*25.4/72-23.4)<.01 and abs(rect.height*25.4/72-23.4)<.01 for rect in image_rects))
+            self.assertTrue(any(abs(rect.x0*25.4/72-8)<.01 and abs(rect.width*25.4/72-23.4)<.01 and abs(rect.height*25.4/72-23.4)<.01 for rect in image_rects))
         batch.refresh_from_db();changed=copy.deepcopy(batch.rows);changed[0]['package']='Other';self.assertEqual(self.generate(batch,changed).status_code,400)
         self.assertEqual(self.generate(batch).status_code,200)
 

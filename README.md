@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.11.3
+# Sunny Travel Ticket Management — 1.11.4
+
+**1.11.4:** dịch QR sang trái để không che tay nhân vật, giữ QR 23.4 mm và khổ 80x110; bỏ ô trắng tại vị trí cũ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_11_4.md). Không migration mới.
 
 **1.11.3:** tăng khung QR thêm 30% (18 lên 23.4 mm), giữ khổ 80x110 và các trường thông tin. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_11_3.md). Không có migration mới.
 
