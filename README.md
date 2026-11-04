@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.12.3
+# Sunny Travel Ticket Management — 1.12.4
+
+**1.12.4:** hiển thị Tổng tiền = Số lượng × Giá bán/vé dưới VAT, trên Ghi chú khi tạo/sửa booking; thêm tổng vé, tổng tiền, đã thu và nợ theo ngày dưới danh sách booking, tính theo tất cả bộ lọc đang áp dụng. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_4.md). Không migration mới.
 
 **1.12.3:** quyền riêng để hủy xác nhận thu thủ công nhầm, đưa booking quầy về chờ thanh toán và chọn lại phương thức; lưu lý do/người sửa/lịch sử khoản thu. Không hủy khoản thu SePay đã xác nhận. Cần migrate 0013 và cấp quyền rõ ràng cho nhân viên. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_3.md).
 

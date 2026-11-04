@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.12.4 — Tổng tiền trong form booking
+
+- Kiểm tra trình duyệt vị trí dưới VAT/trên ghi chú, số lượng nhân giá bán, giá đại lý tự động, giá 0 và booking đang sửa. Dòng tổng không tự cộng VAT/trừ chi phí.
+- Thay đổi giao diện, không thay API/schema/nghiệp vụ lưu booking.
+- Tổng hợp theo ngày và tổng cộng lấy đúng danh sách đã lọc; kiểm tra hai ngày, lọc số lượng, kết hợp trạng thái không có kết quả và xóa bộ lọc.
+
 ## 1.12.3 — Hủy xác nhận thu thủ công nhầm
 
 - 138 kiểm tra backend đạt, migration khớp model. Playwright đạt luồng hủy xác nhận, quyền/lý do, chọn phương thức, xác nhận thủ công và sửa booking.
