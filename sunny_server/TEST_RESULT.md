@@ -1,5 +1,10 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.12.5 — Booking lịch sử và điều kiện thời gian
+
+- Playwright đạt: khôi phục tháng 11 cùng khoảng ngày tháng 10, chọn khoảng ngày sau tháng, chọn tháng sau khoảng ngày, tổng hợp đúng booking cũ và xóa bộ lọc về toàn thời gian.
+- Không thay dữ liệu/backend/schema; không cần migration.
+
 ## 1.12.4 — Tổng tiền trong form booking
 
 - Kiểm tra trình duyệt vị trí dưới VAT/trên ghi chú, số lượng nhân giá bán, giá đại lý tự động, giá 0 và booking đang sửa. Dòng tổng không tự cộng VAT/trừ chi phí.

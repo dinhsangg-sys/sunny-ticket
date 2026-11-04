@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.12.4
+# Sunny Travel Ticket Management — 1.12.5
+
+**1.12.5:** sửa bộ lọc thời gian che booking cũ: chọn khoảng ngày tự bỏ tháng; chọn tháng mới bỏ khoảng ngày. Áp dụng cả điều kiện lọc đã lưu, danh sách và tổng hợp theo ngày. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_5.md). Không migration mới.
 
 **1.12.4:** hiển thị Tổng tiền = Số lượng × Giá bán/vé dưới VAT, trên Ghi chú khi tạo/sửa booking; thêm tổng vé, tổng tiền, đã thu và nợ theo ngày dưới danh sách booking, tính theo tất cả bộ lọc đang áp dụng. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_4.md). Không migration mới.
 
