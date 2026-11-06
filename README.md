@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.12.6
+# Sunny Travel Ticket Management — 1.12.7
+
+**1.12.7:** Báo cáo Tổng quan có Từ ngày – Đến ngày, tự cập nhật 6 chỉ tiêu theo khoảng ngày booking (gồm hai đầu mốc), giữ lựa chọn khi đổi tab báo cáo. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_7.md). Không migration mới.
 
 **1.12.6:** thêm Xuất Excel cho Báo cáo VAT, theo đúng bộ lọc từ/đến ngày và thuế suất; có thông tin bộ lọc, chỉ tiêu tổng hợp, chi tiết booking và dòng tổng cộng. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_6.md). Không migration mới.
 

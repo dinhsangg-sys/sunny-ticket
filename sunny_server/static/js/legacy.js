@@ -723,8 +723,8 @@ function renderReportPage(){
  let d=today(),box=$("reportPage");
  if(reportTab==="tickets"){box.innerHTML='<iframe title="Báo cáo đối chiếu vé nhập / xuất" src="/counter/report/?embed=1" style="display:block;width:100%;height:calc(100vh - 180px);min-height:650px;border:0;border-radius:12px;background:white"></iframe>';return}
  if(reportTab==="overview"){
-   let rows=db.bookings.filter(x=>x.date===d),t=sum(rows),paid=rows.reduce((a,x)=>a+paidAmount(x),0),debt=rows.reduce((a,x)=>a+customerDue(x),0),vat=rows.reduce((a,x)=>a+vatAmount(x),0);
-   box.innerHTML=`<div class="card"><h3>Tổng quan báo cáo</h3><div class="toolbar" style="margin:0 0 14px"><div class="field"><label>Ngày</label><input id="rovdate" class="input" type="date" value="${d}"></div><button class="btn primary" onclick="renderReportOverview()">Xem</button></div><div id="roverview"></div></div>`;renderReportOverview();return
+   let st=uiFilters.reportOverview||{from:d,to:d};
+   box.innerHTML=`<div class="card"><h3>Tổng quan báo cáo</h3><div class="toolbar" style="margin:0 0 14px"><div class="field"><label for="rovfrom">Từ ngày</label><input id="rovfrom" class="input" type="date" value="${esc(st.from||'')}"></div><div class="field"><label for="rovto">Đến ngày</label><input id="rovto" class="input" type="date" value="${esc(st.to||'')}"></div><button class="btn primary" onclick="renderReportOverview()">Xem</button></div><div id="roverview"></div></div>`;['rovfrom','rovto'].forEach(id=>$(id).onchange=renderReportOverview);renderReportOverview();return
  }
  if(reportTab==="detail"){
    let st=uiFilters.reports.detail||{f:d,t:d,type:"",q:"",agent:"",pay:""};
@@ -749,7 +749,10 @@ function renderReportPage(){
  }
 }
 function renderReportOverview(){
- let d=$("rovdate")?.value||today(),rows=db.bookings.filter(x=>x.date===d),t=sum(rows),paid=rows.reduce((a,x)=>a+paidAmount(x),0),debt=rows.reduce((a,x)=>a+customerDue(x),0),vat=rows.reduce((a,x)=>a+vatAmount(x),0),sup=rows.reduce((a,x)=>a+supplierDueAmount(x),0);
+ let from=$("rovfrom")?.value||'',to=$("rovto")?.value||'';
+ if(from&&to&&from>to){$('roverview').innerHTML='<p class="red" role="alert">Từ ngày không thể sau Đến ngày.</p>';return}
+ uiFilters.reportOverview={from,to};
+ let rows=db.bookings.filter(x=>(!from||x.date>=from)&&(!to||x.date<=to)),t=sum(rows),paid=rows.reduce((a,x)=>a+paidAmount(x),0),debt=rows.reduce((a,x)=>a+customerDue(x),0),vat=rows.reduce((a,x)=>a+vatAmount(x),0),sup=rows.reduce((a,x)=>a+supplierDueAmount(x),0);
  $("roverview").innerHTML=`<div class="grid cards"><div class="card"><div class="muted">Doanh thu</div><div class="metric">${money(t.r)}</div></div><div class="card"><div class="muted">Lợi nhuận</div><div class="metric green">${money(t.p)}</div></div><div class="card"><div class="muted">Đã thu</div><div class="metric green">${money(paid)}</div></div><div class="card"><div class="muted">Khách còn nợ</div><div class="metric">${money(debt)}</div></div><div class="card"><div class="muted">VAT</div><div class="metric">${money(vat)}</div></div><div class="card"><div class="muted">Còn trả tiền vé</div><div class="metric">${money(sup)}</div></div></div>`
 }
 function renderSupplierReport(){

@@ -1,5 +1,10 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.12.7 — Khoảng ngày Tổng quan
+
+- Kiểm tra 6 chỉ tiêu theo ngày booking, một ngày/nhiều ngày, đầu/cuối mốc, giữ lựa chọn qua tab, bỏ giới hạn, không có booking và ngày đảo ngược.
+- Không thay công thức/backend/schema hoặc xuất Excel VAT.
+
 ## 1.12.6 — Xuất Excel VAT
 
 - Dùng chung bộ lọc ngày/thuế suất và hàm tính tổng giữa báo cáo hiển thị và dữ liệu Excel.
