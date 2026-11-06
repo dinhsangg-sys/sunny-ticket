@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.12.5
+# Sunny Travel Ticket Management — 1.12.6
+
+**1.12.6:** thêm Xuất Excel cho Báo cáo VAT, theo đúng bộ lọc từ/đến ngày và thuế suất; có thông tin bộ lọc, chỉ tiêu tổng hợp, chi tiết booking và dòng tổng cộng. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_6.md). Không migration mới.
 
 **1.12.5:** sửa bộ lọc thời gian che booking cũ: chọn khoảng ngày tự bỏ tháng; chọn tháng mới bỏ khoảng ngày. Áp dụng cả điều kiện lọc đã lưu, danh sách và tổng hợp theo ngày. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_5.md). Không migration mới.
 

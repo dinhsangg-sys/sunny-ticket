@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.12.6 — Xuất Excel VAT
+
+- Dùng chung bộ lọc ngày/thuế suất và hàm tính tổng giữa báo cáo hiển thị và dữ liệu Excel.
+- Kiểm tra trình duyệt loại booking không VAT, mốc ngày lịch sử, thuế suất, tổng cộng, dạng số/tiền/tỷ lệ, Unicode, không xuất khi không có dữ liệu/ngày sai/thiếu thư viện.
+- Không thay API/schema/công thức VAT. Dữ liệu xuất được kiểm tra ở đầu vào thư viện XLSX, không gửi email hoặc sửa booking.
+
 ## 1.12.5 — Booking lịch sử và điều kiện thời gian
 
 - Playwright đạt: khôi phục tháng 11 cùng khoảng ngày tháng 10, chọn khoảng ngày sau tháng, chọn tháng sau khoảng ngày, tổng hợp đúng booking cũ và xóa bộ lọc về toàn thời gian.

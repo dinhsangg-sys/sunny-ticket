@@ -737,7 +737,7 @@ function renderReportPage(){
    $("rtype").value=st.type||"";$("rpay").value=st.pay||"";setupReportAgentSearch();["rf","rt","rpay","rtype"].forEach(id=>$(id).onchange=renderDetailedReport);renderDetailedReport();return
  }
  if(reportTab==="vat"){
-   box.innerHTML=`<div class="card"><h3>Báo cáo VAT</h3><div class="toolbar" style="margin:0 0 12px;align-items:flex-end"><div class="field"><label>Từ ngày</label><input id="vf" class="input" type="date" value="${d}"></div><div class="field"><label>Đến ngày</label><input id="vt" class="input" type="date" value="${d}"></div><div class="field"><label>Thuế suất</label><select id="vrate" class="select"><option value="">Tất cả</option><option value="8">8%</option><option value="10">10%</option><option value="15">15%</option></select></div><button class="btn primary" onclick="renderVatReport()">Xem VAT</button></div><div id="vreport"></div></div>`;
+   box.innerHTML=`<div class="card"><h3>Báo cáo VAT</h3><div class="toolbar" style="margin:0 0 12px;align-items:flex-end"><div class="field"><label>Từ ngày</label><input id="vf" class="input" type="date" value="${d}"></div><div class="field"><label>Đến ngày</label><input id="vt" class="input" type="date" value="${d}"></div><div class="field"><label>Thuế suất</label><select id="vrate" class="select"><option value="">Tất cả</option><option value="8">8%</option><option value="10">10%</option><option value="15">15%</option></select></div><button class="btn primary" onclick="renderVatReport()">Xem VAT</button><button class="btn" onclick="exportVatReportExcel()">⬇ Xuất Excel</button></div><div id="vreport"></div></div>`;
    ["vf","vt","vrate"].forEach(id=>$(id).onchange=renderVatReport);renderVatReport();return
  }
  if(reportTab==="monthly"){
@@ -757,10 +757,25 @@ function renderSupplierReport(){
  let total=rows.reduce((z,x)=>{z.due+=supplierDueTotal(x);z.paid+=supplierPaidAmount(x);z.left+=supplierDueAmount(x);return z},{due:0,paid:0,left:0});
  $("rsreport").innerHTML=`<div class="grid cards" style="margin-bottom:12px"><div class="card"><div class="muted">Phải trả</div><div class="metric">${money(total.due)}</div></div><div class="card"><div class="muted">Đã trả</div><div class="metric green">${money(total.paid)}</div></div><div class="card"><div class="muted">Còn phải trả</div><div class="metric">${money(total.left)}</div></div></div><div class="tablebox"><table class="table"><thead><tr><th>Mã booking</th><th>Ngày</th><th>Khách hàng / Đại lý</th><th>Loại vé</th><th>SL</th><th>Phải trả</th><th>Đã trả</th><th>Còn trả</th><th>Trạng thái</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${bookingLink(x,"supplier")}</td><td>${x.date}</td><td>${esc(bookingPartyName(x))}</td><td>${esc(x.ticketType)}</td><td>${x.qty}</td><td>${money(supplierDueTotal(x))}</td><td>${money(supplierPaidAmount(x))}</td><td>${money(supplierDueAmount(x))}</td><td>${supplierDueAmount(x)>0?"Còn nợ":"Đã trả"}</td></tr>`).join("")||'<tr><td colspan="9" class="empty">Không có dữ liệu.</td></tr>'}</tbody></table></div>`
 }
-function renderVatReport(){
+function vatReportRows(){
  let a=$("vf")?.value||"",b=$("vt")?.value||"",rate=$("vrate")?.value||"";
- let rows=db.bookings.filter(x=>x.hasVat&&(!a||x.date>=a)&&(!b||x.date<=b)&&(!rate||num(x.vatRate)===num(rate))).sort((x,y)=>y.date.localeCompare(x.date));
- let t=rows.reduce((z,x)=>{z.b++;z.q+=num(x.qty);z.sell+=num(x.sellPrice)*num(x.qty);z.buy+=num(x.buyPrice)*num(x.qty);z.base+=vatBase(x);z.vat+=vatAmount(x);return z},{b:0,q:0,sell:0,buy:0,base:0,vat:0});
+ if(a&&b&&a>b){alert('Từ ngày không thể sau Đến ngày.');return null}
+ return db.bookings.filter(x=>x.hasVat&&(!a||x.date>=a)&&(!b||x.date<=b)&&(!rate||num(x.vatRate)===num(rate))).sort((x,y)=>y.date.localeCompare(x.date));
+}
+function vatReportTotals(rows){return rows.reduce((z,x)=>{z.b++;z.q+=num(x.qty);z.sell+=num(x.sellPrice)*num(x.qty);z.buy+=num(x.buyPrice)*num(x.qty);z.base+=vatBase(x);z.vat+=vatAmount(x);return z},{b:0,q:0,sell:0,buy:0,base:0,vat:0})}
+function exportVatReportExcel(){
+ const rows=vatReportRows();if(!rows)return;if(!rows.length)return alert('Không có booking VAT phù hợp để xuất Excel.');if(typeof XLSX==='undefined')return alert('Chưa tải được thư viện Excel. Vui lòng kiểm tra kết nối Internet rồi thử lại.');
+ const total=vatReportTotals(rows),from=$('vf')?.value||'',to=$('vt')?.value||'',rate=$('vrate')?.value||'';
+ const data=[['SUNNY TRAVEL - BÁO CÁO VAT'],['Thời gian',(from||'Tất cả')+' → '+(to||'Tất cả')],['Thuế suất',rate?rate+'%':'Tất cả'],['Booking có VAT',total.b],['Số vé xuất VAT',total.q],['Giá trị tính VAT',total.base],['Tổng tiền VAT',total.vat],[],['Mã booking','Ngày','Khách hàng / Đại lý','Loại vé','SL','Tổng giá bán','Tổng giá vốn','Giá trị tính VAT','VAT %','Tiền VAT']];
+ for(const x of rows)data.push([x.bookingCode||x.id,x.date,bookingPartyName(x),x.ticketType,num(x.qty),num(x.sellPrice)*num(x.qty),num(x.buyPrice)*num(x.qty),vatBase(x),num(x.vatRate)/100,vatAmount(x)]);
+ data.push(['Tổng cộng','','','',total.q,total.sell,total.buy,total.base,'',total.vat]);
+ const sheet=XLSX.utils.aoa_to_sheet(data);sheet['!cols']=[{wch:23},{wch:13},{wch:32},{wch:27},{wch:10},{wch:20},{wch:20},{wch:22},{wch:12},{wch:20}];sheet['!autofilter']={ref:'A9:J'+(data.length-1)};
+ for(const r of [5,6]){const cell=sheet[XLSX.utils.encode_cell({r,c:1})];if(cell)cell.z='#,##0 "đ"'}
+ for(let r=9;r<data.length;r++){for(const c of [5,6,7,9]){const cell=sheet[XLSX.utils.encode_cell({r,c})];if(cell)cell.z='#,##0 "đ"'}const quantity=sheet[XLSX.utils.encode_cell({r,c:4})];if(quantity)quantity.z='#,##0';if(r<data.length-1){const cell=sheet[XLSX.utils.encode_cell({r,c:8})];if(cell)cell.z='0.##%'}}
+ const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,sheet,'VAT');XLSX.writeFile(book,`Sunny-VAT-${from||'all'}-${to||'all'}-${rate?rate+'pct':'all-rates'}.xlsx`);
+}
+function renderVatReport(){
+ let rows=vatReportRows();if(!rows)return;let t=vatReportTotals(rows);
  $("vreport").innerHTML=`<div class="grid cards" style="margin-bottom:12px"><div class="card"><div class="muted">Booking có VAT</div><div class="metric">${t.b}</div></div><div class="card"><div class="muted">Số vé xuất VAT</div><div class="metric">${t.q}</div></div><div class="card"><div class="muted">Giá trị tính VAT</div><div class="metric">${money(t.base)}</div></div><div class="card"><div class="muted">Tổng tiền VAT</div><div class="metric">${money(t.vat)}</div></div></div><div class="tablebox viewport-table"><table class="table" style="min-width:1100px"><thead><tr><th>Mã booking</th><th>Ngày</th><th>Đại lý</th><th>Loại vé</th><th>SL</th><th>Tổng giá bán</th><th>Tổng giá vốn</th><th>Giá trị tính VAT</th><th>VAT %</th><th>Tiền VAT</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${bookingLink(x)}</td><td>${x.date}</td><td>${esc(bookingPartyName(x))}</td><td>${esc(x.ticketType)}</td><td>${x.qty}</td><td>${money(num(x.sellPrice)*num(x.qty))}</td><td>${money(num(x.buyPrice)*num(x.qty))}</td><td>${money(vatBase(x))}</td><td>${num(x.vatRate)}%</td><td><b>${money(vatAmount(x))}</b></td></tr>`).join("")||'<tr><td colspan="10" class="empty">Không có booking VAT trong khoảng thời gian đã chọn.</td></tr>'}</tbody></table></div>`;
 }
 function setupReportAgentSearch(){
