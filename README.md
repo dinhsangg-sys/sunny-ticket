@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.12.7
+# Sunny Travel Ticket Management — 1.13.0
+
+**1.13.0:** quản lý biểu phí thẻ theo loại thẻ/nơi phát hành và kỳ hiệu lực; nhân viên chọn đủ thông tin, xem phí và thực nhận trước xác nhận. Phí bên bán chịu, giữ khách đã trả đủ và giảm lợi nhuận; lưu mức phí theo giao dịch. Thêm Báo cáo → Phí thẻ/Excel và khoản chi phí tự động trong sổ quỹ. Cần migrate 0014, khai báo biểu phí trước khi thu thẻ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_13_0.md).
 
 **1.12.7:** Báo cáo Tổng quan có Từ ngày – Đến ngày, tự cập nhật 6 chỉ tiêu theo khoảng ngày booking (gồm hai đầu mốc), giữ lựa chọn khi đổi tab báo cáo. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_12_7.md). Không migration mới.
 

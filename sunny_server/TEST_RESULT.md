@@ -1,5 +1,12 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.13.0 — Phí thanh toán thẻ bên bán chịu
+
+- 146 kiểm tra backend đạt; kiểm tra bổ sung bảo vệ snapshot/lịch sử và khoản thu bị gửi trùng đạt. Migration khớp model.
+- Kiểm tra 10 mức phí theo ảnh, hiệu lực/chồng kỳ, báo phí trước thu, đúng số tiền gross/fee/net, lợi nhuận không trừ hai lần, snapshot bất biến khi đổi biểu phí, sửa thu nhầm và bảo vệ khoản thu/lịch sử phí.
+- Playwright kiểm tra nạp mẫu, khóa trường mức phí đã dùng, chọn đủ loại thẻ/nơi phát hành, báo phí lỗi/chặn xác nhận, một lần thu, báo cáo Phí thẻ/Excel, thu đủ và một chi phí tự động trong sổ quỹ. Hồi quy thu tiền thủ công, sửa booking, báo cáo VAT/nhà cung cấp và SePay đạt.
+- Cần migration 0014; không áp phí hồi tố cho giao dịch cũ, không chạy POS/ngân hàng/email thật.
+
 ## 1.12.7 — Khoảng ngày Tổng quan
 
 - Kiểm tra 6 chỉ tiêu theo ngày booking, một ngày/nhiều ngày, đầu/cuối mốc, giữ lựa chọn qua tab, bỏ giới hạn, không có booking và ngày đảo ngược.

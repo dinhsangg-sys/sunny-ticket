@@ -63,6 +63,7 @@ def booking_detail(request,booking_id):
         total_changed=row['revenue']!=before['revenue']
         adjustment=0
         if total_changed and delta and not pending_before:
+            if any(p.get('cardFee') for p in old_payments):raise ValueError('Booking đã thu có phí thẻ: cần đối soát; nếu xác nhận nhầm hãy dùng quyền hủy xác nhận rồi thu lại đúng.')
             if not permitted(user,'settle_adjustment') or body.get('settled') is not True:
                 raise ValueError('Tổng tiền thay đổi: cần quyền điều chỉnh thanh toán và xác nhận đã thu thêm/hoàn lại thực tế.')
             adjustment=float(delta)

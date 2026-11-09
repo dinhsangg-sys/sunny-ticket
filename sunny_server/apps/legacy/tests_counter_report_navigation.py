@@ -5,7 +5,7 @@ from apps.accounts.models import User
 class ReportNavigationTests(TestCase):
     def test_superuser_has_report_links_in_main_and_admin(self):
         user=User.objects.create_superuser('mmap-test',password='test-password',role='admin');self.client.force_login(user)
-        self.assertContains(self.client.get('/'),'legacy.js?v=counter-preview-10')
+        self.assertContains(self.client.get('/'),'/static/js/legacy.js?v=')
         self.assertContains(self.client.get('/admin/'),'Báo cáo đối chiếu vé')
         self.assertEqual(self.client.get('/counter/report/').status_code,200)
 

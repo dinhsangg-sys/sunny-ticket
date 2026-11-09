@@ -47,6 +47,8 @@ def state(request):
         payload = json.loads(request.body)
         data, revision = payload['data'], int(payload['revision'])
         if not isinstance(data,dict): raise ValueError()
+        from .card_fees import protect_card_receipts
+        protect_card_receipts(obj.data,data)
         validate(data)
         previous={b.get('id'):b for b in obj.data.get('bookings',[])}
         for b in data.get('bookings',[]):

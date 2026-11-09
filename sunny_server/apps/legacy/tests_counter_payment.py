@@ -17,6 +17,12 @@ class CounterPaymentTests(TestCase):
     post=fixtures.CounterTests.post
 
     def confirm(self,key,method='cash',version=1,**extra):
+        if method=='card':
+            from .models import CardFeeRate
+            from .card_fees import quote_fee
+            CardFeeRate.objects.get_or_create(scheme='visa',origin='domestic',defaults={'rate':'2.55','starts_on':'2020-01-01'})
+            row=next(b for b in Workspace.objects.get(pk=1).data['bookings'] if b['id']==key)
+            extra['cardFeeQuote']=quote_fee('visa','domestic',row['revenue']-sum(p['amount'] for p in row.get('payments',[])))
         return self.client.post('/api/counter/bookings/'+key+'/confirm-payment/',json.dumps({'version':version,'paymentMethod':method,'confirmed':True,**extra}),content_type='application/json')
 
     def test_default_and_three_methods_require_explicit_acknowledgment_and_are_idempotent(self):

@@ -17,6 +17,9 @@ from .partners import partner_types, enforce_partner_types
 def can(user,name): return full_access(user) or allowed(user,name)
 
 def save_workspace(obj,data,user,revision,action):
+    if action not in ('counter.payment_reopen','counter.payment_confirm'):
+        from .card_fees import protect_card_receipts
+        protect_card_receipts(obj.data,data)
     if not Workspace.objects.filter(pk=obj.pk,revision=revision).update(data=data,revision=F('revision')+1):
         raise RuntimeError('Dữ liệu đã đổi; tải lại trước khi tiếp tục.')
     for a in data.get('agents',[]):

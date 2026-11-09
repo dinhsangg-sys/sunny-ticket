@@ -74,3 +74,15 @@ class SePayTransaction(models.Model):
     reason = models.CharField(max_length=240,blank=True)
     class Meta:
         constraints=[models.UniqueConstraint(fields=['intent'],condition=models.Q(state='applied'),name='one_applied_sepay_transaction')]
+
+class CardFeeRate(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    scheme = models.CharField(max_length=16)
+    origin = models.CharField(max_length=16)
+    rate = models.DecimalField(max_digits=6,decimal_places=3)
+    starts_on = models.DateField()
+    ends_on = models.DateField(null=True,blank=True)
+    active = models.BooleanField(default=True)
+    note = models.CharField(max_length=500,blank=True)
+    revision = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)

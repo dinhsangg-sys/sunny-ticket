@@ -118,7 +118,8 @@ def calculate_booking(row):
     vat=(base*rate/100).quantize(Decimal('1'),rounding=ROUND_HALF_UP)
     revenue=sell*qty-cost
     if revenue<0: raise ValueError('Chi phí lớn hơn tổng giá bán.')
-    row.update(revenue=float(revenue),profit=float(revenue-buy*qty-vat),vatBase=float(base),vatAmount=float(vat))
+    card_fee=sum((amount(p.get('cardFee',{}).get('feeAmount',0)) for p in row.get('payments',[])),Decimal(0))
+    row.update(revenue=float(revenue),profit=float(revenue-buy*qty-vat-card_fee),vatBase=float(base),vatAmount=float(vat))
     if sum(amount(p['amount']) for p in row.get('payments',[]))>revenue: raise ValueError('Tổng thu vượt doanh thu booking.')
     if sum(amount(p['amount']) for p in row.get('supplierPayments',[]))>buy*qty: raise ValueError('Tổng chi vượt giá vốn booking.')
     return row

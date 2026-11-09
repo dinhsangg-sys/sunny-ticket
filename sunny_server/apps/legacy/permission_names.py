@@ -11,3 +11,5 @@ _SUPPORTED_EXTRA = {'workspace__full_access','ticket_type__change_status','ticke
 PERMISSIONS = [(code,label) for code,label in PERMISSIONS if code in {'cost_price__reorder','agency__classify'} or code.startswith('partner_type__') or code in _SUPPORTED_EXTRA or code.split('__')[0] in _SUPPORTED_PREFIXES and code.split('__')[1] in _SUPPORTED_ACTIONS]
 PERMISSIONS.extend([('counter__view','Truy cập màn hình quầy, xem booking của bản thân'),('counter__create','Tạo booking tại quầy với ngày/giá vốn do hệ thống xác định')])
 PERMISSIONS.extend([('counter__change','Sửa thông tin booking quầy của bản thân'),('counter__settle_adjustment','Xác nhận thu thêm/hoàn lại khi sửa booking quầy'),('counter__replace_tickets','Thay bộ vé và phát hành phiên bản mới của booking quầy'),('counter__report','Xem báo cáo đối chiếu vé của bản thân'),('counter__report_all','Xem đối chiếu vé của tất cả nhân viên'),('counter__reopen_payment','Hủy xác nhận thu tiền thủ công nhầm, đưa booking quầy về chờ thanh toán')])
+
+PERMISSIONS.append(('card_fee__manage','Quản lý khai báo phí thanh toán thẻ và thời gian hiệu lực'))

@@ -18,12 +18,20 @@ from .pricing import amount, calculate_booking
 @never_cache
 @require_POST
 def confirm_payment(request,booking_id):
+    # Fee-policy changes and payment confirmation share this lock.
+    try:
+        with transaction.atomic():
+            Workspace.objects.filter(pk=1).update(updated_at=timezone.now())
+            return _confirm_payment(request,booking_id)
+    except OperationalError:return JsonResponse({'error':'Đang có giao dịch khác lưu. Mở lại để kiểm tra trước khi xác nhận.'},status=409)
+
+def _confirm_payment(request,booking_id):
     user=request.user
     if not permitted(user,'view') or not permitted(user,'create'):return JsonResponse({'error':'Không có quyền xác nhận thanh toán quầy.'},status=403)
     obj=Workspace.objects.get(pk=1);data=copy.deepcopy(obj.data);row=own_booking(data,user,booking_id)
     try:
         body=json.loads(request.body)
-        if not isinstance(body,dict) or set(body)-{'version','paymentMethod','confirmed','paymentRevision'} or body.get('confirmed') is not True:raise ValueError('Cần xác nhận đã nhận tiền thực tế.')
+        if not isinstance(body,dict) or set(body)-{'version','paymentMethod','confirmed','paymentRevision','cardFeeQuote'} or body.get('confirmed') is not True:raise ValueError('Cần xác nhận đã nhận tiền thực tế.')
         revision=body.get('paymentRevision',0)
         if type(revision) is not int or revision!=row.get('counterPaymentRevision',0):return JsonResponse({'error':'Trạng thái thu tiền đã đổi. Mở lại booking trước khi xác nhận.'},status=409)
         method=body.get('paymentMethod',row.get('paymentMethod','cash'))
@@ -39,7 +47,15 @@ def confirm_payment(request,booking_id):
         if type(body.get('version')) is not int or body['version']!=row.get('counterVersion',1):return JsonResponse({'error':'Booking vừa thay đổi. Mở lại để kiểm tra số tiền trước khi xác nhận.'},status=409)
         if paid>total:raise ValueError('Khoản thu vượt tổng tiền; cần quản trị đối soát.')
         before=public_booking(row);old_payments=copy.deepcopy(row.get('payments',[]));delta=total-paid;now=timezone.now().isoformat()
-        if delta>0:row.setdefault('payments',[]).append({'id':str(uuid.uuid4()),'date':timezone.localdate().isoformat(),'amount':float(delta),'method':method,'note':'Xác nhận đã thu tại quầy — '+PAYMENT_METHODS[method]+' — '+user.get_username(),'createdBy':user.pk,'createdAt':now})
+        fee=None
+        if method=='card':
+            from .card_fees import quote_fee
+            supplied=body.get('cardFeeQuote')
+            if not isinstance(supplied,dict):raise ValueError('Chọn loại thẻ/nơi phát hành và kiểm tra phí trước khi xác nhận.')
+            fee=quote_fee(supplied.get('scheme'),supplied.get('origin'),delta)
+            if supplied!=fee:return JsonResponse({'error':'Phí thẻ hoặc số tiền đã đổi. Tính lại phí trước khi xác nhận.'},status=409)
+        elif body.get('cardFeeQuote'):raise ValueError('Chỉ áp dụng phí với thanh toán thẻ.')
+        if delta>0:row.setdefault('payments',[]).append({'id':str(uuid.uuid4()),'date':timezone.localdate().isoformat(),'amount':float(delta),'method':method,'note':'Xác nhận đã thu tại quầy — '+PAYMENT_METHODS[method]+' — '+user.get_username(),'createdBy':user.pk,'createdAt':now,**({'cardFee':fee} if fee else {})})
         row.update(status='completed',paymentMethod=method,counterPaymentConfirmedAt=now,counterPaymentConfirmedBy=user.get_username())
         calculate_booking(row)
         row.setdefault('counterHistory',[]).append({'action':'payment_confirm','at':now,'by':user.get_username(),'before':before,'after':public_booking(row),'paymentAdjustment':float(delta),'paymentsBefore':old_payments,'paymentsAfter':copy.deepcopy(row.get('payments',[]))})
