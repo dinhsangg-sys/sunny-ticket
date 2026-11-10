@@ -150,6 +150,21 @@ class SouvenirsTests(TestCase):
         self.assertEqual(html.count('/assets/'+str(first.pk)+'/'),1)
         self.assertEqual(html.count('/assets/'+str(second.pk)+'/'),1)
         self.assertLess(html.index('id="svIntroVideo"'),html.index('class="sv-product-intro"'))
-        self.assertContains(guest.get('/souvenirs/p/'+self.product.slug+'/'),'Nghe giới thiệu')
+        self.assertContains(guest.get('/souvenirs/p/'+self.product.slug+'/',{'lang':'vi'}),'Nghe giới thiệu')
         Asset.objects.all().delete()
         self.assertNotContains(guest.get('/souvenirs/p/'+self.product.slug+'/'),'souvenirs_video.js')
+
+    def test_language_detection_english_default_browser_preference_and_manual_choice(self):
+        url='/souvenirs/p/'+self.product.slug+'/'
+        for header,expected in [('', 'en'),('vi-VN,vi;q=0.9,en;q=0.8','vi'),('en-US,en;q=0.9,vi;q=0.5','en'),('fr-FR,vi;q=0.4','en'),('en;q=0.4,vi-VN;q=0.9','vi'),('*','en'),('vi;q=0,en;q=1','en'),('not a valid header','en')]:
+            with self.subTest(header=header):
+                response=Client().get(url,HTTP_ACCEPT_LANGUAGE=header)
+                self.assertEqual(response['Content-Language'],expected)
+                self.assertContains(response,'lang="'+expected+'"')
+                self.assertIn('Accept-Language',response['Vary'])
+        guest=Client();response=guest.get(url,{'lang':'vi'},HTTP_ACCEPT_LANGUAGE='en-US')
+        self.assertEqual(response['Content-Language'],'vi');self.assertEqual(response.cookies['souvenirs_lang'].value,'vi')
+        self.assertEqual(guest.get('/souvenirs/catalog/',HTTP_ACCEPT_LANGUAGE='en-US')['Content-Language'],'vi')
+        self.assertEqual(guest.get(url,{'lang':'en'},HTTP_ACCEPT_LANGUAGE='vi-VN')['Content-Language'],'en')
+        self.assertEqual(guest.get(url,HTTP_ACCEPT_LANGUAGE='vi-VN')['Content-Language'],'en')
+        self.assertEqual(Client().get(url,{'lang':'invalid'})['Content-Language'],'en')

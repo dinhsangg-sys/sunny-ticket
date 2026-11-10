@@ -1,3 +1,8 @@
+## 1.14.5 — Ngôn ngữ khách tự động
+
+- 17 kiểm thử Souvenirs đạt. Kiểm tra vi-VN/en-US/ngôn ngữ khác, trọng số q, q=0, header thiếu/lỗi, lựa chọn URL/cookie ưu tiên, nhớ lựa chọn khi vào lại, Content-Language và Vary.
+- QR 1.14.4 giữ nguyên, không có migration. Ngôn ngữ trình duyệt không được diễn giải thành quốc tịch.
+
 ## 1.14.3 — Video giới thiệu ưu tiên
 
 - 16 kiểm thử Souvenirs đạt; video đầu tiên nằm trước ảnh/mô tả, không lặp video; nút Việt/Anh; trang không video giữ bố cục cũ.

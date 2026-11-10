@@ -1,3 +1,7 @@
+# 1.14.5 — Tự chọn ngôn ngữ Souvenirs
+
+Ưu tiên lựa chọn của khách, sau đó ngôn ngữ trình duyệt; không xác định được dùng tiếng Anh. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_14_5.md).
+
 # 1.14.4 — QR mở đúng sản phẩm trên sn
 
 Sửa QR catalog chung thành đường dẫn chi tiết riêng của từng sản phẩm. Cần tải/in lại tem. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_14_4.md).

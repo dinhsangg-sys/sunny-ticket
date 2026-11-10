@@ -13,6 +13,8 @@ from django.db import transaction,OperationalError,IntegrityError
 from django.http import JsonResponse,Http404,HttpResponse,HttpResponseForbidden,FileResponse,StreamingHttpResponse
 from django.shortcuts import render,get_object_or_404,redirect
 from django.utils import timezone
+from django.utils.translation.trans_real import parse_accept_lang_header
+from django.utils.cache import patch_vary_headers
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET,require_POST,require_http_methods
@@ -39,12 +41,25 @@ def product_url(product):
 
 
 def public_context(request):
-    lang=request.GET.get('lang','vi')
-    if lang not in ('vi','en'):lang='vi'
+    lang=request.GET.get('lang')
+    if lang not in ('vi','en'):lang=request.COOKIES.get('souvenirs_lang')
+    if lang not in ('vi','en'):
+        preferences=parse_accept_lang_header(request.headers.get('Accept-Language',''))
+        preferred=next((code.lower().split('-')[0] for code,quality in preferences if quality>0),None)
+        lang='vi' if preferred=='vi' else 'en'
     def language_url(value):
         params=request.GET.copy();params['lang']=value
         return '?'+urlencode(params)
     return {**base_context(request),'lang':lang,'vi_url':language_url('vi'),'en_url':language_url('en')}
+
+def public_render(request,template,context):
+    response=render(request,template,context)
+    response['Content-Language']=context['lang']
+    patch_vary_headers(response,['Accept-Language','Cookie'])
+    if request.GET.get('lang') in ('vi','en'):
+        response.set_cookie('souvenirs_lang',context['lang'],max_age=31536000,httponly=True,samesite='Lax',secure=request.is_secure())
+    return response
+
 
 def translate_product(product,lang):
     for field in ('name','category','summary','story'):
@@ -65,7 +80,7 @@ def catalog(request):
     context=public_context(request)
     categories=[{'value':value,'label':(Product.objects.filter(published=True,category=value).exclude(category_en='').values_list('category_en',flat=True).first() if context['lang']=='en' else '') or value} for value in categories]
     products=[translate_product(p,context['lang']) for p in products]
-    return render(request,'souvenirs/catalog.html',{**context,'products':products,'categories':categories,'q':q,'selected_category':category})
+    return public_render(request,'souvenirs/catalog.html',{**context,'products':products,'categories':categories,'q':q,'selected_category':category})
 
 @require_GET
 @never_cache
@@ -75,7 +90,7 @@ def detail(request,slug):
     for article in product.articles.all():
         article.display_title=(article.title_en if context['lang']=='en' else '') or article.title
         article.display_body=(article.body_en if context['lang']=='en' else '') or article.body
-    return render(request,'souvenirs/detail.html',{**context,'product':product,'intro_video':next((a for a in product.assets.all() if a.kind=='video'),None)})
+    return public_render(request,'souvenirs/detail.html',{**context,'product':product,'intro_video':next((a for a in product.assets.all() if a.kind=='video'),None)})
 
 @require_GET
 @never_cache
