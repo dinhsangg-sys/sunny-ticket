@@ -33,9 +33,10 @@ def base_context(request):
     return {'base':'' if getattr(request,'urlconf',None)=='apps.souvenirs.public_urls' else '/souvenirs','can_manage':can(request.user,'manage_catalog'),'can_sell':can(request.user,'sell'),'can_report':can(request.user,'view_reports'),'report_visible':permitted(request.user,'report')}
 
 def product_url(product):
-    origin=settings.SOUVENIRS_PUBLIC_ORIGIN.rstrip('/');parsed=urlparse(origin)
-    if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:raise ValueError('SOUVENIRS_PUBLIC_ORIGIN cần là tên miền HTTPS, không kèm đường dẫn.')
-    return origin+'/p/'+product.slug+'/'
+    url=settings.SOUVENIRS_CATALOG_URL;parsed=urlparse(url)
+    if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:raise ValueError('SOUVENIRS_CATALOG_URL cần là đường dẫn catalog HTTPS hợp lệ.')
+    return url
+
 
 def public_context(request):
     lang=request.GET.get('lang','vi')

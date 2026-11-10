@@ -1,3 +1,7 @@
+# 1.14.2 — QR mở catalog trên sn
+
+QR mới mở catalog hiện có, không cần subdomain souvenirs. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_14_2.md).
+
 # 1.14.1 — Souvenirs song ngữ Việt / Anh
 
 Trang khách có nút chuyển Tiếng Việt / English; nội dung dịch nhập trong hồ sơ sản phẩm, để trống dùng tiếng Việt. QR và đơn hàng giữ nguyên. Xem [hướng dẫn nâng cấp](sunny_server/UPGRADE_1_14_1.md).

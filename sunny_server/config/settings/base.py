@@ -57,3 +57,6 @@ if SOUVENIRS_ENABLED:
     from urllib.parse import urlparse
     _souvenir_host=urlparse(SOUVENIRS_PUBLIC_ORIGIN).hostname
     if _souvenir_host and _souvenir_host not in ALLOWED_HOSTS:ALLOWED_HOSTS.append(_souvenir_host)
+
+# QR opens the existing public catalog on the management domain.
+SOUVENIRS_CATALOG_URL = os.environ.get('SOUVENIRS_CATALOG_URL','https://sn.hoianmemorieslands.com/souvenirs/catalog/')
