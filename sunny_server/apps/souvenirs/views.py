@@ -5,7 +5,7 @@ from io import BytesIO
 import json
 import uuid
 import unicodedata
-from urllib.parse import urlparse, urlencode
+from urllib.parse import urlparse, urlencode, urljoin
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -35,7 +35,7 @@ def base_context(request):
 def product_url(product):
     url=settings.SOUVENIRS_CATALOG_URL;parsed=urlparse(url)
     if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:raise ValueError('SOUVENIRS_CATALOG_URL cần là đường dẫn catalog HTTPS hợp lệ.')
-    return url
+    return urljoin(url.rstrip('/')+'/', '../p/'+product.slug+'/')
 
 
 def public_context(request):

@@ -66,7 +66,7 @@ class SouvenirsTests(TestCase):
         self.client.force_login(self.admin)
         data={'sku':'SV002','name':'Túi vải Hội An','category':'Dệt','price':'200000','cost':'50000','summary':'Từ Hội An','story':'Dệt nên ký ức','published':'on','sort_order':0,'expected_version':1,'assets-TOTAL_FORMS':1,'assets-INITIAL_FORMS':0,'assets-MIN_NUM_FORMS':0,'assets-MAX_NUM_FORMS':30,'assets-0-kind':'image','assets-0-file':self.png(),'assets-0-caption':'Túi vải','assets-0-position':0,'articles-TOTAL_FORMS':1,'articles-INITIAL_FORMS':0,'articles-MIN_NUM_FORMS':0,'articles-MAX_NUM_FORMS':30,'articles-0-title':'Câu chuyện làng nghề','articles-0-body':'Nội dung đầy đủ','articles-0-position':0}
         response=self.client.post('/souvenirs/products/new/',data);self.assertEqual(response.status_code,302,response.content[:1000]);p=Product.objects.get(sku='SV002');self.assertEqual(p.assets.count(),1);self.assertEqual(p.articles.count(),1)
-        response=self.client.get('/souvenirs/products/'+str(p.pk)+'/label/?format=png');self.assertEqual(response.status_code,200);decoded=zxingcpp.read_barcode(Image.open(BytesIO(response.content)));self.assertEqual(decoded.text,'https://sn.hoianmemorieslands.com/souvenirs/catalog/')
+        response=self.client.get('/souvenirs/products/'+str(p.pk)+'/label/?format=png');self.assertEqual(response.status_code,200);decoded=zxingcpp.read_barcode(Image.open(BytesIO(response.content)));self.assertEqual(decoded.text,'https://sn.hoianmemorieslands.com/souvenirs/p/'+p.slug+'/')
         old_slug=p.slug;p.name='Tên mới';p.save();self.assertEqual(Product.objects.get(pk=p.pk).slug,old_slug)
 
     def test_bad_image_cannot_be_published_as_product_media(self):
@@ -127,13 +127,18 @@ class SouvenirsTests(TestCase):
         response=self.client.get('/souvenirs/products/'+str(self.product.pk)+'/edit/')
         self.assertContains(response,'name="name_en"');self.assertContains(response,'name="articles-0-title_en"')
 
-    def test_catalog_qr_does_not_use_retired_subdomain_or_require_login(self):
+    def test_product_qr_does_not_use_retired_subdomain_or_require_login(self):
         self.client.force_login(self.admin)
         response=self.client.get('/souvenirs/products/'+str(self.product.pk)+'/label/?format=png')
         decoded=zxingcpp.read_barcode(Image.open(BytesIO(response.content)))
-        self.assertEqual(decoded.text,'https://sn.hoianmemorieslands.com/souvenirs/catalog/')
-        guest=Client();response=guest.get('/souvenirs/catalog/')
+        self.assertEqual(decoded.text,'https://sn.hoianmemorieslands.com/souvenirs/p/'+self.product.slug+'/')
+        guest=Client();response=guest.get('/souvenirs/p/'+self.product.slug+'/')
         self.assertEqual(response.status_code,200);self.assertContains(response,self.product.name)
+        other=Product.objects.create(sku='OTHER',name='Other product',price=50000,published=True)
+        response=self.client.get('/souvenirs/products/'+str(other.pk)+'/label/?format=png')
+        other_qr=zxingcpp.read_barcode(Image.open(BytesIO(response.content)))
+        self.assertNotEqual(decoded.text,other_qr.text)
+        self.assertEqual(other_qr.text,'https://sn.hoianmemorieslands.com/souvenirs/p/'+other.slug+'/')
         self.assertEqual(guest.get('/admin/').status_code,302)
 
     def test_intro_video_first_without_duplicate_and_bilingual_button(self):
