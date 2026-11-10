@@ -135,3 +135,16 @@ class SouvenirsTests(TestCase):
         guest=Client();response=guest.get('/souvenirs/catalog/')
         self.assertEqual(response.status_code,200);self.assertContains(response,self.product.name)
         self.assertEqual(guest.get('/admin/').status_code,302)
+
+    def test_intro_video_first_without_duplicate_and_bilingual_button(self):
+        first=Asset.objects.create(product=self.product,kind='video',file='souvenirs/intro.mp4',position=1)
+        second=Asset.objects.create(product=self.product,kind='video',file='souvenirs/extra.mp4',position=2)
+        guest=Client();response=guest.get('/souvenirs/p/'+self.product.slug+'/',{'lang':'en'})
+        html=response.content.decode()
+        self.assertContains(response,'Listen to the introduction');self.assertContains(response,'id="svIntroVideo"')
+        self.assertEqual(html.count('/assets/'+str(first.pk)+'/'),1)
+        self.assertEqual(html.count('/assets/'+str(second.pk)+'/'),1)
+        self.assertLess(html.index('id="svIntroVideo"'),html.index('class="sv-product-intro"'))
+        self.assertContains(guest.get('/souvenirs/p/'+self.product.slug+'/'),'Nghe giới thiệu')
+        Asset.objects.all().delete()
+        self.assertNotContains(guest.get('/souvenirs/p/'+self.product.slug+'/'),'souvenirs_video.js')

@@ -1,3 +1,9 @@
+## 1.14.3 — Video giới thiệu ưu tiên
+
+- 16 kiểm thử Souvenirs đạt; video đầu tiên nằm trước ảnh/mô tả, không lặp video; nút Việt/Anh; trang không video giữ bố cục cũ.
+- Browser kiểm tra vị trí video trong viewport desktop/mobile; mô phỏng play() cho trường hợp cho phép âm thanh, chặn âm thanh và lỗi tệp; kiểm tra fallback chạy muted và bấm bật tiếng. Không chứng nhận âm thanh thực tế hoặc chính sách của mọi thiết bị; cần kiểm tra video thật trên điện thoại.
+- Không thay model/migration. Kiểm tra hồi quy catalog/đơn hàng/phí thẻ/báo cáo bằng template thật.
+
 # Kết quả kiểm thử bản chuyển đổi
 
 ## 1.14.0 — Souvenirs và bán hàng tại quầy

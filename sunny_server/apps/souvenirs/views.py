@@ -75,7 +75,7 @@ def detail(request,slug):
     for article in product.articles.all():
         article.display_title=(article.title_en if context['lang']=='en' else '') or article.title
         article.display_body=(article.body_en if context['lang']=='en' else '') or article.body
-    return render(request,'souvenirs/detail.html',{**context,'product':product})
+    return render(request,'souvenirs/detail.html',{**context,'product':product,'intro_video':next((a for a in product.assets.all() if a.kind=='video'),None)})
 
 @require_GET
 @never_cache

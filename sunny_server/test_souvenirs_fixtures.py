@@ -26,5 +26,7 @@ with tempfile.TemporaryDirectory() as folder:
     output={'product':{'id':str(p.pk),'slug':p.slug,'sku':p.sku,'name':p.name,'price':150000},'image':base64.b64encode(raw).decode(),'today':timezone.localdate().isoformat()}
     for name,response in [('catalog',guest.get('/',HTTP_HOST='souvenirs.test')),('detail',guest.get('/p/'+p.slug+'/',HTTP_HOST='souvenirs.test')),('manage',staff.get('/souvenirs/manage/')),('edit',staff.get('/souvenirs/products/'+str(p.pk)+'/edit/'))]:
         assert response.status_code==200;(output.__setitem__(name,response.content.decode()))
+    Asset.objects.create(product=p,kind='video',file='souvenirs/intro.mp4',caption='Giới thiệu',position=0)
+    output['video_detail']=guest.get('/p/'+p.slug+'/',HTTP_HOST='souvenirs.test').content.decode()
     connections.close_all()
     print(json.dumps(output))

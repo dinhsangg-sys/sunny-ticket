@@ -1,3 +1,7 @@
+# 1.14.3 — Video giới thiệu ở đầu trang sản phẩm
+
+Ưu tiên video và thử phát có tiếng; có nút Nghe giới thiệu nếu trình duyệt chặn âm thanh. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_14_3.md).
+
 # 1.14.2 — QR mở catalog trên sn
 
 QR mới mở catalog hiện có, không cần subdomain souvenirs. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_14_2.md).
