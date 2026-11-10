@@ -21,7 +21,12 @@ def internal(user):
 @login_required
 @ensure_csrf_cookie
 def home(request):
-    if request.user.role=='counter': return redirect('counter-page')
+    if request.user.role=='counter':
+        from django.conf import settings
+        from .counter import permitted
+        from apps.souvenirs.views import can
+        if settings.SOUVENIRS_ENABLED and not permitted(request.user,'view') and can(request.user,'sell'):return redirect('/souvenirs/manage/')
+        return redirect('counter-page')
     if internal(request.user):
         return render(request, 'legacy.html' if full_access(request.user) else 'restricted.html')
     data = Workspace.objects.filter(pk=1).values_list('data',flat=True).first() or {}

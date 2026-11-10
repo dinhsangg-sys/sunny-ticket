@@ -1,4 +1,6 @@
-# Sunny Travel Ticket Management — 1.13.0
+# Sunny Travel Ticket Management — 1.14.0
+
+**1.14.0:** module Souvenirs: quản lý sản phẩm/ảnh/video/câu chuyện/bài viết, QR cố định và tem in; trang khách `souvenirs.hoianmemorieslands.com`; mục Bán hàng lưu niệm trong menu nhân viên, tạo đơn và xác nhận thu, báo cáo doanh thu riêng trong Ticket Management. Tắt mặc định đến khi bật SOUVENIRS_ENABLED và cấu hình DNS/SSL. Cần migrate souvenirs 0001/0002. [Hướng dẫn cập nhật và tên miền](sunny_server/UPGRADE_1_14_0.md).
 
 **1.13.0:** quản lý biểu phí thẻ theo loại thẻ/nơi phát hành và kỳ hiệu lực; nhân viên chọn đủ thông tin, xem phí và thực nhận trước xác nhận. Phí bên bán chịu, giữ khách đã trả đủ và giảm lợi nhuận; lưu mức phí theo giao dịch. Thêm Báo cáo → Phí thẻ/Excel và khoản chi phí tự động trong sổ quỹ. Cần migrate 0014, khai báo biểu phí trước khi thu thẻ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_13_0.md).
 

@@ -32,6 +32,10 @@ def references(rate_id):
         payments=list(row.get('payments',[]))
         for history in row.get('counterHistory',[]):payments.extend(history.get('paymentsBefore',[]));payments.extend(history.get('paymentsAfter',[]))
         found.extend(p['cardFee'] for p in payments if str(p.get('cardFee',{}).get('rateId'))==str(rate_id))
+    from django.apps import apps
+    if apps.is_installed('apps.souvenirs'):
+        Order=apps.get_model('souvenirs','SaleOrder')
+        found.extend(Order.objects.filter(card_fee__rateId=str(rate_id)).values_list('card_fee',flat=True))
     return found
 
 def rate_data(row):

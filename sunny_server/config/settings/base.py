@@ -48,3 +48,12 @@ SEPAY_GATEWAY = os.environ.get('SEPAY_GATEWAY','')
 SEPAY_ACCOUNT_NUMBER = os.environ.get('SEPAY_ACCOUNT_NUMBER','')
 SEPAY_ACCOUNT_NAME = os.environ.get('SEPAY_ACCOUNT_NAME','')
 SEPAY_TTL_SECONDS = int(os.environ.get('SEPAY_TTL_SECONDS','900'))
+SOUVENIRS_ENABLED = os.environ.get('SOUVENIRS_ENABLED','0') == '1'
+SOUVENIRS_PUBLIC_ORIGIN = os.environ.get('SOUVENIRS_PUBLIC_ORIGIN','https://souvenirs.hoianmemorieslands.com')
+INSTALLED_APPS += ['apps.souvenirs']
+MIDDLEWARE.insert(1,'apps.souvenirs.routing.PublicHostMiddleware')
+TEMPLATES[0]['OPTIONS']['context_processors'].append('apps.souvenirs.routing.context')
+if SOUVENIRS_ENABLED:
+    from urllib.parse import urlparse
+    _souvenir_host=urlparse(SOUVENIRS_PUBLIC_ORIGIN).hostname
+    if _souvenir_host and _souvenir_host not in ALLOWED_HOSTS:ALLOWED_HOSTS.append(_souvenir_host)

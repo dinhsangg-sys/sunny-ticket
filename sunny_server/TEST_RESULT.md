@@ -1,5 +1,11 @@
 # Kết quả kiểm thử bản chuyển đổi
 
+## 1.14.0 — Souvenirs và bán hàng tại quầy
+
+- 159 kiểm tra backend đạt, migration khớp model. Quyền nội dung/bán hàng/báo cáo tách riêng; khách chỉ đọc sản phẩm đã công khai, không thấy giá vốn/đơn hàng.
+- Template thật kiểm tra desktop/mobile, menu nhân viên, tạo đơn một lần, xác nhận một lần, phí thẻ và doanh thu đồng bộ từ cùng database. QR PNG giải mã đúng URL, ảnh/video ẩn khi ngừng hiển thị, stream hỗ trợ Range.
+- Dữ liệu vé cũ không bị chuyển đổi; module mới tắt mặc định. DNS/SSL/Ubuntu chưa thay trực tiếp. Không thực hiện giao dịch hoặc email thật.
+
 ## 1.13.0 — Phí thanh toán thẻ bên bán chịu
 
 - 146 kiểm tra backend đạt; kiểm tra bổ sung bảo vệ snapshot/lịch sử và khoản thu bị gửi trùng đạt. Migration khớp model.
