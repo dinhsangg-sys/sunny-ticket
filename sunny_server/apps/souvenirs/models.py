@@ -16,6 +16,10 @@ class Product(models.Model):
     category=models.CharField('Bộ sưu tập / nhóm sản phẩm',max_length=100,blank=True)
     summary=models.CharField('Giới thiệu ngắn',max_length=500,blank=True)
     story=models.TextField('Câu chuyện sản phẩm',blank=True)
+    name_en=models.CharField('English — name',blank=True,max_length=180)
+    category_en=models.CharField('English — category',blank=True,max_length=100)
+    summary_en=models.CharField('English — summary',blank=True,max_length=500)
+    story_en=models.TextField('English — story',blank=True)
     price=models.DecimalField('Giá bán (đồng)',max_digits=14,decimal_places=0,validators=[MinValueValidator(0)])
     cost=models.DecimalField('Giá vốn (nội bộ)',max_digits=14,decimal_places=0,default=0,validators=[MinValueValidator(0)])
     published=models.BooleanField('Hiển thị cho khách và cho phép bán',default=False)
@@ -35,6 +39,7 @@ class Asset(models.Model):
     kind=models.CharField('Loại nội dung',max_length=8,choices=[('image','Hình ảnh'),('video','Video MP4/WebM')])
     file=models.FileField('Tệp tải lên',upload_to=asset_path)
     caption=models.CharField('Chú thích',max_length=250,blank=True)
+    caption_en=models.CharField('English — caption',blank=True,max_length=250)
     position=models.PositiveIntegerField('Thứ tự',default=0)
     class Meta:ordering=['position','id']
 
@@ -42,6 +47,8 @@ class Article(models.Model):
     product=models.ForeignKey(Product,on_delete=models.CASCADE,related_name='articles')
     title=models.CharField('Tiêu đề bài viết',max_length=180)
     body=models.TextField('Nội dung bài viết')
+    title_en=models.CharField('English — title',max_length=180,blank=True)
+    body_en=models.TextField('English — article',blank=True)
     position=models.PositiveIntegerField('Thứ tự',default=0)
     class Meta:ordering=['position','id']
 

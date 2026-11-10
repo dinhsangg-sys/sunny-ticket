@@ -110,3 +110,19 @@ class SouvenirsTests(TestCase):
     def test_cancelled_order_has_no_revenue_and_cannot_be_paid(self):
         order=self.order();self.assertEqual(self.action(order,action='cancel',confirmed=True).status_code,200);self.assertEqual(self.action(order,action='pay',method='cash',confirmed=True).status_code,400)
         self.client.force_login(self.admin);self.assertEqual(self.client.get('/souvenirs/api/report/').json()['totals']['total'],0)
+
+    def test_bilingual_content_switch_search_fallback_and_escaping(self):
+        self.product.name_en='Hoi An lantern';self.product.category='Thủ công';self.product.category_en='Crafts';self.product.story_en='Handmade <script>bad()</script>';self.product.save()
+        Article.objects.create(product=self.product,title='Tiêu đề',body='Nội dung',title_en='Craft story',body_en='English article')
+        guest=Client()
+        response=guest.get('/souvenirs/catalog/',{'lang':'en','q':'lantern','category':'Thủ công'})
+        self.assertContains(response,'Hoi An lantern');self.assertContains(response,'Crafts');self.assertContains(response,'lang=en');self.assertContains(response,'Find a gift')
+        response=guest.get('/souvenirs/p/'+self.product.slug+'/',{'lang':'en'})
+        self.assertContains(response,'lang="en"');self.assertContains(response,'Craft story');self.assertContains(response,'English article');self.assertContains(response,'&lt;script&gt;');self.assertContains(response,self.product.summary)
+        self.assertNotContains(response,'<script>bad()</script>')
+        response=guest.get('/souvenirs/p/'+self.product.slug+'/',{'lang':'vi'})
+        self.assertContains(response,self.product.name);self.assertNotContains(response,'English article')
+        self.assertContains(guest.get('/souvenirs/catalog/',{'lang':'invalid'}),'lang="vi"')
+        self.client.force_login(self.admin)
+        response=self.client.get('/souvenirs/products/'+str(self.product.pk)+'/edit/')
+        self.assertContains(response,'name="name_en"');self.assertContains(response,'name="articles-0-title_en"')

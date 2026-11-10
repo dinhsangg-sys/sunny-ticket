@@ -8,11 +8,11 @@ class ProductForm(forms.ModelForm):
     expected_version=forms.IntegerField(widget=forms.HiddenInput,required=False)
     class Meta:
         model=Product
-        fields=['sku','name','category','summary','story','price','cost','published','sort_order']
+        fields=['sku','name','name_en','category','category_en','summary','summary_en','story','story_en','price','cost','published','sort_order']
         widgets={'story':forms.Textarea(attrs={'rows':8}),'summary':forms.Textarea(attrs={'rows':3})}
 
 class AssetForm(forms.ModelForm):
-    class Meta:model=Asset;fields=['kind','file','caption','position']
+    class Meta:model=Asset;fields=['kind','file','caption','caption_en','position']
     def clean_file(self):
         file=self.cleaned_data.get('file')
         if not file or not hasattr(file,'content_type'):return file
@@ -31,4 +31,4 @@ class AssetForm(forms.ModelForm):
         file.seek(0);return file
 
 Assets=inlineformset_factory(Product,Asset,form=AssetForm,extra=2,can_delete=True,max_num=30,validate_max=True)
-Articles=inlineformset_factory(Product,Article,fields=['title','body','position'],extra=1,can_delete=True,max_num=30,validate_max=True,widgets={'body':forms.Textarea(attrs={'rows':6})})
+Articles=inlineformset_factory(Product,Article,fields=['title','title_en','body','body_en','position'],extra=1,can_delete=True,max_num=30,validate_max=True,widgets={'body':forms.Textarea(attrs={'rows':6})})

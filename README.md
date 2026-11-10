@@ -1,3 +1,7 @@
+# 1.14.1 — Souvenirs song ngữ Việt / Anh
+
+Trang khách có nút chuyển Tiếng Việt / English; nội dung dịch nhập trong hồ sơ sản phẩm, để trống dùng tiếng Việt. QR và đơn hàng giữ nguyên. Xem [hướng dẫn nâng cấp](sunny_server/UPGRADE_1_14_1.md).
+
 # Sunny Travel Ticket Management — 1.14.0
 
 **1.14.0:** module Souvenirs: quản lý sản phẩm/ảnh/video/câu chuyện/bài viết, QR cố định và tem in; trang khách `souvenirs.hoianmemorieslands.com`; mục Bán hàng lưu niệm trong menu nhân viên, tạo đơn và xác nhận thu, báo cáo doanh thu riêng trong Ticket Management. Tắt mặc định đến khi bật SOUVENIRS_ENABLED và cấu hình DNS/SSL. Cần migrate souvenirs 0001/0002. [Hướng dẫn cập nhật và tên miền](sunny_server/UPGRADE_1_14_0.md).

@@ -5,7 +5,7 @@ from io import BytesIO
 import json
 import uuid
 import unicodedata
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -37,6 +37,20 @@ def product_url(product):
     if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:raise ValueError('SOUVENIRS_PUBLIC_ORIGIN cần là tên miền HTTPS, không kèm đường dẫn.')
     return origin+'/p/'+product.slug+'/'
 
+def public_context(request):
+    lang=request.GET.get('lang','vi')
+    if lang not in ('vi','en'):lang='vi'
+    def language_url(value):
+        params=request.GET.copy();params['lang']=value
+        return '?'+urlencode(params)
+    return {**base_context(request),'lang':lang,'vi_url':language_url('vi'),'en_url':language_url('en')}
+
+def translate_product(product,lang):
+    for field in ('name','category','summary','story'):
+        setattr(product,'display_'+field,(getattr(product,field+'_en') if lang=='en' else '') or getattr(product,field))
+    for asset in product.assets.all():asset.display_caption=(asset.caption_en if lang=='en' else '') or asset.caption
+    return product
+
 @require_GET
 @never_cache
 def catalog(request):
@@ -46,14 +60,21 @@ def catalog(request):
     if category:products=products.filter(category=category)
     if q:
         def searchable(value):return ''.join(c for c in unicodedata.normalize('NFD',value.casefold().replace('đ','d')) if not unicodedata.combining(c))
-        needle=searchable(q);products=[p for p in products if needle in searchable(p.name+' '+p.sku)]
-    return render(request,'souvenirs/catalog.html',{**base_context(request),'products':products,'categories':categories,'q':q,'selected_category':category})
+        needle=searchable(q);products=[p for p in products if needle in searchable(p.name+' '+p.name_en+' '+p.sku)]
+    context=public_context(request)
+    categories=[{'value':value,'label':(Product.objects.filter(published=True,category=value).exclude(category_en='').values_list('category_en',flat=True).first() if context['lang']=='en' else '') or value} for value in categories]
+    products=[translate_product(p,context['lang']) for p in products]
+    return render(request,'souvenirs/catalog.html',{**context,'products':products,'categories':categories,'q':q,'selected_category':category})
 
 @require_GET
 @never_cache
 def detail(request,slug):
     enabled();product=get_object_or_404(Product.objects.prefetch_related('assets','articles'),slug=slug,published=True)
-    return render(request,'souvenirs/detail.html',{**base_context(request),'product':product})
+    context=public_context(request);translate_product(product,context['lang'])
+    for article in product.articles.all():
+        article.display_title=(article.title_en if context['lang']=='en' else '') or article.title
+        article.display_body=(article.body_en if context['lang']=='en' else '') or article.body
+    return render(request,'souvenirs/detail.html',{**context,'product':product})
 
 @require_GET
 @never_cache
