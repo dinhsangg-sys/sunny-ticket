@@ -1,3 +1,8 @@
+## 1.16.1 — Chỉnh trang đăng nhập
+
+- 4 kiểm tra backend đăng nhập/CSRF/next và xử lý lỗi đạt; kiểm tra template không có thẻ ảnh/ảnh Hội An và có slogan mới.
+- Browser desktop/mobile/320px kiểm tra không tràn ngang, khoảng cách chữ normal, slogan, hiện/ẩn mật khẩu, lỗi/focus và fallback không JS. Nền vẽ bằng CSS, không có ảnh địa điểm.
+
 ## 1.16.0 — Đăng nhập Sunny
 
 - 4 kiểm tra backend đạt: biểu mẫu và static, đăng nhập/next, chặn chuyển hướng ngoài miền, lỗi an toàn và CSRF.

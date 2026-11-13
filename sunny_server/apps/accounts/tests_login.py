@@ -8,8 +8,9 @@ class LoginDesignTests(TestCase):
     def test_brand_accessible_fields_and_local_assets(self):
         response=self.client.get('/login/?next=/counter/')
         self.assertEqual(response.status_code,200)
-        for text in ['Từ lòng người','những hành trình','csrfmiddlewaretoken','name="username"','name="password"','autocomplete="current-password"','value="/counter/"','name="next"']:self.assertContains(response,text)
-        for asset in ('css/login.css','js/login.js','images/sunny-hoi-an-welcome.jpg'):self.assertIsNotNone(finders.find(asset))
+        for text in ['Tấm lòng người','những hành trình','csrfmiddlewaretoken','name="username"','name="password"','autocomplete="current-password"','value="/counter/"','name="next"']:self.assertContains(response,text)
+        self.assertNotContains(response,'<img');self.assertNotContains(response,'sunny-hoi-an-welcome');self.assertNotContains(response,'Hội An')
+        for asset in ('css/login.css','js/login.js'):self.assertIsNotNone(finders.find(asset))
     def test_valid_post_preserves_next_and_rejects_external_redirect(self):
         response=self.client.post('/login/',{'username':'sunny-test','password':'test-only-login-password','next':'/counter/'})
         self.assertRedirects(response,'/counter/',fetch_redirect_response=False)

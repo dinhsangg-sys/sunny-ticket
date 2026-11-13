@@ -1,3 +1,7 @@
+# 1.16.1 — Slogan và nền đăng nhập Sunny
+
+Tấm lòng người địa phương, đến những hành trình đáng nhớ. Nền trừu tượng vàng/trắng, font tiếng Việt và khoảng cách tự nhiên, không có ảnh địa điểm. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_16_1.md).
+
 # 1.16.0 — Giao diện đăng nhập Sunny
 
 Vàng/trắng, slogan bản địa do người dùng chọn, thiết kế cho máy tính và điện thoại. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_16_0.md).
