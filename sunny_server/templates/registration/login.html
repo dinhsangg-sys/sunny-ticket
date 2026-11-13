@@ -1,1 +1,72 @@
-<!doctype html><html lang="vi"><meta charset="utf-8"><title>Sunny - Đăng nhập</title><body style="font-family:Arial;max-width:400px;margin:80px auto"><h1>Sunny Travel</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button>Đăng nhập</button></form></body></html>
+{% load static %}<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffcf25">
+  <title>Đăng nhập · Sunny Travel</title>
+  <link rel="stylesheet" href="{% static 'css/login.css' %}?v=1.16.0">
+  <script src="{% static 'js/login.js' %}?v=1.16.0" defer></script>
+</head>
+<body>
+  <main class="login-layout">
+    <section class="welcome" aria-labelledby="sunny-slogan">
+      <div class="sunny-brand" aria-label="Sunny Travel">
+        <svg class="sunny-mark" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="9" fill="currentColor"/><path d="M24 3v6m0 30v6M3 24h6m30 0h6M9 9l4 4m22 22 4 4M9 39l4-4M35 13l4-4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+        <span>SUNNY<small>TRAVEL & LOCAL EXPERIENCES</small></span>
+      </div>
+      <div class="welcome-copy">
+        <p class="eyebrow"><span></span> SỰ TỬ TẾ LÀ KHỞI ĐẦU CỦA MỖI HÀNH TRÌNH</p>
+        <h2 id="sunny-slogan"><span class="slogan-prefix">Sunny — </span>Từ lòng người<br class="desktop-break"> địa phương,<br>đến những hành trình<br class="desktop-break"> <em>đáng nhớ.</em></h2>
+        <p class="welcome-description">Chăm chút từng tấm vé, từng món quà.<br>Cùng nhau mang nét đẹp bản địa đến với mỗi vị khách.</p>
+      </div>
+      <figure class="local-photo">
+        <img src="{% static 'images/sunny-hoi-an-welcome.jpg' %}" alt="Không khí đón khách rộn ràng với trang phục truyền thống tại Công viên Ấn tượng Hội An" width="880" height="587" fetchpriority="high">
+        <figcaption><span>HỘI AN, VIỆT NAM</span><span>Gần gũi từ những điều giản dị <span aria-hidden="true">↗</span></span></figcaption>
+      </figure>
+      <div class="welcome-bottom"><span>Hiểu nơi mình sống. Yêu điều mình làm.</span><span aria-hidden="true">✳</span></div>
+    </section>
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="panel-top"><span class="workspace-label"><span aria-hidden="true"></span> KHÔNG GIAN LÀM VIỆC SUNNY</span><span class="small-sun" aria-hidden="true">☀</span></div>
+      <div class="login-content">
+        <p class="form-eyebrow">MỘT NGÀY MỚI, NHỮNG HÀNH TRÌNH MỚI</p>
+        <h1 id="login-title">Chào mừng trở lại.</h1>
+        <p class="login-description">Cùng Sunny bắt đầu một ngày làm việc<br class="desktop-break"> thật nhiều cảm hứng.</p>
+        {% if form.errors %}
+        <div class="login-errors" id="login-errors" role="alert" tabindex="-1">
+          <strong>Chưa đăng nhập được</strong>
+          {% if form.non_field_errors %}{{ form.non_field_errors }}{% else %}<p>Vui lòng kiểm tra các thông tin bên dưới.</p>{% endif %}
+        </div>
+        {% endif %}
+        <form method="post" class="login-form">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next|default:'' }}">
+          <div class="form-field">
+            <label for="id_username">Tên đăng nhập</label>
+            <div class="input-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></svg>
+              <input id="id_username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="150" value="{{ form.username.value|default:'' }}" placeholder="Nhập tên đăng nhập của bạn" required {% if not form.errors %}autofocus{% endif %} {% if form.username.errors %}aria-invalid="true" aria-describedby="username-errors"{% endif %}>
+            </div>
+            {% if form.username.errors %}<div id="username-errors" class="field-errors">{{ form.username.errors }}</div>{% endif %}
+          </div>
+          <div class="form-field">
+            <label for="id_password">Mật khẩu</label>
+            <div class="input-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4"/><path d="M12 14v3"/></svg>
+              <input id="id_password" name="password" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required {% if form.password.errors %}aria-invalid="true" aria-describedby="password-errors"{% endif %}>
+              <button class="password-toggle" id="password-toggle" type="button" aria-label="Hiện mật khẩu" aria-pressed="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+            {% if form.password.errors %}<div id="password-errors" class="field-errors">{{ form.password.errors }}</div>{% endif %}
+            <p class="caps-hint" id="caps-hint" role="status" hidden>Caps Lock đang bật.</p>
+          </div>
+          <button class="login-submit" type="submit"><span>Đăng nhập</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+        </form>
+        <p class="account-help">Cần hỗ trợ tài khoản? <span>Liên hệ quản trị Sunny.</span></p>
+        <div class="form-note"><span aria-hidden="true">✦</span><p>Mỗi thao tác chỉn chu.<br>Một trải nghiệm trọn vẹn.</p></div>
+      </div>
+      <div class="panel-bottom"><span>SUNNY TRAVEL</span><span>Tận tâm từ những điều nhỏ nhất.</span></div>
+    </section>
+  </main>
+  <footer class="page-footer"><span>Sunny — Từ lòng người địa phương, đến những hành trình đáng nhớ.</span><span>Dành cho đội ngũ Sunny và đối tác được cấp tài khoản.</span></footer>
+</body>
+</html>

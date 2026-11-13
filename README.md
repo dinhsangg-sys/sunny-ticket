@@ -1,3 +1,7 @@
+# 1.16.0 — Giao diện đăng nhập Sunny
+
+Vàng/trắng, slogan bản địa do người dùng chọn, thiết kế cho máy tính và điện thoại. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_16_0.md).
+
 # 1.15.1 — Hủy booking sau đối soát
 
 Quyền riêng, lý do bắt buộc, giữ hồ sơ lịch sử và phí thực tế không hoàn. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_15_1.md).

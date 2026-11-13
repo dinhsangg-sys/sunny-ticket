@@ -1,3 +1,9 @@
+## 1.16.0 — Đăng nhập Sunny
+
+- 4 kiểm tra backend đạt: biểu mẫu và static, đăng nhập/next, chặn chuyển hướng ngoài miền, lỗi an toàn và CSRF.
+- Browser dùng template Django thật kiểm tra desktop/mobile/320px, không tràn ngang, hiện/ẩn mật khẩu, lỗi/focus, trường next và sử dụng khi không có JS. Đã xem ảnh render trên máy tính/điện thoại.
+- Không đổi đăng nhập phía máy chủ, tài khoản, phân quyền hoặc dữ liệu nghiệp vụ. Không có migration mới; cần collectstatic. Ảnh Hội An do người dùng cung cấp được dùng nguyên bản.
+
 ## 1.15.1 — Hủy booking có thanh toán
 
 - 7 kiểm thử hủy booking đạt: quyền/phạm vi, quản trị mặc định, snapshot và file giữ nguyên, bảo vệ lịch sử phí/mã booking/lần tạo, giữ phí thực tế thành chi phí đúng một lần, đầu vào sai và phiên bản cũ, SePay live cần đối soát hoàn tiền, QR chờ hủy, chặn truy cập booking hủy, quyền xử lý và bảo mật khoản chi nhà cung cấp.
