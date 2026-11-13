@@ -1,3 +1,7 @@
+# 1.14.8 — Khoảng trắng tự nhiên dưới logo vé
+
+Không có đường viền phân cách logo với hình minh họa. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_14_8.md).
+
 # 1.14.7 — Logo mới trên mẫu vé
 
 Dùng logo Hoi An Memories Show do người dùng cung cấp, giữ nguyên khổ và nội dung vé. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_14_7.md).
