@@ -1,3 +1,10 @@
+## 1.15.0 — Quyền sửa/xóa đơn, ngày giờ tạo và SePay Souvenirs
+
+- 23 kiểm thử Souvenirs chính + 5 kiểm thử SePay Souvenirs đạt: quyền riêng, quản trị mặc định, operator full workspace không tự có quyền, phạm vi đơn của nhân viên, xóa có lưu hồ sơ, sửa báo cáo/giá vốn/phí thẻ lịch sử, chống ghi đè và thu tiền trên phiên bản cũ.
+- Webhook kiểm tra chữ ký, đúng số tiền/tài khoản/ngân hàng/thời gian, ghi nhận một lần, giao dịch lặp/sai cần đối soát, QR cũ vô hiệu sau sửa/xóa/thu thủ công, quyền xem QR và phiên bản đơn. Live QR VietinBank có tiền tố SEVQR; không thực hiện chuyển tiền thật.
+- Kiểm tra browser trên template thật: ngày/giờ Việt Nam dù máy đặt múi giờ Mỹ, nút sửa/xóa, modal sửa và cập nhật báo cáo, QR trong modal và mở màn hình phụ, đồng bộ paid từ endpoint; hồi quy tạo đơn và phí thẻ đạt. Luồng ngân hàng được mô phỏng, chưa kiểm tra giao dịch thật trên Ubuntu.
+- Bộ backend legacy + Souvenirs được chạy hồi quy đạt; migration kiểm tra khớp model. Có migration souvenirs.0004, không xóa dữ liệu cũ.
+
 ## 1.14.5 — Ngôn ngữ khách tự động
 
 - 17 kiểm thử Souvenirs đạt. Kiểm tra vi-VN/en-US/ngôn ngữ khác, trọng số q, q=0, header thiếu/lỗi, lựa chọn URL/cookie ưu tiên, nhớ lựa chọn khi vào lại, Content-Language và Vary.

@@ -171,6 +171,9 @@ def webhook(request):
             intent=SePayIntent.objects.select_for_update().filter(code=next(iter(codes))).first() if len(codes)==1 else None
             event.intent=intent;reason='Không tìm thấy duy nhất mã thanh toán.'
             if payload.get('transferType')!='in':reason='Không phải giao dịch tiền vào.';event.state='ignored'
+            elif intent and intent.booking_id.startswith('SOUVENIR-'):
+                from apps.souvenirs.sepay import apply_event
+                reason=apply_event(event,intent)
             elif intent:
                 obj=Workspace.objects.get(pk=1);data=copy.deepcopy(obj.data)
                 row=next((b for b in data.get('bookings',[]) if b.get('id')==intent.booking_id and b.get('source')=='counter'),None)

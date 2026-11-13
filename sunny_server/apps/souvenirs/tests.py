@@ -168,3 +168,66 @@ class SouvenirsTests(TestCase):
         self.assertEqual(guest.get(url,{'lang':'en'},HTTP_ACCEPT_LANGUAGE='vi-VN')['Content-Language'],'en')
         self.assertEqual(guest.get(url,HTTP_ACCEPT_LANGUAGE='vi-VN')['Content-Language'],'en')
         self.assertEqual(Client().get(url,{'lang':'invalid'})['Content-Language'],'en')
+
+    def edit_body(self,order,**changes):
+        return {'action':'edit','revision':order.get('revision',0),'confirmed':True,'reason':'Sửa nhập nhầm','note':'Ghi chú mới','items':[{'product':str(self.product.pk),'quantity':3,'unitPrice':110000}],**changes}
+
+    def test_order_edit_delete_permissions_and_admin_default(self):
+        order=self.order()
+        self.assertEqual(self.post('/souvenirs/api/orders/'+order['id']+'/',self.edit_body(order)).status_code,403)
+        self.assertEqual(self.action(order,action='delete',revision=0,confirmed=True,reason='Nhập nhầm').status_code,403)
+        self.user.user_permissions.add(Permission.objects.get(content_type__app_label='souvenirs',codename='edit_orders'))
+        response=self.post('/souvenirs/api/orders/'+order['id']+'/',self.edit_body(order));self.assertEqual(response.status_code,200,response.content)
+        self.assertEqual(response.json()['order']['total'],330000)
+        self.assertEqual(self.action(order,action='delete',revision=1,confirmed=True,reason='Nhập nhầm').status_code,403)
+        manager=User.objects.create_user('role-admin',role='admin');self.client.force_login(manager)
+        data=self.client.get('/souvenirs/api/sales/').json();self.assertTrue(data['canEdit']);self.assertTrue(data['canDelete']);self.assertEqual(data['orders'][0]['id'],order['id'])
+        self.assertEqual(self.action(order,action='delete',revision=1,confirmed=True,reason='Nhập nhầm').status_code,200)
+        obj=SaleOrder.objects.get(pk=order['id']);self.assertIsNotNone(obj.deleted_at);self.assertEqual(len(obj.history),2)
+        self.assertEqual(self.client.get('/souvenirs/api/sales/').json()['orders'],[])
+        self.assertEqual(self.post('/souvenirs/api/orders/'+order['id']+'/',self.edit_body(order)).status_code,409)
+
+    def test_paid_order_edit_report_cost_snapshot_and_soft_delete(self):
+        order=self.order();self.action(order,action='pay',method='cash',confirmed=True)
+        self.client.force_login(self.admin);obj=SaleOrder.objects.get(pk=order['id']);created=obj.created_at;paid=obj.paid_at
+        self.product.cost=99999;self.product.save()
+        response=self.post('/souvenirs/api/orders/'+order['id']+'/',self.edit_body(order,revision=1));self.assertEqual(response.status_code,200,response.content)
+        totals=self.client.get('/souvenirs/api/report/').json()['totals'];self.assertEqual(totals['total'],330000);self.assertEqual(totals['cost'],120000)
+        obj.refresh_from_db();self.assertEqual(obj.created_at,created);self.assertEqual(obj.paid_at,paid);self.assertEqual(obj.revision,2)
+        self.assertEqual(obj.history[0]['before']['total'],200000)
+        response=self.action(order,action='delete',revision=2,confirmed=True,reason='Đối soát hủy');self.assertEqual(response.status_code,200)
+        self.assertEqual(self.client.get('/souvenirs/api/report/').json()['totals']['total'],0)
+        self.assertEqual(Workspace.objects.get(pk=1).data['bookings'][0]['id'],'TICKET-KEEP')
+
+    def test_edit_uses_historical_card_rate_and_stale_revision_rejected(self):
+        rate=CardFeeRate.objects.create(scheme='visa',origin='domestic',rate='2.55',starts_on=timezone.localdate());order=self.order()
+        quote=self.action(order,action='quote',scheme='visa',origin='domestic').json()['quote'];self.action(order,action='pay',method='card',confirmed=True,cardFeeQuote=quote)
+        self.client.force_login(self.admin)
+        self.assertEqual(self.post('/souvenirs/api/orders/'+order['id']+'/',self.edit_body(order)).status_code,409)
+        rate.active=False;rate.save()
+        response=self.post('/souvenirs/api/orders/'+order['id']+'/',self.edit_body(order,revision=1));self.assertEqual(response.status_code,200,response.content)
+        self.assertEqual(response.json()['order']['fee'],8415);self.assertEqual(response.json()['order']['net'],321585)
+        self.assertEqual(self.action(order,action='delete',revision=1,confirmed=True,reason='stale').status_code,409)
+
+    def test_editor_without_sell_only_own_orders_and_invalid_changes_rollback(self):
+        order=self.order();other=User.objects.create_user('other-editor',role='counter');other.user_permissions.add(Permission.objects.get(content_type__app_label='souvenirs',codename='edit_orders'));self.client.force_login(other)
+        self.assertEqual(self.client.get('/souvenirs/manage/').status_code,200)
+        self.assertEqual(self.client.get('/souvenirs/api/sales/').json()['orders'],[])
+        self.assertEqual(self.post('/souvenirs/api/orders/'+order['id']+'/',self.edit_body(order)).status_code,404)
+        self.client.force_login(self.admin)
+        for change in ({'reason':''},{'items':[]},{'items':[{'product':str(self.product.pk),'quantity':-1,'unitPrice':10}]},{'items':[{'product':str(self.product.pk),'quantity':1,'unitPrice':'NaN'}]}):
+            self.assertEqual(self.post('/souvenirs/api/orders/'+order['id']+'/',self.edit_body(order,**change)).status_code,400)
+        obj=SaleOrder.objects.get(pk=order['id']);self.assertEqual(obj.total,200000);self.assertEqual(obj.revision,0);self.assertEqual(obj.lines.count(),1)
+
+    def test_operator_full_workspace_does_not_grant_order_edit_delete(self):
+        operator=User.objects.create_user('full-operator',role='operator')
+        operator.user_permissions.add(Permission.objects.get(content_type__app_label='legacy',codename='workspace__full_access'))
+        self.client.force_login(operator);data=self.client.get('/souvenirs/api/sales/').json()
+        self.assertFalse(data['canEdit']);self.assertFalse(data['canDelete'])
+
+    def test_stale_cashier_cannot_confirm_changed_order_without_revision(self):
+        order=self.order();self.client.force_login(self.admin)
+        self.post('/souvenirs/api/orders/'+order['id']+'/',self.edit_body(order))
+        self.client.force_login(self.user)
+        self.assertEqual(self.action(order,action='pay',method='cash',confirmed=True).status_code,409)
+        self.assertEqual(self.action(order,action='pay',method='cash',confirmed=True,revision=1).status_code,200)

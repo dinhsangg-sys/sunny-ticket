@@ -67,6 +67,11 @@ class SaleOrder(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     paid_at=models.DateTimeField(null=True,blank=True)
     paid_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,null=True,blank=True,related_name='souvenir_receipts')
+    revision=models.PositiveIntegerField(default=0)
+    deleted_at=models.DateTimeField(null=True,blank=True)
+    history=models.JSONField(default=list,blank=True)
+    class Meta:
+        permissions=[('edit_orders','Sửa đơn hàng Souvenirs'),('delete_orders','Xóa đơn hàng Souvenirs')]
     @property
     def code(self):return 'SV-'+timezone.localtime(self.created_at).strftime('%Y%m%d')+'-'+self.id.hex[:12].upper()
 

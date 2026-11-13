@@ -1,3 +1,7 @@
+# 1.15.0 — Quản lý đơn Souvenirs và QR SePay
+
+Sửa/xóa đơn theo quyền, hiển thị ngày giờ tạo và tự cập nhật thanh toán chuyển khoản SePay. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_15_0.md).
+
 # 1.14.9 — Giờ tạo booking tại quầy
 
 Danh sách Booking của tôi hiển thị ngày và giờ tạo theo giờ Việt Nam. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_14_9.md).

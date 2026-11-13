@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import date
 import hashlib
 from io import BytesIO
@@ -28,11 +28,16 @@ from .forms import ProductForm,Assets,Articles
 def enabled():
     if not settings.SOUVENIRS_ENABLED:raise Http404()
 
-def can(user,action):return user.is_authenticated and user.is_active and (user.is_superuser or user.role in ('admin','operator') and full_access(user) or user.has_perm('souvenirs.'+action))
+def can(user,action):
+    if not user.is_authenticated or not user.is_active:return False
+    if action in ('edit_orders','delete_orders'):
+        return user.is_superuser or user.role=='admin' or user.has_perm('souvenirs.'+action)
+    return user.is_superuser or user.role in ('admin','operator') and full_access(user) or user.has_perm('souvenirs.'+action)
+
 
 def base_context(request):
     from apps.legacy.counter import permitted
-    return {'base':'' if getattr(request,'urlconf',None)=='apps.souvenirs.public_urls' else '/souvenirs','can_manage':can(request.user,'manage_catalog'),'can_sell':can(request.user,'sell'),'can_report':can(request.user,'view_reports'),'report_visible':permitted(request.user,'report')}
+    return {'base':'' if getattr(request,'urlconf',None)=='apps.souvenirs.public_urls' else '/souvenirs','can_manage':can(request.user,'manage_catalog'),'can_sell':can(request.user,'sell'),'can_report':can(request.user,'view_reports'),'can_edit_orders':can(request.user,'edit_orders'),'can_delete_orders':can(request.user,'delete_orders'),'can_orders':any(can(request.user,a) for a in ('sell','edit_orders','delete_orders')),'report_visible':permitted(request.user,'report')}
 
 def product_url(product):
     url=settings.SOUVENIRS_CATALOG_URL;parsed=urlparse(url)
@@ -123,7 +128,7 @@ def media(request,key):
 @never_cache
 def management(request):
     enabled()
-    if not any(can(request.user,action) for action in ('manage_catalog','sell','view_reports')):return HttpResponseForbidden('Chưa được cấp quyền Souvenirs.')
+    if not any(can(request.user,action) for action in ('manage_catalog','sell','view_reports','edit_orders','delete_orders')):return HttpResponseForbidden('Chưa được cấp quyền Souvenirs.')
     return render(request,'souvenirs/management.html',{**base_context(request),'products':Product.objects.prefetch_related('assets') if can(request.user,'manage_catalog') else []})
 
 @login_required
@@ -168,11 +173,11 @@ def qr_label(request,key):
     return render(request,'souvenirs/label.html',{**base_context(request),'product':product,'public_url':url})
 
 def order_data(order):
-    return {'id':str(order.pk),'code':order.code,'status':order.status,'createdAt':order.created_at.isoformat(),'paidAt':order.paid_at.isoformat() if order.paid_at else None,'seller':order.seller_name,'total':float(order.total),'paymentMethod':order.payment_method,'fee':float(order.card_fee.get('feeAmount',0)),'net':float(order.total)-float(order.card_fee.get('feeAmount',0)) if order.status=='paid' else 0,'note':order.note,'lines':[{'sku':line.sku,'name':line.name,'quantity':line.quantity,'unitPrice':float(line.unit_price),'subtotal':float(line.subtotal)} for line in order.lines.all()]}
+    return {'revision':order.revision,'history':[{'action':h['action'],'at':h['at'],'actor':h['actor'],'reason':h['reason']} for h in order.history],'id':str(order.pk),'code':order.code,'status':order.status,'createdAt':order.created_at.isoformat(),'paidAt':order.paid_at.isoformat() if order.paid_at else None,'seller':order.seller_name,'total':float(order.total),'paymentMethod':order.payment_method,'fee':float(order.card_fee.get('feeAmount',0)),'net':float(order.total)-float(order.card_fee.get('feeAmount',0)) if order.status=='paid' else 0,'note':order.note,'lines':[{'product':str(line.product_id),'sku':line.sku,'name':line.name,'quantity':line.quantity,'unitPrice':float(line.unit_price),'subtotal':float(line.subtotal)} for line in order.lines.all()]}
 
 def own_order(request,key):
     query=SaleOrder.objects.select_related('seller').prefetch_related('lines')
-    if not can(request.user,'view_reports'):query=query.filter(seller=request.user)
+    if not (request.user.is_superuser or request.user.role=='admin' or can(request.user,'view_reports')):query=query.filter(seller=request.user)
     return get_object_or_404(query,pk=key)
 
 @login_required
@@ -180,8 +185,13 @@ def own_order(request,key):
 @require_http_methods(['GET','POST'])
 def sales(request):
     enabled()
-    if not can(request.user,'sell'):return JsonResponse({'error':'Chưa có quyền bán hàng lưu niệm.'},status=403)
-    if request.method=='GET':return JsonResponse({'products':[{'id':str(p.pk),'sku':p.sku,'name':p.name,'price':float(p.price)} for p in Product.objects.filter(published=True)],'orders':[order_data(o) for o in SaleOrder.objects.filter(seller=request.user).prefetch_related('lines').order_by('-created_at')[:100]]})
+    if not can(request.user,'sell') and (request.method!='GET' or not any(can(request.user,a) for a in ('edit_orders','delete_orders'))):return JsonResponse({'error':'Chưa có quyền bán hàng lưu niệm.'},status=403)
+    if request.method=='GET':
+        orders=SaleOrder.objects.filter(deleted_at__isnull=True)
+        all_orders=(request.user.is_superuser or request.user.role=='admin' or can(request.user,'view_reports')) and any(can(request.user,a) for a in ('edit_orders','delete_orders'))
+        if not all_orders:orders=orders.filter(seller=request.user)
+        from apps.legacy.sepay import ready
+        return JsonResponse({'sepayEnabled':ready(),'canSell':can(request.user,'sell'),'canEdit':can(request.user,'edit_orders'),'canDelete':can(request.user,'delete_orders'),'allOrders':all_orders,'products':[{'id':str(p.pk),'sku':p.sku,'name':p.name,'price':float(p.price)} for p in Product.objects.filter(published=True)],'orders':[order_data(o) for o in orders.prefetch_related('lines').order_by('-created_at')[:100]]})
     try:
         body=json.loads(request.body)
         if not isinstance(body,dict) or set(body)!={'requestId','items','note'}:raise ValueError('Dữ liệu đơn hàng không hợp lệ.')
@@ -215,29 +225,82 @@ def sales(request):
     except (ValueError,TypeError,KeyError,AttributeError,ValidationError) as exc:return JsonResponse({'error':str(exc)},status=400)
     except (OperationalError,IntegrityError):return JsonResponse({'error':'Đang lưu đơn. Tải lại danh sách trước khi thử lại.'},status=409)
 
+def change_order(request,order,body):
+    action=body['action'];keys={'action','revision','confirmed','reason'}|({'items','note'} if action=='edit' else set())
+    if set(body)!=keys or body.get('confirmed') is not True or type(body.get('revision')) is not int:raise ValueError('Cần xác nhận và phiên bản đơn hợp lệ.')
+    if body['revision']!=order.revision:return JsonResponse({'error':'Đơn đã thay đổi. Tải lại trước khi thao tác.'},status=409)
+    reason=body['reason']
+    if not isinstance(reason,str) or not 1<=len(reason.strip())<=500:raise ValueError('Nhập lý do từ 1–500 ký tự.')
+    before=order_data(order)
+    before.pop('history',None)
+    if action=='delete':order.deleted_at=timezone.now()
+    else:
+        items=body['items'];note=body['note']
+        if not isinstance(items,list) or not 1<=len(items)<=50 or not isinstance(note,str) or len(note)>1000:raise ValueError('Đơn cần 1–50 dòng, ghi chú tối đa 1000 ký tự.')
+        existing={str(line.product_id):line for line in order.lines.all()};seen=set();lines=[];total=Decimal(0);cost=Decimal(0)
+        for item in items:
+            if not isinstance(item,dict) or set(item)!={'product','quantity','unitPrice'}:raise ValueError('Dòng hàng không hợp lệ.')
+            key=str(uuid.UUID(item['product']));qty=item['quantity']
+            if key in seen or type(qty) is not int or not 1<=qty<=10000:raise ValueError('Số lượng 1–10000 và không trùng sản phẩm.')
+            seen.add(key)
+            raw=item['unitPrice']
+            if isinstance(raw,bool) or not isinstance(raw,(int,float,str)):raise ValueError('Giá bán không hợp lệ.')
+            try:price=Decimal(str(raw))
+            except Exception:raise ValueError('Giá bán không hợp lệ.')
+            if not price.is_finite() or price<0 or price>99999999999999 or price!=price.to_integral_value():raise ValueError('Giá phải là số đồng nguyên không âm.')
+            old=existing.get(key)
+            if old:product=old.product;name=old.name;sku=old.sku;unit_cost=old.unit_cost
+            else:
+                product=Product.objects.filter(pk=key,published=True).first()
+                if not product:raise ValueError('Sản phẩm thêm vào không còn bán.')
+                name=product.name;sku=product.sku;unit_cost=product.cost
+            lines.append(SaleLine(order=order,product=product,name=name,sku=sku,quantity=qty,unit_price=price,unit_cost=unit_cost));total+=price*qty;cost+=unit_cost*qty
+        if total>100000000000000 or cost>100000000000000:raise ValueError('Tổng tiền vượt giới hạn.')
+        if order.status=='paid' and order.payment_method=='card':
+            rate=Decimal(str(order.card_fee.get('rate','NaN')))
+            if not rate.is_finite() or not 0<=rate<=100:raise ValueError('Thiếu biểu phí thẻ gốc; cần đối soát trước khi sửa.')
+            fee=(total*rate/100).quantize(Decimal(1),rounding=ROUND_HALF_UP)
+            order.card_fee={**order.card_fee,'amount':float(total),'feeAmount':float(fee),'netAmount':float(total-fee)}
+        order.total=total;order.cost_total=cost;order.note=note
+        order.lines.all().delete();SaleLine.objects.bulk_create(lines)
+        if hasattr(order,'_prefetched_objects_cache'):order._prefetched_objects_cache.clear()
+    from .sepay import invalidate
+    invalidate(order)
+    order.revision+=1
+    after=order_data(order);after.pop('history',None)
+    order.history.append({'action':action,'at':timezone.now().isoformat(),'actor':request.user.get_username(),'reason':reason.strip(),'before':before,'after':after})
+    order.save();AuditLog.objects.create(user=request.user,action='souvenirs.order_'+action+':'+str(order.pk))
+    return JsonResponse({'deleted':action=='delete','order':order_data(order)})
+
 @login_required
 @never_cache
 @require_POST
 def order_action(request,key):
     enabled()
-    if not can(request.user,'sell'):return JsonResponse({'error':'Chưa có quyền thu tiền Souvenirs.'},status=403)
     try:
         body=json.loads(request.body)
         if not isinstance(body,dict):raise ValueError('Dữ liệu không hợp lệ.')
+        needed={'edit':'edit_orders','delete':'delete_orders'}.get(body.get('action'),'sell')
+        if not can(request.user,needed):return JsonResponse({'error':'Chưa được cấp quyền thao tác đơn Souvenirs.'},status=403)
         with transaction.atomic():
             Workspace.objects.get_or_create(pk=1);Workspace.objects.filter(pk=1).update(updated_at=timezone.now())
             order=own_order(request,key);action=body.get('action')
+            if order.deleted_at:return JsonResponse({'error':'Đơn đã xóa. Tải lại danh sách.'},status=409)
+            if action in ('edit','delete'):return change_order(request,order,body)
             if action=='quote':
                 if set(body)!={'action','scheme','origin'} or order.status!='pending':raise ValueError('Đơn không còn chờ thanh toán.')
                 return JsonResponse({'quote':quote_fee(body['scheme'],body['origin'],order.total)})
             if action=='cancel':
                 if set(body)!={'action','confirmed'} or body['confirmed'] is not True or order.status=='paid':raise ValueError('Chỉ hủy đơn chưa thu tiền; đơn đã thu cần đối soát riêng.')
-                order.status='cancelled';order.save(update_fields=['status']);AuditLog.objects.create(user=request.user,action='souvenirs.order_cancel:'+str(order.pk));return JsonResponse({'order':order_data(order)})
-            if action!='pay' or set(body)-{'action','confirmed','method','cardFeeQuote'} or body.get('confirmed') is not True or body.get('method') not in ('cash','card','bank_transfer'):raise ValueError('Chọn phương thức và xác nhận đã thu đủ tiền thực tế.')
+                from .sepay import invalidate
+                invalidate(order)
+                order.status='cancelled';order.revision+=1;order.save(update_fields=['status','revision']);AuditLog.objects.create(user=request.user,action='souvenirs.order_cancel:'+str(order.pk));return JsonResponse({'order':order_data(order)})
+            if action!='pay' or set(body)-{'action','confirmed','method','cardFeeQuote','revision'} or body.get('confirmed') is not True or body.get('method') not in ('cash','card','bank_transfer'):raise ValueError('Chọn phương thức và xác nhận đã thu đủ tiền thực tế.')
             if order.status=='paid':
                 if order.payment_method!=body['method']:raise ValueError('Đơn đã thu bằng phương thức khác.')
                 return JsonResponse({'order':order_data(order),'duplicate':True})
             if order.status!='pending':raise ValueError('Đơn đã hủy.')
+            if order.revision and (type(body.get('revision')) is not int or body['revision']!=order.revision):return JsonResponse({'error':'Đơn đã sửa. Tải lại và kiểm tra tổng tiền trước khi thu.'},status=409)
             fee={}
             if body['method']=='card':
                 given=body.get('cardFeeQuote')
@@ -245,9 +308,11 @@ def order_action(request,key):
                 fee=quote_fee(given.get('scheme'),given.get('origin'),order.total)
                 if given!=fee:return JsonResponse({'error':'Biểu phí đã đổi. Tính lại trước khi xác nhận.'},status=409)
             elif body.get('cardFeeQuote'):raise ValueError('Phí thẻ chỉ áp dụng cho thanh toán thẻ.')
-            order.status='paid';order.payment_method=body['method'];order.card_fee=fee;order.paid_at=timezone.now();order.paid_by=request.user;order.save(update_fields=['status','payment_method','card_fee','paid_at','paid_by']);AuditLog.objects.create(user=request.user,action='souvenirs.order_paid:'+str(order.pk))
+            from .sepay import invalidate
+            invalidate(order)
+            order.status='paid';order.payment_method=body['method'];order.card_fee=fee;order.paid_at=timezone.now();order.paid_by=request.user;order.revision+=1;order.save(update_fields=['status','payment_method','card_fee','paid_at','paid_by','revision']);AuditLog.objects.create(user=request.user,action='souvenirs.order_paid:'+str(order.pk))
         return JsonResponse({'order':order_data(order)})
-    except (ValueError,TypeError,KeyError,ValidationError) as exc:return JsonResponse({'error':str(exc)},status=400)
+    except (ValueError,TypeError,KeyError,AttributeError,ValidationError) as exc:return JsonResponse({'error':str(exc)},status=400)
     except OperationalError:return JsonResponse({'error':'Đang có thao tác lưu. Tải lại để kiểm tra.'},status=409)
 
 @login_required
@@ -261,7 +326,7 @@ def report(request):
         if start:date.fromisoformat(start)
         if end:date.fromisoformat(end)
         if start and end and start>end:raise ValueError('Từ ngày không thể sau Đến ngày.')
-        orders=SaleOrder.objects.filter(status='paid').prefetch_related('lines').order_by('-paid_at')
+        orders=SaleOrder.objects.filter(status='paid',deleted_at__isnull=True).prefetch_related('lines').order_by('-paid_at')
         if start:orders=orders.filter(paid_at__date__gte=start)
         if end:orders=orders.filter(paid_at__date__lte=end)
         rows=[order_data(order)|{'cost':float(order.cost_total),'profit':float(order.total-order.cost_total)-float(order.card_fee.get('feeAmount',0))} for order in orders]
