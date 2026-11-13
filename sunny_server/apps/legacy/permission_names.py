@@ -13,3 +13,5 @@ PERMISSIONS.extend([('counter__view','Truy cập màn hình quầy, xem booking 
 PERMISSIONS.extend([('counter__change','Sửa thông tin booking quầy của bản thân'),('counter__settle_adjustment','Xác nhận thu thêm/hoàn lại khi sửa booking quầy'),('counter__replace_tickets','Thay bộ vé và phát hành phiên bản mới của booking quầy'),('counter__report','Xem báo cáo đối chiếu vé của bản thân'),('counter__report_all','Xem đối chiếu vé của tất cả nhân viên'),('counter__reopen_payment','Hủy xác nhận thu tiền thủ công nhầm, đưa booking quầy về chờ thanh toán')])
 
 PERMISSIONS.append(('card_fee__manage','Quản lý khai báo phí thanh toán thẻ và thời gian hiệu lực'))
+
+PERMISSIONS.append(('booking__cancel_paid','Hủy booking có thanh toán sau đối soát, có lý do và lưu lịch sử'))

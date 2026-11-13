@@ -17,7 +17,7 @@ from .partners import partner_types, enforce_partner_types
 def can(user,name): return full_access(user) or allowed(user,name)
 
 def save_workspace(obj,data,user,revision,action):
-    if action not in ('counter.payment_reopen','counter.payment_confirm'):
+    if action not in ('counter.payment_reopen','counter.payment_confirm','booking.cancel_paid'):
         from .card_fees import protect_card_receipts
         protect_card_receipts(obj.data,data)
     if not Workspace.objects.filter(pk=obj.pk,revision=revision).update(data=data,revision=F('revision')+1):
@@ -46,6 +46,9 @@ def operations(request):
                 if key=='cashTransactions': return any(can(user,action_permission(key,action,k)) for k in ('capital','income','expense'))
                 return can(user,action_permission(key,action))
             resources[key]={'label':label,'fields':{k:v for k,v in fields.items() if k in readable},'editable':[f for f in fields if f in readable and can_field(user,key,f)],'rows':rows,'create':permitted('create'),'change':permitted('change'),'delete':permitted('delete')}
+            if key=='bookings':
+                from .booking_cancellation import can_cancel
+                resources[key]['cancelPaid']=can_cancel(user)
             if key=='costPrices': resources[key]['reorder']=can(user,'cost_price.reorder')
         lookups={}
         if resources:

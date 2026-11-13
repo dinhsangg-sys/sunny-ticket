@@ -72,7 +72,8 @@ def counter_api(request):
         own=[public_booking(b) for b in obj.data.get('bookings',[]) if b.get('source')=='counter' and b.get('counterSellerId')==user.pk]
         own.sort(key=lambda b:b.get('createdAt') or '',reverse=True)
         from .sepay import ready
-        return JsonResponse({'sepayEnabled':ready(),'today':day,'seller':user.get_username(),'canCreate':permitted(user,'create'),'canConfirmPayment':permitted(user,'create'),'canChange':permitted(user,'change'),'canReplace':permitted(user,'replace_tickets'),'canReport':permitted(user,'report'),'tickets':tickets,'bookings':own[:100]})
+        from .booking_cancellation import can_cancel
+        return JsonResponse({'sepayEnabled':ready(),'today':day,'seller':user.get_username(),'canCancelPaid':can_cancel(user),'canCreate':permitted(user,'create'),'canConfirmPayment':permitted(user,'create'),'canChange':permitted(user,'change'),'canReplace':permitted(user,'replace_tickets'),'canReport':permitted(user,'report'),'tickets':tickets,'bookings':own[:100]})
     try:
         body=json.loads(request.body)
         fields={'requestId','ticketId','qty','sellPrice','hasVat','note','customerEmail','paymentMethod'}
@@ -91,6 +92,7 @@ def counter_api(request):
         fingerprint=hashlib.sha256(json.dumps({'ticketId':ticket_id,'qty':str(qty.normalize()),'price':str(price.normalize()),'vat':vat,'note':note,'email':email,'paymentMethod':method},sort_keys=True,ensure_ascii=False).encode()).hexdigest()
         data=copy.deepcopy(obj.data)
         existing=next((b for b in data.get('bookings',[]) if b.get('counterRequestId')==request_id and b.get('counterSellerId')==user.pk),None)
+        if any(b.get('counterRequestId')==request_id and b.get('counterSellerId')==user.pk for b in data.get('cancelledBookingCodes',[])):raise ValueError('Lần tạo booking này đã hủy.')
         if existing:
             if existing.get('counterRequestHash')!=fingerprint:raise ValueError('Mã lần lưu đã dùng cho nội dung khác. Kiểm tra booking vừa tạo trước khi mở giao dịch mới.')
             return JsonResponse({'booking':public_booking(existing),'duplicate':True})
@@ -98,7 +100,7 @@ def counter_api(request):
         if len(tickets)!=1:raise ValueError('Loại vé không còn hoạt động hoặc không hợp lệ.')
         ticket=tickets[0];cost=default_cost(data,ticket_id,day)
         prefix='ST-'+day.replace('-','')+'-'
-        numbers=[int(str(b.get('bookingCode'))[len(prefix):]) for b in data.get('bookings',[]) if str(b.get('bookingCode','')).startswith(prefix) and str(b.get('bookingCode'))[len(prefix):].isdigit()]
+        numbers=[int(str(b.get('bookingCode'))[len(prefix):]) for b in list(data.get('bookings',[]))+data.get('cancelledBookingCodes',[]) if str(b.get('bookingCode','')).startswith(prefix) and str(b.get('bookingCode'))[len(prefix):].isdigit()]
         row={'id':'COUNTER-'+str(uuid.uuid4()),'bookingCode':prefix+str(max(numbers,default=0)+1).zfill(3),'date':day,'createdAt':timezone.now().isoformat(),
              'source':'counter','counterSellerId':user.pk,'counterRequestId':request_id,'counterRequestHash':fingerprint,
              'customerType':'retail','agent':user.get_username(),'customerName':user.get_username(),'ticketId':ticket_id,'ticketType':ticket.get('name',''),'product':ticket.get('product',''),

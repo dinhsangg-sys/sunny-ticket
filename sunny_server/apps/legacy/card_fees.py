@@ -26,9 +26,10 @@ def can_manage(user):
 def fee_total(row):return sum((amount(p.get('cardFee',{}).get('feeAmount',0)) for p in row.get('payments',[])),Decimal(0))
 
 def references(rate_id):
+    from .models import BookingCancellation
     data=Workspace.objects.filter(pk=1).values_list('data',flat=True).first() or {}
     found=[]
-    for row in data.get('bookings',[]):
+    for row in list(data.get('bookings',[]))+[r.snapshot for r in BookingCancellation.objects.all()]:
         payments=list(row.get('payments',[]))
         for history in row.get('counterHistory',[]):payments.extend(history.get('paymentsBefore',[]));payments.extend(history.get('paymentsAfter',[]))
         found.extend(p['cardFee'] for p in payments if str(p.get('cardFee',{}).get('rateId'))==str(rate_id))
@@ -125,9 +126,15 @@ def quote_api(request,booking_id):
 
 def protect_card_receipts(before,after):
     """Other workspace editors cannot silently alter charged card receipts."""
+    from .booking_cancellation import guard_archive
     rows=after.get('bookings',[])
     if not isinstance(rows,list) or any(not isinstance(b,dict) or not isinstance(b.get('payments',[]),list) or any(not isinstance(p,dict) for p in b.get('payments',[])) for b in rows):raise ValueError('Danh sách booking/khoản thu không hợp lệ.')
+    guard_archive(after)
     originals={b.get('id'):b for b in before.get('bookings',[])}
+    active_ids={b.get('id') for b in rows}
+    for old in originals.values():
+        had_receipts=bool(old.get('payments')) or any(h.get('paymentsBefore') or h.get('paymentsAfter') for h in old.get('counterHistory',[]))
+        if old.get('id') not in active_ids and had_receipts:raise ValueError('Booking từng có thanh toán: dùng Hủy booking sau đối soát để giữ lịch sử.')
     for old in originals.values():
         archived=[h for h in old.get('counterHistory',[]) if any(p.get('cardFee') for p in h.get('paymentsBefore',[])+h.get('paymentsAfter',[]))]
         new=next((b for b in after.get('bookings',[]) if b.get('id')==old.get('id')),{})

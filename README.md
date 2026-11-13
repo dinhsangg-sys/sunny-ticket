@@ -1,3 +1,7 @@
+# 1.15.1 — Hủy booking sau đối soát
+
+Quyền riêng, lý do bắt buộc, giữ hồ sơ lịch sử và phí thực tế không hoàn. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_15_1.md).
+
 # 1.15.0 — Quản lý đơn Souvenirs và QR SePay
 
 Sửa/xóa đơn theo quyền, hiển thị ngày giờ tạo và tự cập nhật thanh toán chuyển khoản SePay. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_15_0.md).

@@ -1,3 +1,9 @@
+## 1.15.1 — Hủy booking có thanh toán
+
+- 7 kiểm thử hủy booking đạt: quyền/phạm vi, quản trị mặc định, snapshot và file giữ nguyên, bảo vệ lịch sử phí/mã booking/lần tạo, giữ phí thực tế thành chi phí đúng một lần, đầu vào sai và phiên bản cũ, SePay live cần đối soát hoàn tiền, QR chờ hủy, chặn truy cập booking hủy, quyền xử lý và bảo mật khoản chi nhà cung cấp.
+- 180 kiểm tra backend legacy + Souvenirs hồi quy đạt trong lần chạy đầy đủ; kiểm tra bổ sung hủy booking/biểu phí/quy tắc loại vé đạt sau thay đổi cuối. Browser quy trình hủy/hồ sơ hủy và tạo booking đạt. Migration khớp model.
+- Không thực hiện giao dịch/hoàn tiền ngân hàng/POS thật; không thay đổi trực tiếp Ubuntu. Booking bị loại khỏi báo cáo hoạt động, giữ bản gốc trong bảng hồ sơ hủy; PDF/QR đã giao không thể thu hồi từ xa.
+
 ## 1.15.0 — Quyền sửa/xóa đơn, ngày giờ tạo và SePay Souvenirs
 
 - 23 kiểm thử Souvenirs chính + 5 kiểm thử SePay Souvenirs đạt: quyền riêng, quản trị mặc định, operator full workspace không tự có quyền, phạm vi đơn của nhân viên, xóa có lưu hồ sơ, sửa báo cáo/giá vốn/phí thẻ lịch sử, chống ghi đè và thu tiền trên phiên bản cũ.

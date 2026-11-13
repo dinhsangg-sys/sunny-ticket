@@ -86,3 +86,14 @@ class CardFeeRate(models.Model):
     note = models.CharField(max_length=500,blank=True)
     revision = models.PositiveIntegerField(default=1)
     updated_at = models.DateTimeField(auto_now=True)
+
+class BookingCancellation(models.Model):
+    booking_id=models.CharField(max_length=120,unique=True)
+    booking_code=models.CharField(max_length=120)
+    snapshot=models.JSONField()
+    reason=models.CharField(max_length=500)
+    resolution=models.CharField(max_length=16)
+    reference=models.CharField(max_length=200,blank=True)
+    retained_fee=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    cancelled_by=models.ForeignKey('accounts.User',null=True,on_delete=models.SET_NULL)
+    cancelled_at=models.DateTimeField(auto_now_add=True)
