@@ -1,3 +1,7 @@
+# 1.14.7 — Logo mới trên mẫu vé
+
+Dùng logo Hoi An Memories Show do người dùng cung cấp, giữ nguyên khổ và nội dung vé. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_14_7.md).
+
 # 1.14.6 — Tiêu đề vé Hoi An Memories Show
 
 Đổi logo đầu vé thành chữ đen để in nhiệt, giữ nguyên khổ và nội dung. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_14_6.md).
