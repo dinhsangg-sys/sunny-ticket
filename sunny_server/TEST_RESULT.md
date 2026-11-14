@@ -1,3 +1,9 @@
+## 1.17.0 — Thu tiền theo phương thức
+
+- 38 kiểm thử backend đạt: báo cáo thu hỗn hợp/nhiều lần, ngày thu Việt Nam, quyền riêng từng nguồn, dữ liệu cũ thiếu phương thức/ngày/phí, CSV và hồi quy Souvenirs/đăng nhập. Migration khớp model, không có migration mới.
+- Browser đạt cho tab báo cáo bán vé, báo cáo Souvenirs, bộ lọc ngày/phương thức, tổng/phí/thực nhận, xuất CSV đúng bộ lọc, chặn khoảng ngày sai và giao diện điện thoại. Hồi quy bán hàng Souvenirs đạt.
+- Không ghi thay đổi dữ liệu nghiệp vụ, không thực hiện giao dịch ngân hàng thật hoặc cập nhật trực tiếp Ubuntu.
+
 ## 1.16.1 — Chỉnh trang đăng nhập
 
 - 4 kiểm tra backend đăng nhập/CSRF/next và xử lý lỗi đạt; kiểm tra template không có thẻ ảnh/ảnh Hội An và có slogan mới.

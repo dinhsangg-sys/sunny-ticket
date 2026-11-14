@@ -28,7 +28,8 @@ def home(request):
         if settings.SOUVENIRS_ENABLED and not permitted(request.user,'view') and any(can(request.user,a) for a in ('sell','edit_orders','delete_orders')):return redirect('/souvenirs/manage/')
         return redirect('counter-page')
     if internal(request.user):
-        return render(request, 'legacy.html' if full_access(request.user) else 'restricted.html')
+        from .payment_methods import permitted as can_payment_report
+        return render(request, 'legacy.html' if full_access(request.user) else 'restricted.html',{'can_payment_methods_report':can_payment_report(request.user,'tickets')})
     data = Workspace.objects.filter(pk=1).values_list('data',flat=True).first() or {}
     agency = request.user.agency
     # Legacy records refer to agency names: deny ambiguous names rather than leak data.

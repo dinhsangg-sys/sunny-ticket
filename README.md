@@ -1,3 +1,7 @@
+# 1.17.0 — Báo cáo thu theo phương thức thanh toán
+
+Bán vé và Souvenirs: tổng tiền mặt/chuyển khoản/thẻ/chưa xác định theo ngày thu, phí và thực nhận, xuất CSV. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_17_0.md).
+
 # 1.16.1 — Slogan và nền đăng nhập Sunny
 
 Tấm lòng người địa phương, đến những hành trình đáng nhớ. Nền trừu tượng vàng/trắng, font tiếng Việt và khoảng cách tự nhiên, không có ảnh địa điểm. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_16_1.md).
