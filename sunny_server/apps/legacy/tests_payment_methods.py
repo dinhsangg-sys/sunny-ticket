@@ -61,3 +61,21 @@ class PaymentMethodReportTests(TestCase):
         for values in ({'from':'2026-11-04','to':'2026-11-01'},{'from':'2026-02-30'},{'method':'guess'},{'source':'all'},{'from':'20261102'}):self.assertEqual(self.report(**values).status_code,400)
         obj=Workspace.objects.get(pk=1);obj.data['bookings'][0]['payments'].append({'date':'2026-11-03','method':'cash','amount':'NaN'});obj.save()
         self.assertEqual(self.report().json()['warnings']['invalidCount'],1)
+
+    def test_multiple_methods_union_and_csv(self):
+        data=self.report(method='cash,card').json()
+        self.assertEqual(data['totals']['amount'],407000)
+        self.assertEqual(data['totals']['orders'],1)
+        self.assertEqual({r['method'] for r in data['rows']},{'cash','card'})
+        response=self.report(method='cash,card',format='csv')
+        self.assertContains(response,'Tiền mặt + Thẻ thanh toán')
+        self.assertNotIn('200000.0',response.content.decode('utf-8-sig'))
+        self.assertEqual(self.report(method='cash,guess').status_code,400)
+        self.assertEqual(self.report(method='cash,').status_code,400)
+
+    def test_admin_manual_receipt_defaults_unknown(self):
+        obj=Workspace.objects.get(pk=1);obj.data['bookings'][0].update(qty=1,sellPrice=1000000,payments=[]);obj.save()
+        response=self.client.post('/api/operations/',json.dumps({'revision':0,'action':'payment','bookingIndex':0,'kind':'receipt','operation':'create','values':{'date':'2026-11-03','amount':100,'note':'Tiền mặt','method':'cash'}}),content_type='application/json')
+        self.assertEqual(response.status_code,200,response.content)
+        payment=Workspace.objects.get(pk=1).data['bookings'][0]['payments'][-1]
+        self.assertEqual(payment['method'],'unknown')

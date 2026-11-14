@@ -82,7 +82,7 @@ def process_bulk(request, supplier=False):
         rows=[row_for(b) for b in selected];total=sum((get_balance(b) for b in selected),Decimal('0'))
         if action=='preview': return JsonResponse({'revision':revision,'rows':rows,'total':float(total)})
         for b in selected:
-            b.setdefault(payments_key,[]).append({'id':str(uuid.uuid4()),'batchId':batch_id,'date':day,'amount':float(get_balance(b)),'note':note})
+            b.setdefault(payments_key,[]).append({'id':str(uuid.uuid4()),'batchId':batch_id,**({'method':'unknown'} if payments_key=='payments' else {}),'date':day,'amount':float(get_balance(b)),'note':note})
         data.setdefault(batches_key,[]).append({'id':batch_id,'fingerprint':fingerprint,'party':party,'bookingIds':ids,'date':day,'note':note,'total':float(total),'createdBy':user.pk})
         with transaction.atomic(): save_workspace(obj,data,user,revision,prefix+'.bulk_create')
         return JsonResponse({'revision':revision+1,'batchId':batch_id,'total':float(total),'count':len(selected),'duplicate':False})

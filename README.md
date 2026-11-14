@@ -1,3 +1,7 @@
+## 1.17.1 — Lọc nhiều phương thức thu tiền
+
+Bán vé và Souvenirs chọn đồng thời nhiều phương thức; khoản thu nhập tay tại quản trị mặc định Chưa xác định. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_17_1.md).
+
 # 1.17.0 — Báo cáo thu theo phương thức thanh toán
 
 Bán vé và Souvenirs: tổng tiền mặt/chuyển khoản/thẻ/chưa xác định theo ngày thu, phí và thực nhận, xuất CSV. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_17_0.md).

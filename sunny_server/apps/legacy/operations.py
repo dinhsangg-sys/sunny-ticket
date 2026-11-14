@@ -88,7 +88,9 @@ def operations(request):
                 payment={k:body['values'].get(k,'') for k in ('date','amount','note')}
                 if amount(payment['amount'])<=0 or not payment['date']: raise ValueError('Ngày và số tiền không hợp lệ.')
                 payment['amount']=float(amount(payment['amount']))
-                if op=='create': payments.append(payment)
+                if op=='create':
+                    if kind=='receipt':payment['method']='unknown'
+                    payments.append(payment)
                 else: payments[int(body['index'])]={**payments[int(body['index'])],**payment}
             calculate_booking(booking)
         elif action in ('create','change','delete'):

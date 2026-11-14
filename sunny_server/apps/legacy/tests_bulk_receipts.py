@@ -35,6 +35,7 @@ class BulkReceiptTests(TestCase):
         one,two,other=current.data['bookings'][:3]
         self.assertEqual([p['amount'] for p in one['payments']],[20,80]);self.assertEqual(two['payments'][0]['amount'],200);self.assertEqual(other['payments'],[])
         self.assertEqual(one['payments'][-1]['batchId'],self.body['batchId'])
+        self.assertEqual(one['payments'][-1]['method'],'unknown')
         self.assertEqual(AuditLog.objects.get().action,'receipt.bulk_create')
         duplicate=self.post(action='apply');self.assertTrue(duplicate.json()['duplicate']);self.assertEqual(Workspace.objects.get(pk=1).revision,1)
         self.assertEqual(self.post(action='apply',note='Khác').status_code,400)

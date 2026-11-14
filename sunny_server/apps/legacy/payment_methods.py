@@ -59,9 +59,10 @@ def source_rows(source):
             yield {'orderId':str(order.pk),'receiptId':str(order.pk),'code':order.code,'party':order.seller_name,'date':timezone.localtime(order.paid_at,ZONE).date().isoformat() if order.paid_at else '','method':method,'amount':order.total,'feeData':order.card_fee or {}}
 
 def build_report(source,start,end,method):
+    selected=set(method.split(',')) if method else set()
     rows=[];warnings={'undatedCount':0,'undatedAmount':0,'invalidCount':0,'cardFeeMissingCount':0}
     for raw in source_rows(source):
-        if method and raw['method']!=method:continue
+        if selected and raw['method'] not in selected:continue
         try:
             value=amount(raw['amount'])
             if not value:continue
@@ -87,7 +88,7 @@ def csv_response(data):
     def safe(value):
         if isinstance(value,str) and (value.lstrip().startswith(('=','+','-','@')) or value.startswith(('\t','\r','\n'))):return "'"+value
         return value
-    writer.writerow(['SUNNY — THU TIỀN THEO PHƯƠNG THỨC',data['sourceLabel']]);writer.writerow(['Từ ngày',data['from'],'Đến ngày',data['to'],'Phương thức',METHODS.get(data['method'],'Tất cả')])
+    writer.writerow(['SUNNY — THU TIỀN THEO PHƯƠNG THỨC',data['sourceLabel']]);writer.writerow(['Từ ngày',data['from'],'Đến ngày',data['to'],'Phương thức',' + '.join(METHODS[m] for m in data['method'].split(',')) if data['method'] else 'Tất cả'])
     writer.writerow(['Phương thức','Số khoản thu','Số booking/đơn','Tổng thu','Phí đã lưu','Thực nhận theo phí đã lưu'])
     for group in data['groups']:writer.writerow([group['label'],group['receipts'],group['orders'],group['amount'],group['fee'],group['net']])
     t=data['totals'];writer.writerow(['Tổng cộng',t['receipts'],t['orders'],t['amount'],t['fee'],t['net']]);writer.writerow([])
@@ -108,7 +109,7 @@ def report_api(request):
         for value in (start,end):
             if value and (not re.fullmatch(r'\d{4}-\d{2}-\d{2}',value) or not day_of(value)):raise ValueError('Ngày cần đúng định dạng YYYY-MM-DD.')
         if start and end and start>end:raise ValueError('Từ ngày không thể sau Đến ngày.')
-        if method and method not in METHODS:raise ValueError('Phương thức thanh toán không hợp lệ.')
+        if method and any(m not in METHODS for m in method.split(',')):raise ValueError('Phương thức thanh toán không hợp lệ.')
         data=build_report(source,start,end,method)
         return csv_response(data) if request.GET.get('format')=='csv' else JsonResponse(data)
     except (ValueError,TypeError) as exc:return JsonResponse({'error':str(exc)},status=400)

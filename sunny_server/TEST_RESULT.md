@@ -1,3 +1,8 @@
+## 1.17.1 — Chọn nhiều phương thức
+
+- 13 kiểm thử báo cáo/thu hàng loạt đạt, bao gồm hợp nhiều phương thức, CSV cùng bộ lọc và khoản thu thủ công quản trị mặc định unknown.
+- Browser kiểm tra chọn thẻ + tiền mặt, tổng hợp và CSV, đóng danh sách khi click ngoài, báo cáo Souvenirs và điện thoại đạt. Hồi quy frontend bộ chọn ngày đạt. Không có migration mới.
+
 ## 1.17.0 — Thu tiền theo phương thức
 
 - 38 kiểm thử backend đạt: báo cáo thu hỗn hợp/nhiều lần, ngày thu Việt Nam, quyền riêng từng nguồn, dữ liệu cũ thiếu phương thức/ngày/phí, CSV và hồi quy Souvenirs/đăng nhập. Migration khớp model, không có migration mới.
