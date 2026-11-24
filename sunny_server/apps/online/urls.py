@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
-urlpatterns=[
+from .weather import weather_api
+urlpatterns=[path('api/public/weather/',weather_api,name='online-weather'),
  path('discover/',views.homepage,name='online-home'),
  path('services/',views.services,name='online-services'),
  path('services/<slug:slug>/',views.detail,name='online-service'),

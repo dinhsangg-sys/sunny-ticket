@@ -18,6 +18,7 @@ from apps.legacy.sepay import ready,customer_data
 from apps.audit.models import AuditLog
 from .models import Service,Article,OnlinePrice,OnlineOrder
 from .forms import CheckoutForm
+from .language import language,public_render,text
 
 def public_root(request):
     if request.user.is_authenticated or request.get_host().split(':')[0].lower() not in settings.PUBLIC_SITE_HOSTS:
@@ -26,18 +27,18 @@ def public_root(request):
     return homepage(request)
 
 @require_GET
-def homepage(request):return render(request,'online/home.html',{'services':Service.objects.filter(published=True)[:6],'articles':Article.objects.filter(published=True)[:3]})
+def homepage(request):return public_render(request,'online/home.html',{'services':Service.objects.filter(published=True)[:6],'articles':Article.objects.filter(published=True)[:3]})
 
 @require_GET
-def services(request):return render(request,'online/list.html',{'services':Service.objects.filter(published=True),'articles':None,'title':'Những trải nghiệm ở Hội An'})
+def services(request):return public_render(request,'online/list.html',{'services':Service.objects.filter(published=True),'articles':None,'title':'Những trải nghiệm ở Hội An','show_weather':True})
 
 @require_GET
-def articles(request):return render(request,'online/list.html',{'articles':Article.objects.filter(published=True),'services':None,'title':'Chuyện kể từ Hội An'})
+def articles(request):return public_render(request,'online/list.html',{'articles':Article.objects.filter(published=True),'services':None,'title':'Chuyện kể từ Hội An'})
 
 @require_GET
 def detail(request,slug,kind='service'):
     obj=get_object_or_404(Service if kind=='service' else Article,slug=slug,published=True)
-    return render(request,'online/detail.html',{'item':obj,'kind':kind})
+    return public_render(request,'online/detail.html',{'item':obj,'kind':kind,'show_weather':kind=='service'})
 
 @require_GET
 def image(request,kind,key):
@@ -67,9 +68,9 @@ def quote(service,day):
 @require_http_methods(['GET','POST'])
 def checkout(request,slug):
     service=get_object_or_404(Service,slug=slug,published=True)
-    form=CheckoutForm(request.POST or None,initial={'request_id':uuid.uuid4(),'visit_date':timezone.localdate()})
+    form=CheckoutForm(request.POST or None,lang=language(request),initial={'request_id':uuid.uuid4(),'visit_date':timezone.localdate()})
     if request.method=='POST' and form.is_valid():
-        if not checkout_ready():form.add_error(None,'Thanh toán online đang tạm đóng. Vui lòng quay lại sau.')
+        if not checkout_ready():form.add_error(None,text('Thanh toán online đang tạm đóng. Vui lòng quay lại sau.',language(request)))
         else:
             values=form.cleaned_data;key=session_hash(request)
             fingerprint=hashlib.sha256(json.dumps({k:str(v) for k,v in values.items() if k not in ('request_id','website')},sort_keys=True).encode()).hexdigest()
@@ -84,11 +85,11 @@ def checkout(request,slug):
                     if count>=30 or OnlineOrder.objects.filter(session_hash=key,created_at__gte=timezone.now()-timedelta(hours=1)).count()>=10:raise ValueError('Bạn đã gửi nhiều yêu cầu. Vui lòng thử lại sau.')
                     cache.set(ipkey,count+1,3600)
                     unit,ticket,cost=quote(service,values['visit_date'])
-                    order=OnlineOrder.objects.create(request_id=values['request_id'],session_hash=key,fingerprint=fingerprint,service=service,customer_name=values['customer_name'],email=values['email'],phone=values['phone'],visit_date=values['visit_date'],qty=values['qty'],unit_price=unit,total=unit*values['qty'],snapshot={'title':service.title,'ticket':ticket,'cost':cost})
+                    order=OnlineOrder.objects.create(request_id=values['request_id'],session_hash=key,fingerprint=fingerprint,service=service,customer_name=values['customer_name'],email=values['email'],phone=values['phone'],visit_date=values['visit_date'],qty=values['qty'],unit_price=unit,total=unit*values['qty'],snapshot={'title':service.title,'title_en':service.title_en,'ticket':ticket,'cost':cost})
                 return redirect('online-order',key=order.pk)
-            except (ValueError,KeyError,TypeError) as exc:form.add_error(None,str(exc))
-            except (IntegrityError,OperationalError):form.add_error(None,'Yêu cầu đang được xử lý. Thử lại cùng biểu mẫu để tránh trùng đơn.')
-    return render(request,'online/checkout.html',{'service':service,'form':form,'available':checkout_ready()})
+            except (ValueError,KeyError,TypeError) as exc:form.add_error(None,text(str(exc),language(request)))
+            except (IntegrityError,OperationalError):form.add_error(None,text('Yêu cầu đang được xử lý. Thử lại cùng biểu mẫu để tránh trùng đơn.',language(request)))
+    return public_render(request,'online/checkout.html',{'service':service,'form':form,'available':checkout_ready()})
 
 def customer_order(request,key):
     return get_object_or_404(OnlineOrder,pk=key,session_hash=session_hash(request))
@@ -126,14 +127,14 @@ def order_page(request,key):
         except (IntegrityError,OperationalError):error='Đơn đang được cập nhật. Tải lại trang trước khi thử lại.'
     state,label=order_state(order)
     payment=customer_data(order.intent) if order.intent_id else None
-    response=render(request,'online/order.html',{'order':order,'state':state,'label':label,'payment':payment,'error':error})
+    response=public_render(request,'online/order.html',{'order':order,'state':state,'label':label,'payment':payment,'error':error})
     response['Referrer-Policy']='no-referrer';return response
 
 @never_cache
 @require_GET
 def status(request,key):
     order=customer_order(request,key);state,label=order_state(order)
-    return JsonResponse({'state':state,'label':label})
+    return JsonResponse({'state':state,'label':text(label,language(request))})
 
 def can_process(user):return user.is_active and (user.is_superuser or user.has_perm('online.process_orders')) and permitted(user,'view') and permitted(user,'create')
 

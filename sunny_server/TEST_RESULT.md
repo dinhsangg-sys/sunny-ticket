@@ -1,3 +1,10 @@
+## 1.19.0 — Việt/Anh, thời tiết và kênh liên hệ
+
+- 54 kiểm thử online/Souvenirs/đăng nhập và thời tiết đạt trước bổ sung số LINE/WhatsApp/Zalo; 21 kiểm thử online/thời tiết đạt sau thay đổi cuối, cùng browser có đầy đủ menu Souvenirs, liên hệ và 320px. Các phiên bản giá/đơn/SePay giữ nguyên khi đổi ngôn ngữ.
+- Kiểm tra ngôn ngữ ưu tiên/cookie/query/English mặc định, nội dung Anh/fallback Việt/escape, biểu mẫu và trạng thái đơn, trường quản trị, liên kết chính thức và chặn URL giả mạo. Migration thêm trường/bảng, seed các liên hệ do người dùng cung cấp, không xóa dữ liệu.
+- Weather: cache/Expires/304, nguồn cố định Hội An, dữ liệu quá cũ hoặc hỏng, timeout/backoff và fallback không tạo số liệu giả; khách không gửi tọa độ hay truy cập nguồn trực tiếp. Không xác minh nguồn sống bằng Python tại Windows do thiếu chứng chỉ CA; cần kiểm tra HTTPS đi ra từ Ubuntu.
+- Browser template thật đạt Việt/Anh, menu và form, trạng thái paid, thời tiết thành công và lỗi, 320/390px không tràn ngang; hồi quy Souvenirs/giỏ hàng/báo cáo đạt. Dữ liệu thời tiết và dịch vụ trong ảnh QA là fixture, không ghi vào business DB. Không gửi email, tin nhắn hoặc chuyển tiền thật.
+
 ## 1.18.1 — Liên kết về trang chính
 
 - Backend kiểm tra cả catalog/chi tiết, tiếng Việt/Anh, domain chính dùng đường dẫn tương đối và subdomain riêng dùng PUBLIC_SITE_URL.

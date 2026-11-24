@@ -55,7 +55,8 @@ def public_context(request):
     def language_url(value):
         params=request.GET.copy();params['lang']=value
         return '?'+urlencode(params)
-    return {**base_context(request),'sunny_home_url':'/discover/' if request.get_host().split(':')[0].lower() in settings.PUBLIC_SITE_HOSTS else settings.PUBLIC_SITE_URL.rstrip('/')+'/discover/','lang':lang,'vi_url':language_url('vi'),'en_url':language_url('en')}
+    from apps.online.contacts import public_contacts
+    return {**public_contacts(),**base_context(request),'sunny_home_url':'/discover/' if request.get_host().split(':')[0].lower() in settings.PUBLIC_SITE_HOSTS else settings.PUBLIC_SITE_URL.rstrip('/')+'/discover/','lang':lang,'vi_url':language_url('vi'),'en_url':language_url('en')}
 
 def public_render(request,template,context):
     response=render(request,template,context)

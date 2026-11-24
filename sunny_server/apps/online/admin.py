@@ -51,3 +51,10 @@ class OnlineOrderAdmin(admin.ModelAdmin):
     def has_add_permission(self,request):return False
     def has_delete_permission(self,request,obj=None):return False
     def has_change_permission(self,request,obj=None):return False
+
+from .models import SiteContact
+@admin.register(SiteContact)
+class SiteContactAdmin(admin.ModelAdmin):
+    fields=['facebook_url','tiktok_url','google_maps_url','whatsapp_url','zalo_url','line_url','line_phone']
+    def has_add_permission(self,request):return super().has_add_permission(request) and not SiteContact.objects.exists()
+    def has_delete_permission(self,request,obj=None):return False

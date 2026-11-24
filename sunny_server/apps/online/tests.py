@@ -15,6 +15,7 @@ from .views import quote
 class OnlineTests(TestCase):
     def setUp(self):
         cache.clear()
+        self.client.defaults['HTTP_ACCEPT_LANGUAGE']='vi-VN,vi;q=0.9'
         self.admin=User.objects.create_superuser('online-admin',password='test-only-password',role='admin')
         self.staff=User.objects.create_user('online-staff',role='counter',password='test-only-password')
         self.staff.user_permissions.add(*Permission.objects.filter(content_type__app_label='legacy',codename__in=['counter__view','counter__create']))
@@ -139,3 +140,63 @@ class OnlineTests(TestCase):
             with self.assertRaises(ValueError):protect_card_receipts(before,after)
         after=copy.deepcopy(before);after['bookings'][0]['note']='Ghi chú xử lý'
         protect_card_receipts(before,after)
+
+    def test_public_bilingual_browser_preference_override_cookie_and_safe_content(self):
+        self.service.title_en='Hoi An local experience';self.service.summary_en='English summary';self.service.body_en='Conditions <script>unsafe()</script>';self.service.save()
+        article=Article.objects.create(title='Bài tiếng Việt',slug='story',summary='Tóm tắt',body='Nội dung',title_en='English story',summary_en='English story summary',body_en='English story body',published=True)
+        english=Client(HTTP_ACCEPT_LANGUAGE='en-US,en;q=0.9')
+        response=english.get('/discover/')
+        self.assertContains(response,'lang="en"');self.assertContains(response,'Every journey,');self.assertContains(response,'Hoi An local experience');self.assertContains(response,'English story')
+        self.assertEqual(response.cookies['sunny_lang'].value,'en');self.assertIn('Cookie',response['Vary'])
+        response=english.get('/services/hoi-an/',{'lang':'en'})
+        self.assertContains(response,'Conditions &lt;script&gt;');self.assertNotContains(response,'<script>unsafe()')
+        self.assertContains(english.get('/services/hoi-an/book/'),'Email for your tickets')
+        self.assertContains(english.get('/stories/story/'),'English story body')
+        response=english.get('/discover/',{'lang':'vi','q':'giữ lại'})
+        self.assertContains(response,'Mỗi chuyến đi,');self.assertContains(response,'q=gi%E1%BB%AF+l%E1%BA%A1i')
+        self.assertContains(english.get('/services/'),'Những trải nghiệm ở Hội An')
+        self.assertContains(Client(HTTP_ACCEPT_LANGUAGE='fr-FR').get('/discover/'),'Every journey,')
+        self.assertContains(Client(HTTP_ACCEPT_LANGUAGE='vi-VN').get('/discover/'),'Mỗi chuyến đi,')
+        self.assertContains(Client(HTTP_ACCEPT_LANGUAGE='en-US,vi;q=0.5').get('/discover/'),'Every journey,')
+        self.assertContains(Client().get('/discover/',{'lang':'invalid'}),'Every journey,')
+        self.assertContains(english.get('/stories/story/',{'lang':'vi'}),'Bài tiếng Việt')
+    def test_english_order_keeps_same_price_and_translates_status(self):
+        self.service.title_en='English service';self.service.save()
+        self.client.get('/discover/',{'lang':'en'})
+        order,intent=self.intent()
+        self.assertEqual(order.total,1200000);self.assertEqual(order.snapshot['title_en'],'English service')
+        response=self.client.get('/online/orders/'+str(order.pk)+'/',{'lang':'en'})
+        self.assertContains(response,'English service');self.assertContains(response,'TEST MODE');self.assertContains(response,'Total payment');self.assertContains(response,'Scan the QR code to pay')
+        self.assertEqual(self.client.get('/online/orders/'+str(order.pk)+'/status/',{'lang':'en'}).json()['label'],'Awaiting payment')
+        self.hook(intent)
+        self.assertEqual(self.client.get('/online/orders/'+str(order.pk)+'/status/',{'lang':'en'}).json()['label'],'Payment received — Tickets will be emailed')
+    def test_weather_board_only_on_experience_pages_and_keeps_booking_working(self):
+        self.assertContains(self.client.get('/services/'),'data-weather-board')
+        self.assertContains(self.client.get('/services/hoi-an/'),'data-weather-board')
+        self.assertNotContains(self.client.get('/discover/'),'data-weather-board')
+        self.assertNotContains(self.client.get('/stories/'),'data-weather-board')
+        self.assertContains(self.client.get('/services/',{'lang':'en'}),'Hoi An weather')
+
+    def test_official_social_contacts_configurable_safe_and_bilingual(self):
+        from .models import SiteContact
+        from .contacts import valid_contact_url
+        config=SiteContact.objects.get(pk=1)
+        self.assertEqual(config.facebook_url,'https://www.facebook.com/sunnytravelleisure')
+        response=self.client.get('/discover/',{'lang':'en'})
+        self.assertContains(response,'Connect with Sunny');self.assertContains(response,config.facebook_url);self.assertContains(response,'Chat with Sunny');self.assertContains(response,'https://wa.me/84932548145');self.assertContains(response,'https://zalo.me/0932548145')
+        for field,value in [('whatsapp_url','https://wa.me/84901234567'),('zalo_url','https://zalo.me/0901234567'),('line_url','https://lin.ee/test'),('tiktok_url','https://www.tiktok.com/@sunny-test'),('google_maps_url','https://maps.app.goo.gl/test')]:setattr(config,field,value)
+        config.full_clean();config.save()
+        response=self.client.get('/services/',{'lang':'en'})
+        for label in ['Facebook','TikTok','Google Maps','WhatsApp','Zalo','LINE','Chat with Sunny']:self.assertContains(response,label)
+        self.assertContains(response,'rel="noopener noreferrer"')
+        for field,value in [('facebook_url','javascript:alert(1)'),('facebook_url','https://facebook.com.evil.test/path'),('line_url','https://user:password@line.me/test'),('google_maps_url','https://google.com/redirect'),('whatsapp_url','http://wa.me/123')]:self.assertFalse(valid_contact_url(field,value))
+        config.line_url='https://evil.test/tracking';config.save()
+        self.assertNotContains(self.client.get('/discover/'),'evil.test')
+        self.assertContains(self.client.get('/discover/',{'lang':'vi'}),'Liên hệ với Sunny')
+        self.client.force_login(self.admin)
+        self.assertContains(self.client.get('/admin/online/sitecontact/1/change/'),'name="whatsapp_url"')
+    def test_english_form_errors_and_untranslated_content_fallback(self):
+        response=self.client.post(self.url+'?lang=en',{**self.body,'visit_date':'2000-01-01','email':'invalid'})
+        self.assertContains(response,'Choose a date within the next 365 days.');self.assertContains(response,'Please enter a valid value.')
+        self.assertContains(self.client.get('/services/hoi-an/',{'lang':'en'}),self.service.title)
+        self.service.refresh_from_db();self.assertEqual(self.service.title_en,'')

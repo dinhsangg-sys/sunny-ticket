@@ -1,3 +1,7 @@
+## 1.19.0 — Song ngữ, thời tiết và liên hệ Sunny
+
+Website khách Việt/Anh; bảng dự báo Hội An trong Trải nghiệm & vé; quản lý các kênh Facebook/TikTok/Maps và WhatsApp/Zalo/LINE. Có migration mới. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_0.md).
+
 ## 1.18.1 — Điều hướng Souvenirs về Sunny
 
 Thêm nút Trang chủ Sunny ở đầu và chân trang khách Souvenirs, tiếng Việt/Anh; phù hợp điện thoại và giữ giao thức hiện tại trên tên miền chính. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_18_1.md).

@@ -8,6 +8,9 @@ class Service(models.Model):
     ticket_id=models.CharField('Loại vé trong Ticket Management',max_length=120)
     summary=models.CharField('Giới thiệu ngắn',max_length=400)
     body=models.TextField('Giới thiệu / điều kiện sử dụng')
+    title_en=models.CharField('Tên / tiêu đề tiếng Anh',max_length=180,blank=True)
+    summary_en=models.CharField('Giới thiệu ngắn tiếng Anh',max_length=400,blank=True)
+    body_en=models.TextField('Nội dung / điều kiện tiếng Anh',blank=True)
     image=models.ImageField('Ảnh giới thiệu',upload_to='online/content/',blank=True)
     published=models.BooleanField('Hiển thị công khai',default=False)
     sort_order=models.PositiveIntegerField('Thứ tự',default=0)
@@ -22,6 +25,9 @@ class Article(models.Model):
     slug=models.SlugField(unique=True,max_length=180)
     summary=models.CharField('Tóm tắt',max_length=400)
     body=models.TextField('Nội dung')
+    title_en=models.CharField('Tiêu đề tiếng Anh',max_length=180,blank=True)
+    summary_en=models.CharField('Tóm tắt tiếng Anh',max_length=400,blank=True)
+    body_en=models.TextField('Nội dung tiếng Anh',blank=True)
     image=models.ImageField('Ảnh bài viết',upload_to='online/content/',blank=True)
     published=models.BooleanField('Xuất bản',default=False)
     created_at=models.DateTimeField(auto_now_add=True)
@@ -79,3 +85,28 @@ class OnlineOrder(models.Model):
     @property
     def code(self):return 'ON-'+self.id.hex[:12].upper()
     def __str__(self):return self.code
+
+class SiteContact(models.Model):
+    id=models.PositiveSmallIntegerField(primary_key=True,default=1,editable=False)
+    facebook_url=models.URLField('Facebook',max_length=500,blank=True)
+    tiktok_url=models.URLField('TikTok',max_length=500,blank=True)
+    google_maps_url=models.URLField('Google Maps',max_length=500,blank=True)
+    whatsapp_url=models.URLField('WhatsApp',max_length=500,blank=True,help_text='Ví dụ https://wa.me/849xxxxxxxx, dùng số quốc tế bỏ dấu + và số 0 đầu.')
+    zalo_url=models.URLField('Zalo',max_length=500,blank=True,help_text='Đường dẫn Zalo cá nhân hoặc OA chính thức.')
+    line_phone=models.CharField('Số điện thoại LINE',max_length=30,blank=True,help_text='Hiển thị số liên hệ khi chưa có link LINE; không tự tạo liên kết từ số điện thoại.')
+    line_url=models.URLField('LINE',max_length=500,blank=True,help_text='Đường dẫn LINE chính thức dạng https://line.me/... hoặc https://lin.ee/...')
+    class Meta:
+        verbose_name='Liên hệ & kênh Sunny'
+        verbose_name_plural='Liên hệ & kênh Sunny'
+    def clean(self):
+        from .contacts import valid_contact_url
+        errors={}
+        for field in ('facebook_url','tiktok_url','google_maps_url','whatsapp_url','zalo_url','line_url'):
+            value=getattr(self,field,'').strip();setattr(self,field,value)
+            if value and not valid_contact_url(field,value):errors[field]='Dùng liên kết HTTPS đúng kênh, không chứa tên đăng nhập hoặc mật khẩu.'
+        import re
+        self.line_phone=re.sub(r'[ ()-]','',self.line_phone)
+        if self.line_phone and not re.fullmatch(r'\+[1-9][0-9]{7,14}',self.line_phone):errors['line_phone']='Nhập số quốc tế, ví dụ +84932548145.'
+        if self.pk!=1:errors['__all__']='Chỉ sử dụng một cấu hình liên hệ Sunny.'
+        if errors:raise ValidationError(errors)
+    def __str__(self):return 'Sunny — Kênh chính thức & liên hệ'

@@ -8,3 +8,5 @@ sunny_server/private_counter/
 *.zip
 *.env
 !*.env.example
+
+sunny_server/weather_cache/

@@ -67,3 +67,10 @@ PUBLIC_SITE_URL = os.environ.get('PUBLIC_SITE_URL','https://sunnygovn.com').rstr
 PUBLIC_SITE_HOSTS = [v.strip().lower() for v in os.environ.get('PUBLIC_SITE_HOSTS','sunnygovn.com,www.sunnygovn.com').split(',') if v.strip()]
 ONLINE_CHECKOUT_ENABLED = os.environ.get('ONLINE_CHECKOUT_ENABLED','0') == '1'
 ONLINE_PAYMENT_OWNER = os.environ.get('ONLINE_PAYMENT_OWNER','')
+
+HOI_AN_WEATHER_ENABLED = os.environ.get('HOI_AN_WEATHER_ENABLED','1') == '1'
+HOI_AN_WEATHER_USER_AGENT = os.environ.get('HOI_AN_WEATHER_USER_AGENT','SunnyGovn/1.19.0 https://sunnygovn.com https://github.com/dinhsangg-sys/sunny-ticket')
+CACHES = {
+    'default': {'BACKEND':'django.core.cache.backends.locmem.LocMemCache'},
+    'weather': {'BACKEND':'django.core.cache.backends.filebased.FileBasedCache','LOCATION':BASE_DIR/'weather_cache'},
+}
