@@ -1,3 +1,7 @@
+## 1.19.4 — Cờ tròn ENG / VN
+
+Bộ chọn ngôn ngữ dùng cờ tròn và tên viết tắt trên cả hai trang khách. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_4.md).
+
 ## 1.19.3 — Cờ ngôn ngữ và Google Maps
 
 Bộ chọn cờ có mũi tên xổ xuống, mặc định tiếng Anh khi chưa chọn; ghi nhớ lựa chọn trên trang chính/Souvenirs. Thêm Google Maps chính thức dưới logo. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_3.md).

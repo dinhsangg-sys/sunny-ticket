@@ -16,3 +16,5 @@ h1,h2,.arch i,.card-copy h3,footer p{font-family:Arial,"Segoe UI",sans-serif;let
 .sunny-contact-links .channel-links{flex-direction:row}
 
 .footer-brand{display:flex;flex-direction:column;align-items:flex-start;gap:14px;min-width:0}.sunny-contact-links{display:block;grid-column:auto;margin:0;padding:0;border:0;max-width:100%}.sunny-contact-links .channel-links{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px;margin:0}.sunny-contact-links .channel-links a{display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;gap:0;padding:5px;border:0;border-radius:6px;background:transparent;flex:0 0 36px;line-height:1}.sunny-contact-links .channel-links a:hover{background:#b5c3ae33}.sunny-contact-links .channel-icon{width:26px;height:26px;flex:0 0 26px}
+
+.sunny-contact-links .channel-links a{color:#193f38;transition:color .15s ease,background .15s ease}.sunny-contact-links .channel-links a:hover{color:#a66b1c}.sunny-contact-links .channel-icon{width:24px;height:24px;flex-basis:24px}

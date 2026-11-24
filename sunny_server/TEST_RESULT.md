@@ -1,3 +1,10 @@
+## 1.19.4 — Cờ tròn ENG / VN và footer gọn
+
+- Biểu tượng SVG đơn sắc dùng currentColor; giữ nhãn hỗ trợ truy cập và liên kết cũ.
+
+- Browser template thật kiểm tra cờ tròn, nhãn ENG/VN, menu đổi ngôn ngữ ở 320px, desktop/mobile; hồi quy Souvenirs đạt.
+- Bỏ Staff login ở footer; giữ nút đăng nhập header. Không có migration mới hoặc thay đổi quyền. Chưa triển khai trực tiếp Ubuntu.
+
 ## 1.19.3 — Cờ ngôn ngữ và Google Maps
 
 - 50 kiểm thử online/Souvenirs đạt: mặc định tiếng Anh cả với header tiếng Việt, chọn thủ công và cookie tiếp tục hoạt động; URL Google được hiển thị trên cả hai trang, chặn host giả mạo.
