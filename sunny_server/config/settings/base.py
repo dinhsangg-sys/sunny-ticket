@@ -3,9 +3,9 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parents[2]
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'development-only-change-before-production')
 DEBUG = False
-ALLOWED_HOSTS = [x.strip() for x in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,172.16.150.157,sn.hoianmemorieslands.com').split(',') if x.strip()]
+ALLOWED_HOSTS = [x.strip() for x in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,172.16.150.157,sn.hoianmemorieslands.com,sunnygovn.com,www.sunnygovn.com').split(',') if x.strip()]
 # Explicit deployment origin; also applies to development mode behind an HTTPS proxy.
-CSRF_TRUSTED_ORIGINS = [x.strip() for x in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', 'https://sn.hoianmemorieslands.com').split(',') if x.strip()]
+CSRF_TRUSTED_ORIGINS = [x.strip() for x in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', 'https://sn.hoianmemorieslands.com,https://sunnygovn.com,https://www.sunnygovn.com').split(',') if x.strip()]
 CSRF_FAILURE_VIEW = 'apps.legacy.errors.csrf_failure'
 INSTALLED_APPS = ['django.contrib.admin','django.contrib.auth','django.contrib.contenttypes','django.contrib.sessions','django.contrib.messages','django.contrib.staticfiles','apps.accounts','apps.agencies','apps.audit','apps.legacy']
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware','django.contrib.sessions.middleware.SessionMiddleware','django.middleware.common.CommonMiddleware','django.middleware.csrf.CsrfViewMiddleware','django.contrib.auth.middleware.AuthenticationMiddleware','django.contrib.messages.middleware.MessageMiddleware','django.middleware.clickjacking.XFrameOptionsMiddleware']
@@ -60,3 +60,10 @@ if SOUVENIRS_ENABLED:
 
 # QR opens the existing public catalog on the management domain.
 SOUVENIRS_CATALOG_URL = os.environ.get('SOUVENIRS_CATALOG_URL','https://sn.hoianmemorieslands.com/souvenirs/catalog/')
+
+# Public brand website and online sales. Existing internal host remains supported.
+INSTALLED_APPS += ['apps.online']
+PUBLIC_SITE_URL = os.environ.get('PUBLIC_SITE_URL','https://sunnygovn.com').rstrip('/')
+PUBLIC_SITE_HOSTS = [v.strip().lower() for v in os.environ.get('PUBLIC_SITE_HOSTS','sunnygovn.com,www.sunnygovn.com').split(',') if v.strip()]
+ONLINE_CHECKOUT_ENABLED = os.environ.get('ONLINE_CHECKOUT_ENABLED','0') == '1'
+ONLINE_PAYMENT_OWNER = os.environ.get('ONLINE_PAYMENT_OWNER','')

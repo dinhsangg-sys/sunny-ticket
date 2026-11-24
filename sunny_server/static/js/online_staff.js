@@ -1,0 +1,1 @@
+(()=>{const key=new URLSearchParams(location.search).get('online');if(!key||!key.startsWith('ONLINE-'))return;counterInitialLoad.then(()=>{if(!counterState)throw Error('Không tải được dữ liệu quầy. Vui lòng làm mới trang.');return counterOpenTickets(key)}).catch(error=>{counterElement('counterMessage').textContent=error.message})})();

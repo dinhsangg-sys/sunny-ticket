@@ -1,3 +1,7 @@
+## 1.18.0 — sunnygovn.com và vé online
+
+Website giới thiệu, bài viết, dịch vụ, bảng giá online riêng, thanh toán SePay và hàng đợi nhân viên gửi vé qua email. Có migration mới; chưa tự thay DNS/HTTPS. [Hướng dẫn triển khai](sunny_server/UPGRADE_1_18_0.md).
+
 ## 1.17.1 — Lọc nhiều phương thức thu tiền
 
 Bán vé và Souvenirs chọn đồng thời nhiều phương thức; khoản thu nhập tay tại quản trị mặc định Chưa xác định. Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_17_1.md).

@@ -126,10 +126,12 @@ def quote_api(request,booking_id):
 
 def protect_card_receipts(before,after):
     """Other workspace editors cannot silently alter charged card receipts."""
+    from apps.online.protection import protect_online_bookings
     from .booking_cancellation import guard_archive
     rows=after.get('bookings',[])
     if not isinstance(rows,list) or any(not isinstance(b,dict) or not isinstance(b.get('payments',[]),list) or any(not isinstance(p,dict) for p in b.get('payments',[])) for b in rows):raise ValueError('Danh sách booking/khoản thu không hợp lệ.')
     guard_archive(after)
+    protect_online_bookings(before,after)
     originals={b.get('id'):b for b in before.get('bookings',[])}
     active_ids={b.get('id') for b in rows}
     for old in originals.values():

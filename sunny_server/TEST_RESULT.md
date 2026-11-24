@@ -1,3 +1,10 @@
+## 1.18.0 — Website Sunny và đặt vé online
+
+- 204 kiểm thử backend hồi quy online/legacy/Souvenirs/đăng nhập đạt trước chốt bảo vệ cuối; 38 kiểm tra tập trung sau đó đạt cho online, phí thẻ, quầy, sửa booking và hủy. Có thêm kiểm tra bảo vệ khoản thu online và gửi PDF bằng email backend thử.
+- Kiểm tra webhook HMAC, ngân hàng/tài khoản/số tiền/thời gian, trùng giao dịch, giá do server tính, snapshot, request id chống đặt trùng, phiên khách riêng tư, quyền nhận đơn, email qua luồng quầy và giá trùng/kỳ không hợp lệ. Gửi email dùng locmem, không gửi thư thật; QR ở test không chuyển tiền thật.
+- Browser trên template thật đạt desktop/mobile/320px, điều hướng dịch vụ → đặt vé, trường email/ngày/số lượng, QR test và tự cập nhật khi paid. Đã xem ảnh render và sửa font dùng bộ chữ tiếng Việt đầy đủ. Hồi quy giao diện quầy và báo cáo chạy đạt.
+- Có migration online.0001_initial, không xóa dữ liệu cũ. Không tạo nội dung/vé mẫu trong database thật. Chưa cấu hình DNS/Nginx/HTTPS trên máy chủ, chưa thử ngân hàng/SMTP thật. Thanh toán mới mặc định tắt, cần quản trị khai báo giá/dịch vụ/người phụ trách trước khi mở.
+
 ## 1.17.1 — Chọn nhiều phương thức
 
 - 13 kiểm thử báo cáo/thu hàng loạt đạt, bao gồm hợp nhiều phương thức, CSV cùng bộ lọc và khoản thu thủ công quản trị mặc định unknown.

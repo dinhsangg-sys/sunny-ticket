@@ -1,0 +1,35 @@
+# REFERENCE ONLY. Do not replace the existing proxy configuration.
+# Use this on the Nginx/OpenResty server currently accepting public HTTPS.
+# Replace every EXISTING_SUNNY_UPSTREAM with the current sn proxy_pass target
+# (including its host:port), and certificate paths with the issued certificate.
+# This is the final HTTPS configuration, AFTER DNS and certificates are ready.
+# Keep the old sn vhost unchanged while webhook/printed links are in use.
+server {
+    listen 80;
+    server_name sunnygovn.com www.sunnygovn.com;
+    # During certificate issuance, serve the ACME challenge using the edge's
+    # existing certificate workflow. Do not redirect a not-yet-issued hostname.
+    return 308 https://sunnygovn.com$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name www.sunnygovn.com;
+    ssl_certificate /etc/letsencrypt/live/sunnygovn.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/sunnygovn.com/privkey.pem;
+    return 308 https://sunnygovn.com$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name sunnygovn.com;
+    ssl_certificate /etc/letsencrypt/live/sunnygovn.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/sunnygovn.com/privkey.pem;
+    client_max_body_size 128m;
+    # Reuse the existing sn static-file serving or upstream static route.
+    # Never alias media/private_counter: source tickets and order files are private.
+    location / {
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass http://EXISTING_SUNNY_UPSTREAM;
+    }
+}
