@@ -1,3 +1,7 @@
+## 1.19.6 — Thông tin công ty ở footer
+
+Bổ sung địa chỉ, email, hotline và tên công ty trên cả hai trang khách. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_6.md).
+
 ## 1.19.5 — Logo Sunny chính thức
 
 Ảnh logo ở đầu và chân trang khách; bấm logo về trang chủ Sunny. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_5.md).

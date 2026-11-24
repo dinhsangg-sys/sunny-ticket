@@ -4,3 +4,5 @@
 .sunny-logo-link:focus-visible{outline:2px solid #a66b1c;outline-offset:4px;border-radius:4px}
 @media(max-width:640px){.sunny-logo{width:96px;height:96px}.footer-brand .sunny-logo{width:140px;height:140px}}
 .sv-footer .sunny-logo-link{background:#f7f4ed;border-radius:8px;padding:8px}.sv-footer .sunny-contact-links .channel-links a{color:#f4f0e5}.sv-footer .sunny-contact-links .channel-links a:hover{color:#f4c544}
+
+.sunny-company{grid-column:1/-1;display:flex;flex-direction:column;gap:8px;margin:0;padding-top:22px;border-top:1px solid #b8c1b255;font:normal 13px/1.7 Arial,sans-serif;overflow-wrap:anywhere}.sunny-company strong{font-size:15px}.sunny-company .company-contact{display:flex;flex-wrap:wrap;gap:8px 24px}.sunny-company .company-contact a{display:inline-block;margin:0;color:inherit}.sunny-company a:hover{text-decoration:underline}.sunny-company a:focus-visible{outline:2px solid #c58a35;outline-offset:3px}.sv-footer .sunny-company{margin:24px 0}

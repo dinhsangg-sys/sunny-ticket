@@ -1,3 +1,8 @@
+## 1.19.6 — Thông tin công ty ở footer
+
+- Browser template thật desktop/mobile/320px đạt, có liên kết mailto/tel đúng và không tràn ngang; hồi quy Souvenirs đạt.
+- Thông tin dùng chung cho hai footer, Việt/Anh theo lựa chọn ngôn ngữ. Không đổi dữ liệu nghiệp vụ, không có migration mới; chưa triển khai trực tiếp Ubuntu.
+
 ## 1.19.5 — Logo Sunny chính thức
 
 - Browser template thật kiểm tra ảnh PNG tải đúng, hai vị trí logo, bấm logo header về /discover/, desktop/mobile/320px và hồi quy Souvenirs đạt.
