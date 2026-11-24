@@ -116,7 +116,7 @@ class SouvenirsTests(TestCase):
         guest=Client()
         for url in ('/souvenirs/catalog/','/souvenirs/p/'+self.product.slug+'/','/catalog/','/p/'+self.product.slug+'/'):
             host='souvenirs.test' if url.startswith(('/catalog/','/p/')) else 'testserver'
-            for lang,label in [('vi','Trang chủ Sunny'),('en','Sunny home')]:
+            for lang,label in [('vi','Home'),('en','Home')]:
                 response=guest.get(url,{'lang':lang},HTTP_HOST=host)
                 self.assertEqual(response.status_code,200)
                 self.assertContains(response,'href="https://sunnygovn.com/discover/"',count=2)

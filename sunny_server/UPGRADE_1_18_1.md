@@ -1,6 +1,6 @@
 # 1.18.1 — Quay về trang chính Sunny từ Souvenirs
 
-Catalog và chi tiết sản phẩm có liên kết Trang chủ Sunny / Sunny home ở đầu trang, cùng liên kết quay về ở chân trang. Header co giãn trên điện thoại. Logo Souvenirs vẫn mở bộ sưu tập như trước.
+Catalog và chi tiết sản phẩm có liên kết Home ở đầu trang và chân trang cho cả tiếng Việt/Anh. Header co giãn trên điện thoại. Logo Souvenirs vẫn mở bộ sưu tập như trước.
 
 Trên sunnygovn.com/www, liên kết dùng /discover/ cùng host và giao thức, nên không ép HTTPS khi SSL chưa hoàn tất. /discover/ luôn mở website giới thiệu, kể cả đã đăng nhập quản trị. Trên tên miền Souvenirs cũ hoặc host khác, liên kết dùng PUBLIC_SITE_URL (mặc định https://sunnygovn.com) để không mở nhầm catalog riêng.
 
