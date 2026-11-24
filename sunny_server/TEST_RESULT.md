@@ -1,3 +1,8 @@
+## 1.18.1 — Liên kết về trang chính
+
+- Backend kiểm tra cả catalog/chi tiết, tiếng Việt/Anh, domain chính dùng đường dẫn tương đối và subdomain riêng dùng PUBLIC_SITE_URL.
+- Browser trên template thật kiểm tra bấm liên kết đầu/chân trang về đúng trang giới thiệu Sunny, bố cục 390/320px không tràn ngang và hồi quy giỏ hàng/thu tiền/báo cáo Souvenirs.
+
 ## 1.18.0 — Website Sunny và đặt vé online
 
 - 204 kiểm thử backend hồi quy online/legacy/Souvenirs/đăng nhập đạt trước chốt bảo vệ cuối; 38 kiểm tra tập trung sau đó đạt cho online, phí thẻ, quầy, sửa booking và hủy. Có thêm kiểm tra bảo vệ khoản thu online và gửi PDF bằng email backend thử.

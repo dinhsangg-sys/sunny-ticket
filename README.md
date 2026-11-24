@@ -1,3 +1,7 @@
+## 1.18.1 — Điều hướng Souvenirs về Sunny
+
+Thêm nút Trang chủ Sunny ở đầu và chân trang khách Souvenirs, tiếng Việt/Anh; phù hợp điện thoại và giữ giao thức hiện tại trên tên miền chính. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_18_1.md).
+
 ## 1.18.0 — sunnygovn.com và vé online
 
 Website giới thiệu, bài viết, dịch vụ, bảng giá online riêng, thanh toán SePay và hàng đợi nhân viên gửi vé qua email. Có migration mới; chưa tự thay DNS/HTTPS. [Hướng dẫn triển khai](sunny_server/UPGRADE_1_18_0.md).

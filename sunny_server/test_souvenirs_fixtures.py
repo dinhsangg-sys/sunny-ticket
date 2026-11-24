@@ -16,7 +16,7 @@ from apps.souvenirs.models import Product,Asset,Article
 from PIL import Image
 
 with tempfile.TemporaryDirectory() as folder:
-    settings.DATABASES['default']['NAME']=str(Path(folder)/'preview.sqlite3');settings.MEDIA_ROOT=Path(folder)/'media';settings.SOUVENIRS_ENABLED=True;settings.SOUVENIRS_PUBLIC_ORIGIN='https://souvenirs.test';settings.ALLOWED_HOSTS=['testserver','souvenirs.test']
+    settings.DATABASES['default']['NAME']=str(Path(folder)/'preview.sqlite3');settings.MEDIA_ROOT=Path(folder)/'media';settings.SOUVENIRS_ENABLED=True;settings.SOUVENIRS_PUBLIC_ORIGIN='https://souvenirs.test';settings.ALLOWED_HOSTS=['testserver','souvenirs.test','sunnygovn.com']
     call_command('migrate',verbosity=0)
     user=User.objects.create_user('preview-manager',is_superuser=True,is_staff=True,role='admin')
     p=Product.objects.create(sku='SV001',name='Đèn lồng Hội An',price=150000,cost=50000,published=True,category='Nét thủ công',summary='Một món quà nhỏ lưu giữ sắc màu phố Hội.',story='Những nếp vải và bàn tay người thợ.\nMột câu chuyện để mang về từ Hội An.')
@@ -28,6 +28,8 @@ with tempfile.TemporaryDirectory() as folder:
         assert response.status_code==200;(output.__setitem__(name,response.content.decode()))
     Asset.objects.create(product=p,kind='video',file='souvenirs/intro.mp4',caption='Giới thiệu',position=0)
     output['video_detail']=guest.get('/p/'+p.slug+'/',HTTP_HOST='souvenirs.test').content.decode()
+    output['main_catalog']=guest.get('/souvenirs/catalog/',HTTP_HOST='sunnygovn.com').content.decode()
+    output['sunny_home']=guest.get('/discover/').content.decode()
     output['payment_page']=staff.get('/reports/payment-methods/?source=tickets').content.decode()
     connections.close_all()
     print(json.dumps(output))

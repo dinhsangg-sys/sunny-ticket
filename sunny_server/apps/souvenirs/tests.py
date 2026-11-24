@@ -111,6 +111,19 @@ class SouvenirsTests(TestCase):
         order=self.order();self.assertEqual(self.action(order,action='cancel',confirmed=True).status_code,200);self.assertEqual(self.action(order,action='pay',method='cash',confirmed=True).status_code,400)
         self.client.force_login(self.admin);self.assertEqual(self.client.get('/souvenirs/api/report/').json()['totals']['total'],0)
 
+    @override_settings(PUBLIC_SITE_URL='https://sunnygovn.com',ALLOWED_HOSTS=['testserver','souvenirs.test','sunnygovn.com'])
+    def test_public_pages_have_main_site_return_links(self):
+        guest=Client()
+        for url in ('/souvenirs/catalog/','/souvenirs/p/'+self.product.slug+'/','/catalog/','/p/'+self.product.slug+'/'):
+            host='souvenirs.test' if url.startswith(('/catalog/','/p/')) else 'testserver'
+            for lang,label in [('vi','Trang chủ Sunny'),('en','Sunny home')]:
+                response=guest.get(url,{'lang':lang},HTTP_HOST=host)
+                self.assertEqual(response.status_code,200)
+                self.assertContains(response,'href="https://sunnygovn.com/discover/"',count=2)
+                self.assertContains(response,label)
+        response=guest.get('/souvenirs/catalog/',HTTP_HOST='sunnygovn.com')
+        self.assertContains(response,'href="/discover/"',count=2)
+
     def test_bilingual_content_switch_search_fallback_and_escaping(self):
         self.product.name_en='Hoi An lantern';self.product.category='Thủ công';self.product.category_en='Crafts';self.product.story_en='Handmade <script>bad()</script>';self.product.save()
         Article.objects.create(product=self.product,title='Tiêu đề',body='Nội dung',title_en='Craft story',body_en='English article')
