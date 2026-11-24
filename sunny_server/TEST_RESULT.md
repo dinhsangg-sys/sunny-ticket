@@ -1,3 +1,9 @@
+## 1.19.2 — Footer chỉ có biểu tượng dưới logo
+
+- Kiểm tra backend cấu hình kênh, liên kết hợp lệ và nhãn hỗ trợ truy cập đạt. Không đổi quyền/đường dẫn liên hệ hoặc dữ liệu nghiệp vụ.
+- Browser dùng template thật kiểm tra biểu tượng nằm trong cụm thương hiệu footer, không có tên/mũi tên ngoài SVG, liên kết vẫn có accessible name; bố cục desktop/mobile/320px và hồi quy Souvenirs đạt. Chữ Zalo bên trong chính logo SVG là một phần hình logo, không phải nhãn bên cạnh.
+- Không có migration mới so với 1.19.1; chưa cập nhật trực tiếp Ubuntu.
+
 ## 1.19.1 — Biểu tượng kênh và thời tiết trong header
 
 - 21 kiểm thử online/thời tiết đạt, migration khớp model. Kiểm tra biểu tượng đủ các kênh khi khai báo, LINE không hiển thị mặc định, không đưa số LINE cũ ra website.

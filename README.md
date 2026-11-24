@@ -1,3 +1,7 @@
+## 1.19.2 — Biểu tượng dưới logo
+
+Footer chỉ hiển thị logo các kênh, xếp gọn dưới logo Sunny; giữ nhãn hỗ trợ truy cập, không hiện tên/mũi tên. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_2.md).
+
 ## 1.19.1 — Biểu tượng liên hệ và header gọn
 
 Thêm biểu tượng các kênh, đưa thời tiết vào header nhỏ gọn, gỡ LINE cho đến khi có tài khoản. Không hiển thị % mưa. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_1.md).
