@@ -1,3 +1,8 @@
+## 1.19.7 — Footer: thông tin công ty dưới slogan
+
+- Browser trang chính và Souvenirs đạt desktop/mobile/320px; thông tin công ty xuất hiện một lần, email/hotline giữ đúng liên kết.
+- Tăng chữ nội dung lên 16px, tên công ty 19px và đặt dưới slogan, không còn hàng riêng ở đáy footer. Không có migration mới; chưa cập nhật trực tiếp Ubuntu.
+
 ## 1.19.6 — Thông tin công ty ở footer
 
 - Browser template thật desktop/mobile/320px đạt, có liên kết mailto/tel đúng và không tràn ngang; hồi quy Souvenirs đạt.

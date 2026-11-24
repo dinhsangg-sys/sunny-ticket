@@ -1,3 +1,7 @@
+## 1.19.7 — Footer rõ ràng hơn
+
+Đưa thông tin công ty lên dưới slogan, tăng cỡ chữ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_7.md).
+
 ## 1.19.6 — Thông tin công ty ở footer
 
 Bổ sung địa chỉ, email, hotline và tên công ty trên cả hai trang khách. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_6.md).
