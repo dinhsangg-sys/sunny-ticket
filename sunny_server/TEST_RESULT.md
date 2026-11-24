@@ -1,3 +1,10 @@
+## 1.19.8 — Biểu tượng footer và nút hỗ trợ cố định
+
+- Browser template thật trang chính/Souvenirs đạt desktop/mobile/320px; kiểm tra đường dẫn gọi hotline và neo về đầu trang, không thực hiện cuộc gọi thật.
+- Quan sát footer desktop: địa chỉ một dòng và bốn biểu tượng công ty/vị trí/email/điện thoại; giữ song ngữ và liên kết liên hệ.
+- Cụm nút position:fixed luôn xuất hiện khi cuộn, điện thoại rung nhẹ; giảm chuyển động theo prefers-reduced-motion. Kiểm tra điều hướng Souvenirs đợi trang tải xong trước khi đo bố cục.
+- Không có migration mới; chưa triển khai trực tiếp Ubuntu.
+
 ## 1.19.7 — Footer: thông tin công ty dưới slogan
 
 - Browser trang chính và Souvenirs đạt desktop/mobile/320px; thông tin công ty xuất hiện một lần, email/hotline giữ đúng liên kết.

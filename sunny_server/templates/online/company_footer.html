@@ -1,6 +1,6 @@
 {% load online_tags %}
 <address class="sunny-company">
-  <strong>{% ot "Công ty TNHH Sunny" "Sunny Company Limited" %}</strong>
-  <span>{% ot "36/147 Lê Quý Đôn, Phường Hội An, Thành phố Đà Nẵng, Việt Nam" "36/147 Le Quy Don, Hoi An Ward, Da Nang City, Vietnam" %}</span>
-  <div class="company-contact"><a href="mailto:info@sunnygovn.com">Email: info@sunnygovn.com</a><a href="tel:+84932548145">Hotline: +84 932 548 145</a></div>
+  <strong class="company-row">{% include 'online/company_icon.html' with icon='building' %}<span>{% ot "Công ty TNHH Sunny" "Sunny Company Limited" %}</span></strong>
+  <span class="company-row company-address">{% include 'online/company_icon.html' with icon='pin' %}<span>{% ot "36/147 Lê Quý Đôn, Phường Hội An, Thành phố Đà Nẵng, Việt Nam" "36/147 Le Quy Don, Hoi An Ward, Da Nang City, Vietnam" %}</span></span>
+  <div class="company-contact"><a class="company-row" href="mailto:info@sunnygovn.com" aria-label="Email: info@sunnygovn.com">{% include 'online/company_icon.html' with icon='email' %}<span>info@sunnygovn.com</span></a><a class="company-row" href="tel:+84932548145" aria-label="Hotline: +84 932 548 145">{% include 'online/company_icon.html' with icon='phone' %}<span>+84 932 548 145</span></a></div>
 </address>
