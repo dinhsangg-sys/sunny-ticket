@@ -1,3 +1,9 @@
+## 1.19.3 — Cờ ngôn ngữ và Google Maps
+
+- 50 kiểm thử online/Souvenirs đạt: mặc định tiếng Anh cả với header tiếng Việt, chọn thủ công và cookie tiếp tục hoạt động; URL Google được hiển thị trên cả hai trang, chặn host giả mạo.
+- Browser template thật đạt desktop/mobile/320px, mở bộ chọn cờ và đổi Việt/Anh, biểu tượng Google Maps dưới logo; hồi quy Souvenirs/giỏ hàng/thu tiền/báo cáo đạt.
+- Không thao tác thanh toán thật hoặc cập nhật trực tiếp Ubuntu. Có migration 0005 điền Google Maps khi trống.
+
 ## 1.19.2 — Footer chỉ có biểu tượng dưới logo
 
 - Kiểm tra backend cấu hình kênh, liên kết hợp lệ và nhãn hỗ trợ truy cập đạt. Không đổi quyền/đường dẫn liên hệ hoặc dữ liệu nghiệp vụ.

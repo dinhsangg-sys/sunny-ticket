@@ -22,7 +22,7 @@ with tempfile.TemporaryDirectory() as folder:
     service=Service.objects.create(title='Một buổi tối đáng nhớ ở Hội An',slug='hoi-an',ticket_id='eco',summary='Chậm lại một nhịp để cảm nhận vẻ đẹp của phố Hội qua một trải nghiệm được chuẩn bị chu đáo.',body='Đọc kỹ ngày sử dụng và thông tin vé trước khi đặt. Đây là nội dung thử giao diện, không phải dịch vụ đang mở bán.',published=True,title_en='An evening to remember in Hoi An',summary_en='Slow down and discover the charm of Hoi An through a thoughtfully planned local experience.',body_en='Read your ticket conditions and visit date before booking. This is a layout fixture, not a live offer.')
     OnlinePrice.objects.create(service=service,price=600000,starts_on=timezone.localdate())
     Article.objects.create(title='Đi chậm một chút, thấy Hội An nhiều hơn',slug='di-cham',summary='Từ những con ngõ nhỏ đến nhịp sống ven sông, một góc nhìn để bắt đầu hành trình của bạn.',body='Bài viết thử bố cục. Không xuất bản lên website thật.',published=True)
-    guest=Client(HTTP_ACCEPT_LANGUAGE='vi-VN');output={'today':timezone.localdate().isoformat()}
+    guest=Client(HTTP_ACCEPT_LANGUAGE='vi-VN');guest.cookies['sunny_lang']='vi';output={'today':timezone.localdate().isoformat()}
     for key,path in [('home','/'),('services','/services/'),('stories','/stories/'),('detail','/services/hoi-an/'),('checkout','/services/hoi-an/book/')]:
         response=guest.get(path,HTTP_HOST='sunnygovn.com');assert response.status_code==200
         output[key]=response.content.decode()

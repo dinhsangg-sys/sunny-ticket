@@ -2,7 +2,7 @@ from urllib.parse import urlparse
 HOSTS={
  'facebook_url':{'facebook.com','www.facebook.com','m.facebook.com','fb.com','www.fb.com','fb.me'},
  'tiktok_url':{'tiktok.com','www.tiktok.com','vm.tiktok.com','vt.tiktok.com'},
- 'google_maps_url':{'google.com','www.google.com','maps.google.com','maps.app.goo.gl','goo.gl'},
+ 'google_maps_url':{'google.com','www.google.com','maps.google.com','maps.app.goo.gl','goo.gl','share.google'},
  'whatsapp_url':{'wa.me','api.whatsapp.com','www.whatsapp.com','whatsapp.com'},
  'zalo_url':{'zalo.me','www.zalo.me','oa.zalo.me'},
  'line_url':{'line.me','www.line.me','lin.ee'},

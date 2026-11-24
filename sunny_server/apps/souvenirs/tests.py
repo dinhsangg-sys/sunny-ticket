@@ -169,7 +169,7 @@ class SouvenirsTests(TestCase):
 
     def test_language_detection_english_default_browser_preference_and_manual_choice(self):
         url='/souvenirs/p/'+self.product.slug+'/'
-        for header,expected in [('', 'en'),('vi-VN,vi;q=0.9,en;q=0.8','vi'),('en-US,en;q=0.9,vi;q=0.5','en'),('fr-FR,vi;q=0.4','en'),('en;q=0.4,vi-VN;q=0.9','vi'),('*','en'),('vi;q=0,en;q=1','en'),('not a valid header','en')]:
+        for header,expected in [('', 'en'),('vi-VN,vi;q=0.9,en;q=0.8','en'),('en-US,en;q=0.9,vi;q=0.5','en'),('fr-FR,vi;q=0.4','en'),('en;q=0.4,vi-VN;q=0.9','en'),('*','en'),('vi;q=0,en;q=1','en'),('not a valid header','en')]:
             with self.subTest(header=header):
                 response=Client().get(url,HTTP_ACCEPT_LANGUAGE=header)
                 self.assertEqual(response['Content-Language'],expected)

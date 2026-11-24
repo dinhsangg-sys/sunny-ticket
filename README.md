@@ -1,3 +1,7 @@
+## 1.19.3 — Cờ ngôn ngữ và Google Maps
+
+Bộ chọn cờ có mũi tên xổ xuống, mặc định tiếng Anh khi chưa chọn; ghi nhớ lựa chọn trên trang chính/Souvenirs. Thêm Google Maps chính thức dưới logo. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_3.md).
+
 ## 1.19.2 — Biểu tượng dưới logo
 
 Footer chỉ hiển thị logo các kênh, xếp gọn dưới logo Sunny; giữ nhãn hỗ trợ truy cập, không hiện tên/mũi tên. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_2.md).

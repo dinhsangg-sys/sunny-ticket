@@ -16,6 +16,7 @@ class OnlineTests(TestCase):
     def setUp(self):
         cache.clear()
         self.client.defaults['HTTP_ACCEPT_LANGUAGE']='vi-VN,vi;q=0.9'
+        self.client.cookies['sunny_lang']='vi'
         self.admin=User.objects.create_superuser('online-admin',password='test-only-password',role='admin')
         self.staff=User.objects.create_user('online-staff',role='counter',password='test-only-password')
         self.staff.user_permissions.add(*Permission.objects.filter(content_type__app_label='legacy',codename__in=['counter__view','counter__create']))
@@ -156,7 +157,7 @@ class OnlineTests(TestCase):
         self.assertContains(response,'Mỗi chuyến đi,');self.assertContains(response,'q=gi%E1%BB%AF+l%E1%BA%A1i')
         self.assertContains(english.get('/services/'),'Những trải nghiệm ở Hội An')
         self.assertContains(Client(HTTP_ACCEPT_LANGUAGE='fr-FR').get('/discover/'),'Every journey,')
-        self.assertContains(Client(HTTP_ACCEPT_LANGUAGE='vi-VN').get('/discover/'),'Mỗi chuyến đi,')
+        self.assertContains(Client(HTTP_ACCEPT_LANGUAGE='vi-VN').get('/discover/'),'Every journey,')
         self.assertContains(Client(HTTP_ACCEPT_LANGUAGE='en-US,vi;q=0.5').get('/discover/'),'Every journey,')
         self.assertContains(Client().get('/discover/',{'lang':'invalid'}),'Every journey,')
         self.assertContains(english.get('/stories/story/',{'lang':'vi'}),'Bài tiếng Việt')
@@ -182,6 +183,16 @@ class OnlineTests(TestCase):
         from .contacts import valid_contact_url
         config=SiteContact.objects.get(pk=1)
         self.assertEqual(config.facebook_url,'https://www.facebook.com/sunnytravelleisure')
+        self.assertEqual(config.google_maps_url,'https://share.google/8FKS1V2zJ0mxKpJE4')
+        config.full_clean()
+        with self.settings(SOUVENIRS_ENABLED=True):
+            self.assertContains(self.client.get('/souvenirs/catalog/'),config.google_maps_url)
+        for path in ['/discover/']:
+            page=self.client.get(path)
+            self.assertContains(page,config.google_maps_url)
+            self.assertContains(page,'aria-label="Google Maps"')
+            self.assertContains(page,'data-channel-icon="Google Maps"')
+        self.assertFalse(valid_contact_url('google_maps_url','https://share.google.evil.test/place'))
         response=self.client.get('/discover/',{'lang':'en'})
         self.assertNotContains(response,'class="line-contact-number"');self.assertNotContains(response,'data-channel-icon="LINE"');self.assertContains(response,'data-channel-icon="Facebook"');self.assertContains(response,'Sunny official channels and contact');self.assertContains(response,config.facebook_url);self.assertContains(response,'aria-label="WhatsApp"');self.assertContains(response,'https://wa.me/84932548145');self.assertContains(response,'https://zalo.me/0932548145')
         for field,value in [('whatsapp_url','https://wa.me/84901234567'),('zalo_url','https://zalo.me/0901234567'),('line_url','https://lin.ee/test'),('tiktok_url','https://www.tiktok.com/@sunny-test'),('google_maps_url','https://maps.app.goo.gl/test')]:setattr(config,field,value)

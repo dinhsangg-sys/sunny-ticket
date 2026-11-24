@@ -1,0 +1,10 @@
+<details class="flag-language">
+  <summary aria-label="{% if lang == 'vi' %}Chọn ngôn ngữ{% else %}Choose language{% endif %}">
+    {% if lang == 'vi' %}{% include 'online/language_flag.html' with flag='vi' %}{% else %}{% include 'online/language_flag.html' with flag='en' %}{% endif %}
+    <svg class="flag-chevron" viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+  </summary>
+  <div class="flag-options">
+    <a href="{{ en_url }}" lang="en" hreflang="en" aria-label="English" title="English" {% if lang == 'en' %}aria-current="true"{% endif %}>{% include 'online/language_flag.html' with flag='en' %}</a>
+    <a href="{{ vi_url }}" lang="vi" hreflang="vi" aria-label="Tiếng Việt" title="Tiếng Việt" {% if lang == 'vi' %}aria-current="true"{% endif %}>{% include 'online/language_flag.html' with flag='vi' %}</a>
+  </div>
+</details>

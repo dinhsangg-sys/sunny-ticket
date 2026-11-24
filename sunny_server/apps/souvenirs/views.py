@@ -13,7 +13,6 @@ from django.db import transaction,OperationalError,IntegrityError
 from django.http import JsonResponse,Http404,HttpResponse,HttpResponseForbidden,FileResponse,StreamingHttpResponse
 from django.shortcuts import render,get_object_or_404,redirect
 from django.utils import timezone
-from django.utils.translation.trans_real import parse_accept_lang_header
 from django.utils.cache import patch_vary_headers
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -46,12 +45,8 @@ def product_url(product):
 
 
 def public_context(request):
-    lang=request.GET.get('lang')
-    if lang not in ('vi','en'):lang=request.COOKIES.get('souvenirs_lang')
-    if lang not in ('vi','en'):
-        preferences=parse_accept_lang_header(request.headers.get('Accept-Language',''))
-        preferred=next((code.lower().split('-')[0] for code,quality in preferences if quality>0),None)
-        lang='vi' if preferred=='vi' else 'en'
+    from apps.online.language import language
+    lang=language(request)
     def language_url(value):
         params=request.GET.copy();params['lang']=value
         return '?'+urlencode(params)

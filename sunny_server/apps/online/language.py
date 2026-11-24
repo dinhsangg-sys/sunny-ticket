@@ -1,7 +1,6 @@
 import copy
 from urllib.parse import urlencode
 from django.utils.cache import patch_vary_headers
-from django.utils.translation.trans_real import parse_accept_lang_header
 from django.shortcuts import render
 
 def language(request):
@@ -9,9 +8,7 @@ def language(request):
     if selected in ('vi','en'):return selected
     for name in ('souvenirs_lang','sunny_lang'):
         if request.COOKIES.get(name) in ('vi','en'):return request.COOKIES[name]
-    preferences=parse_accept_lang_header(request.headers.get('Accept-Language',''))
-    preferred=next((code.lower().split('-')[0] for code,quality in preferences if quality>0),None)
-    return 'vi' if preferred=='vi' else 'en'
+    return 'en'
 
 def localized(obj,lang):
     result=copy.copy(obj)
