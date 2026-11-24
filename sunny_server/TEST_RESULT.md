@@ -1,3 +1,8 @@
+## 1.19.5 — Logo Sunny chính thức
+
+- Browser template thật kiểm tra ảnh PNG tải đúng, hai vị trí logo, bấm logo header về /discover/, desktop/mobile/320px và hồi quy Souvenirs đạt.
+- Giữ ảnh gốc trong suốt, không sửa mẫu vé. Footer Souvenirs có nền sáng sau logo để bảo đảm tương phản. Chưa cập nhật trực tiếp Ubuntu.
+
 ## 1.19.4 — Cờ tròn ENG / VN và footer gọn
 
 - Biểu tượng SVG đơn sắc dùng currentColor; giữ nhãn hỗ trợ truy cập và liên kết cũ.

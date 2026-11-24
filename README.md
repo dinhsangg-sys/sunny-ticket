@@ -1,3 +1,7 @@
+## 1.19.5 — Logo Sunny chính thức
+
+Ảnh logo ở đầu và chân trang khách; bấm logo về trang chủ Sunny. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_5.md).
+
 ## 1.19.4 — Cờ tròn ENG / VN
 
 Bộ chọn ngôn ngữ dùng cờ tròn và tên viết tắt trên cả hai trang khách. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_4.md).
