@@ -1,3 +1,9 @@
+## 1.19.1 — Biểu tượng kênh và thời tiết trong header
+
+- 21 kiểm thử online/thời tiết đạt, migration khớp model. Kiểm tra biểu tượng đủ các kênh khi khai báo, LINE không hiển thị mặc định, không đưa số LINE cũ ra website.
+- Browser desktop/mobile/320px đạt: biểu tượng Facebook/TikTok/WhatsApp/Zalo, không có LINE, ô thời tiết nằm trong header; popup dự báo mở/đóng bằng click ngoài và Escape, lỗi nguồn có fallback. Hồi quy Souvenirs/giỏ hàng/thu tiền/báo cáo đạt.
+- Không tích hợp WeatherAPI hoặc phần trăm mưa theo yêu cầu hủy bổ sung đó. Không gửi tin nhắn/email/thanh toán thật. Chưa thay cấu hình trực tiếp trên Ubuntu.
+
 ## 1.19.0 — Việt/Anh, thời tiết và kênh liên hệ
 
 - 54 kiểm thử online/Souvenirs/đăng nhập và thời tiết đạt trước bổ sung số LINE/WhatsApp/Zalo; 21 kiểm thử online/thời tiết đạt sau thay đổi cuối, cùng browser có đầy đủ menu Souvenirs, liên hệ và 320px. Các phiên bản giá/đơn/SePay giữ nguyên khi đổi ngôn ngữ.

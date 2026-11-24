@@ -23,7 +23,4 @@ def public_contacts():
         for field,label,target in [('facebook_url','Facebook',social),('tiktok_url','TikTok',social),('google_maps_url','Google Maps',social),('whatsapp_url','WhatsApp',contacts),('zalo_url','Zalo',contacts),('line_url','LINE',contacts)]:
             value=getattr(obj,field)
             if value and valid_contact_url(field,value):target.append({'label':label,'url':value})
-        if not any(item['label']=='LINE' for item in contacts):
-            import re
-            if re.fullmatch(r'\+[1-9][0-9]{7,14}',obj.line_phone or ''):line_phone=obj.line_phone
     return {'social_links':social,'contact_links':contacts,'line_phone':line_phone}

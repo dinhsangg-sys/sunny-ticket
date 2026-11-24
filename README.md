@@ -1,3 +1,7 @@
+## 1.19.1 — Biểu tượng liên hệ và header gọn
+
+Thêm biểu tượng các kênh, đưa thời tiết vào header nhỏ gọn, gỡ LINE cho đến khi có tài khoản. Không hiển thị % mưa. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_1.md).
+
 ## 1.19.0 — Song ngữ, thời tiết và liên hệ Sunny
 
 Website khách Việt/Anh; bảng dự báo Hội An trong Trải nghiệm & vé; quản lý các kênh Facebook/TikTok/Maps và WhatsApp/Zalo/LINE. Có migration mới. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_0.md).

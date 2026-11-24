@@ -52,8 +52,8 @@ def normalize(raw,now):
     return {'location':'Hoi An','timezone':'Asia/Ho_Chi_Minh','temperature':nearest['temperature'],'condition':nearest['condition'],'forecastTime':nearest['stamp'].isoformat(),'updatedAt':raw['properties']['meta']['updated_at'],'days':days,'source':'MET Norway'}
 
 def expiry(headers,now):
-    try:return max(600,int((parsedate_to_datetime(headers['Expires'])-now).total_seconds()))
-    except (KeyError,TypeError,ValueError,OverflowError):return 900
+    try:return max(10800,int((parsedate_to_datetime(headers['Expires'])-now).total_seconds()))
+    except (KeyError,TypeError,ValueError,OverflowError):return 10800
 
 def get_weather():
     cache=caches['weather'];now=timezone.now();stored=cache.get(KEY)

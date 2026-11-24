@@ -9,3 +9,7 @@
 .sunny-contact-links{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:22px 50px;padding-top:22px;margin-top:10px;border-top:1px solid #d5d9cb}.sunny-contact-links>div{display:block}.sunny-contact-links strong{font-size:13px}.sunny-contact-links .channel-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.sunny-contact-links .channel-links a{display:inline-block;border:1px solid #bcc8b8;border-radius:5px;padding:8px 13px;font:13px/1.5 Arial,sans-serif;text-decoration:none}.sunny-contact-links .channel-links a:hover{background:#e1e6d7}.sunny-contact-links a:focus-visible{outline:3px solid #c58a35;outline-offset:3px}@media(max-width:500px){.sunny-contact-links{gap:20px}.sunny-contact-links .channel-links{gap:8px}}
 
 .line-contact-number{font:13px/1.5 Arial,sans-serif;display:inline-block;padding:8px 0;user-select:all;overflow-wrap:anywhere}.line-contact-number small{font-size:11px;user-select:none}
+
+.sunny-contact-links .channel-links a{display:inline-flex;align-items:center;gap:8px}.channel-icon{width:23px;height:23px;display:inline-block;flex:0 0 23px;vertical-align:middle}
+
+.sunny-contact-links .channel-links{flex-direction:row}
