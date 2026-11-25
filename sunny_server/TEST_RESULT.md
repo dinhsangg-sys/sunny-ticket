@@ -1,3 +1,8 @@
+## 1.19.9 — Ô cửa sổ Hội An
+
+- Browser template thật desktop/mobile/320px và hồi quy Souvenirs đạt. Quan sát ảnh trang chủ: cửa gỗ, tường vàng, đèn lồng, mái phố cổ và chữ Việt/Anh đặt trên web, không có chữ bị lặp trong nền. Phối nền kem ấm, chữ xanh đậm, nút vàng dịu; bỏ nền vuông ngoài ô cửa.
+- Ảnh WebP nền trong suốt khoảng 243 KB lưu cùng static; không thay đổi đặt vé, thanh toán hoặc quyền. Không có migration mới; chưa triển khai trực tiếp Ubuntu.
+
 ## 1.19.8 — Biểu tượng footer và nút hỗ trợ cố định
 
 - Browser template thật trang chính/Souvenirs đạt desktop/mobile/320px; kiểm tra đường dẫn gọi hotline và neo về đầu trang, không thực hiện cuộc gọi thật.

@@ -1,3 +1,7 @@
+## 1.19.9 — Ô cửa sổ Hội An
+
+Phối lại hình minh họa trang chủ với cửa gỗ, tường vàng và đèn lồng; giữ chữ song ngữ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_9.md).
+
 ## 1.19.8 — Biểu tượng thông tin footer
 
 Địa chỉ một dòng trên desktop, biểu tượng trước thông tin công ty/liên hệ; nút hotline cố định và về đầu trang. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_8.md).
