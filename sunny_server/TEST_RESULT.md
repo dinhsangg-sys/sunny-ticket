@@ -1,3 +1,8 @@
+## 1.20.2 — Giá giới thiệu gọn và chọn theo loại vé
+
+- Hai kiểm thử giá giới thiệu đạt: bỏ tên loại vé/ghi chú trên thẻ Việt/Anh, chọn loại 700.000 đ vẫn hiện 700.000 đ dù có loại 300.000 đ; kiểm tra giá không hợp lệ/tương lai giữ nguyên.
+- Model/migration khớp, không có migration mới. Chưa triển khai trực tiếp Ubuntu.
+
 ## 1.20.1 — Giá giới thiệu trên thẻ dịch vụ
 
 - 29 kiểm thử online/cart đạt; xác minh tự lấy giá thấp nhất, chọn vé mặc định hoặc một lựa chọn thuộc dịch vụ, giá tương lai có thể đặt, ẩn vé ngừng bán/giá hết hạn. Không đổi giá checkout/đơn cũ.

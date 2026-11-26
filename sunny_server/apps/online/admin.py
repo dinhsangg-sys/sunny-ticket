@@ -24,6 +24,9 @@ class ServiceForm(ImageCheckForm):
         choices=[(t['id'],t.get('name',t['id'])+' — '+t.get('product','')) for t in data.get('ticketTypes',[]) if t.get('active',True)]
         if self.instance.pk and self.instance.ticket_id not in dict(choices):choices.append((self.instance.ticket_id,self.instance.ticket_id+' (đã dừng)'))
         self.fields['card_price_option'].queryset=ServiceOption.objects.filter(service=self.instance) if self.instance.pk else ServiceOption.objects.none()
+        self.fields['card_price_source'].label='Cách chọn giá giới thiệu'
+        self.fields['card_price_option'].label='Loại vé hiển thị Giá từ'
+        self.fields['card_price_source'].help_text='Để tự chọn một loại bất kỳ, chọn chế độ Chọn một lựa chọn vé rồi chọn loại ở ô bên dưới. Không bắt buộc chọn loại có giá thấp nhất.'
         self.fields['card_price_option'].help_text='Chọn chế độ ở trên; lưu dịch vụ và tạo lựa chọn/giá online trước, rồi quay lại chọn loại vé giới thiệu.'
         self.fields['ticket_id']=forms.ChoiceField(label='Loại vé mặc định (có thể bỏ trống nếu dùng lựa chọn vé)',required=False,choices=[('','Không dùng vé mặc định')]+choices)
 class ArticleForm(ImageCheckForm):

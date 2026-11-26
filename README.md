@@ -1,3 +1,7 @@
+## 1.20.2 — Giá từ gọn trên thẻ dịch vụ
+
+Chỉ hiện Giá từ, bỏ chú thích bên dưới; quản trị có thể chọn bất kỳ loại vé làm giá giới thiệu. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_20_2.md).
+
 ## 1.20.1 — Giá giới thiệu trên thẻ dịch vụ
 
 Hiển thị Giá từ / From; quản trị chọn loại vé giới thiệu hoặc tự lấy giá thấp nhất hợp lệ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_20_1.md).
