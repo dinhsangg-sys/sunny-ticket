@@ -1,3 +1,8 @@
+## 1.20.4 — Hai đường cong dưới phần mở đầu
+
+- Browser template thật desktop/mobile/320px và hồi quy điều hướng/checkout đạt; quan sát desktop có đúng hai nét cong mảnh chạy ngang, không còn nét cong ngắn riêng dưới ô cửa. git diff --check đạt.
+- Không có migration mới; chưa triển khai trực tiếp Ubuntu.
+
 ## 1.20.3 — Bỏ dải thông điệp trang chủ
 
 - Render template thật bằng database tạm đạt cho Việt/Anh: không còn dải promise, các thẻ dịch vụ vẫn có mặt. git diff --check đạt.

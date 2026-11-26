@@ -1,3 +1,7 @@
+## 1.20.4 — Hai đường cong mềm
+
+Thêm hai đường cong mảnh dưới phần mở đầu trang chủ theo mẫu. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_20_4.md).
+
 ## 1.20.3 — Đưa dịch vụ lên cao hơn
 
 Bỏ dải ba thông điệp bên dưới phần mở đầu trang chủ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_20_3.md).
