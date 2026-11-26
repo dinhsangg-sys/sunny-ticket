@@ -48,14 +48,15 @@ def public_render(request,template,context):
         params=request.GET.copy();params['lang']=value
         return '?'+urlencode(params)
     from .contacts import public_contacts
-    context={**public_contacts(),**context,'lang':lang,'vi_url':url('vi'),'en_url':url('en')}
+    from .cart import cart_count
+    context={'cart_count':cart_count(request),**public_contacts(),**context,'lang':lang,'vi_url':url('vi'),'en_url':url('en')}
     for key in ('services','articles'):
         if context.get(key) is not None:context[key]=[localized(obj,lang) for obj in context[key]]
     for key in ('item','service'):
         if context.get(key) is not None:context[key]=localized(context[key],lang)
     for key in ('title','label','error'):
         if key in context:context[key]=text(context[key],lang)
-    if context.get('order'):
+    if context.get('order') and hasattr(context['order'],'snapshot'):
         snapshot=context['order'].snapshot
         context['order_title']=snapshot.get('title_en') or snapshot.get('title','') if lang=='en' else snapshot.get('title','')
     response=render(request,template,context)

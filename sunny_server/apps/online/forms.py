@@ -23,3 +23,10 @@ class CheckoutForm(forms.Form):
     def clean_website(self):
         if self.cleaned_data['website']:raise forms.ValidationError('Unable to submit this request.' if self.lang=='en' else 'Không thể gửi yêu cầu.')
         return ''
+
+
+class CartCheckoutForm(CheckoutForm):
+    quote_token=forms.CharField(widget=forms.HiddenInput)
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        del self.fields['visit_date'];del self.fields['qty']

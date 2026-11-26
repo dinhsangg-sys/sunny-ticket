@@ -74,3 +74,5 @@ CACHES = {
     'default': {'BACKEND':'django.core.cache.backends.locmem.LocMemCache'},
     'weather': {'BACKEND':'django.core.cache.backends.filebased.FileBasedCache','LOCATION':BASE_DIR/'weather_cache'},
 }
+
+ONLINE_ADMIN_EMAIL = os.environ.get('ONLINE_ADMIN_EMAIL','')

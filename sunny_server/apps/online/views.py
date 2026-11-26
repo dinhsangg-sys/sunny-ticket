@@ -38,6 +38,9 @@ def articles(request):return public_render(request,'online/list.html',{'articles
 @require_GET
 def detail(request,slug,kind='service'):
     obj=get_object_or_404(Service if kind=='service' else Article,slug=slug,published=True)
+    if kind=='service':
+        from .cart import service_page
+        return service_page(request,obj)
     return public_render(request,'online/detail.html',{'item':obj,'kind':kind,'show_weather':kind=='service'})
 
 @require_GET
@@ -55,14 +58,16 @@ def owner():
 
 def checkout_ready():return settings.ONLINE_CHECKOUT_ENABLED and ready() and email_ready() and owner() is not None
 
-def quote(service,day):
+def quote(service,day,option=None):
     data=Workspace.objects.filter(pk=1).values_list('data',flat=True).first() or {}
-    tickets=[t for t in data.get('ticketTypes',[]) if t.get('id')==service.ticket_id and t.get('active',True)]
+    ticket_id=option.ticket_id if option else service.ticket_id
+    if option and (option.service_id!=service.pk or not option.active):raise ValueError('Lựa chọn vé đang ngừng bán.')
+    tickets=[t for t in data.get('ticketTypes',[]) if t.get('id')==ticket_id and t.get('active',True)]
     if len(tickets)!=1:raise ValueError('Loại vé đang tạm ngừng bán online.')
-    prices=list(OnlinePrice.objects.filter(service=service,active=True,starts_on__lte=day).filter(Q(ends_on__isnull=True)|Q(ends_on__gte=day))[:2])
+    prices=list(OnlinePrice.objects.filter(service=service,option=option,active=True,starts_on__lte=day).filter(Q(ends_on__isnull=True)|Q(ends_on__gte=day))[:2])
     if len(prices)!=1:raise ValueError('Ngày đã chọn chưa có giá online duy nhất. Vui lòng chọn ngày khác hoặc liên hệ Sunny.')
     if not 0<prices[0].price<=100000000:raise ValueError('Giá online chưa hợp lệ.')
-    return prices[0].price,tickets[0],default_cost(data,service.ticket_id,day.isoformat())
+    return prices[0].price,tickets[0],default_cost(data,ticket_id,day.isoformat())
 
 @never_cache
 @require_http_methods(['GET','POST'])
@@ -92,7 +97,7 @@ def checkout(request,slug):
     return public_render(request,'online/checkout.html',{'service':service,'form':form,'available':checkout_ready()})
 
 def customer_order(request,key):
-    return get_object_or_404(OnlineOrder,pk=key,session_hash=session_hash(request))
+    return get_object_or_404(OnlineOrder,pk=key,cart__isnull=True,session_hash=session_hash(request))
 
 def order_state(order):
     if order.booking_id and BookingCancellation.objects.filter(booking_id=order.booking_id).exists():return 'review','Đơn đang được hỗ trợ / đối soát'
@@ -161,8 +166,12 @@ def queue(request):
                 return redirect('/counter/?online='+order.booking_id)
         except (ValueError,RuntimeError) as exc:error=str(exc)
         except (OperationalError,IntegrityError):error='Có nhân viên đang cập nhật đơn. Tải lại để kiểm tra.'
+    from .models import CartOrder
+    carts=CartOrder.objects.filter(status='paid')
+    if request.GET.get('all')!='1':carts=carts.exclude(email_state__in=['sent','external'])
+    carts=carts.prefetch_related('lines')[:200]
     rows=[]
-    orders=OnlineOrder.objects.filter(status='paid').select_related('service','assigned_to','intent')[:200]
+    orders=OnlineOrder.objects.filter(status='paid',cart__isnull=True).select_related('service','assigned_to','intent')[:200]
     for order in orders:
         state,label=order_state(order);rows.append({'order':order,'state':state,'label':label,'mine':order.assigned_to_id==request.user.pk,'available':not order.assigned_to_id})
-    return render(request,'online/queue.html',{'rows':rows,'error':error})
+    return render(request,'online/queue.html',{'rows':rows,'carts':carts,'error':error})

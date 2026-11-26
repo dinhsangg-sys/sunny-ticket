@@ -1,3 +1,7 @@
+## 1.20.0 — Dịch vụ, giỏ hàng và quản trị gửi vé
+
+Bài dịch vụ 3/4 + chọn vé 1/4, nhiều loại vé/giá online, Thêm vào giỏ hoặc Thanh toán ngay, thanh toán tổng qua SePay, thông báo và xử lý/đính kèm/gửi vé trong quản trị. Có migration mới. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_20_0.md).
+
 ## 1.19.9 — Ô cửa sổ Hội An
 
 Phối lại hình minh họa trang chủ với cửa gỗ, tường vàng và đèn lồng; giữ chữ song ngữ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_19_9.md).

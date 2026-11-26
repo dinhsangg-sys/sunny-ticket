@@ -30,6 +30,12 @@ with tempfile.TemporaryDirectory() as folder:
     output['services_en']=guest.get('/services/?lang=en',HTTP_HOST='sunnygovn.com').content.decode()
     output['detail_en']=guest.get('/services/hoi-an/?lang=en').content.decode()
     output['checkout_en']=guest.get('/services/hoi-an/book/?lang=en').content.decode()
+    output['prices']=guest.get('/services/hoi-an/prices/',{'date':timezone.localdate().isoformat()}).json()
+    guest.get('/discover/?lang=vi')
+    guest.post('/services/hoi-an/add/',{'visit_date':timezone.localdate().isoformat(),'qty_default':'2'})
+    output['cart']=guest.get('/cart/').content.decode()
+    output['cart_checkout']=guest.get('/cart/checkout/').content.decode()
+
     guest.get('/discover/?lang=vi')
     import uuid
     response=guest.post('/services/hoi-an/book/',{'request_id':str(uuid.uuid4()),'visit_date':timezone.localdate().isoformat(),'qty':2,'customer_name':'Khách thử giao diện','email':'guest@example.test','phone':'0901234567','agreed':'on'})

@@ -1,3 +1,13 @@
+## 1.20.0 — Dịch vụ, giỏ hàng, thanh toán ngay và gửi vé
+
+- 60 kiểm thử online/Souvenirs đạt: giá mặc định và lựa chọn độc lập, dữ liệu giá tại máy chủ, chọn/bỏ mục trong giỏ, giá thay đổi trước checkout, giới hạn số lượng, CSRF, đơn riêng theo phiên, checkout lặp không tạo đơn mới, thanh toán ngay giữ nguyên giỏ khác.
+- SePay giỏ nhiều dịch vụ: callback sai tiền không tạo booking, callback đúng tạo các booking và phân bổ khoản thu đúng tổng, callback lặp không tạo thêm booking/thông báo. Báo cáo phương thức thu tiền đúng tổng.
+- 32 kiểm thử hồi quy SePay, báo cáo phương thức và bộ vé tại quầy đạt. Các đơn một loại vé trước đây giữ luồng cũ.
+- Vé riêng: kiểm tra PDF/PNG/JPEG, quyền tải/đính kèm/gửi, chặn gửi khi chưa thanh toán, gửi một lần và trạng thái chưa rõ cần đối soát; ghi nhận thư bên ngoài có xác nhận/ghi chú. Hai kiểm thử lỗi email và khôi phục trạng thái gửi bị ngắt đạt sau chỉnh sửa cuối; không tự gửi lại.
+- Browser template thật đạt: bố cục bài/chọn vé, giá/tổng trực tiếp, Thêm vào giỏ, Thanh toán ngay, biểu tượng số vé, tên/email/SĐT ở checkout, 390px/320px, chặn thao tác khi không tải được giá; hồi quy web chính và Souvenirs đạt.
+- Migration/model khớp. Check Django thường đạt. `check --deploy` trên cấu hình development cục bộ vẫn có cảnh báo HTTPS/cookie/DEBUG/khóa mặc định; không thay cấu hình production trong tác vụ này.
+- Kiểm thử dùng database/media tạm và email locmem, không gửi thư thật hoặc chuyển tiền thật. Chưa xác minh SMTP, webhook thực hoặc triển khai trực tiếp Ubuntu. Có migration mới online.0006; cần khai báo nội dung, lựa chọn và giá thực trước khi bán.
+
 ## 1.19.9 — Ô cửa sổ Hội An
 
 - Browser template thật desktop/mobile/320px và hồi quy Souvenirs đạt. Quan sát ảnh trang chủ: cửa gỗ, tường vàng, đèn lồng, mái phố cổ và chữ Việt/Anh đặt trên web, không có chữ bị lặp trong nền. Phối nền kem ấm, chữ xanh đậm, nút vàng dịu; bỏ nền vuông ngoài ô cửa.

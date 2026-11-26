@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 class Service(models.Model):
     title=models.CharField('Tên dịch vụ',max_length=180)
     slug=models.SlugField(unique=True,max_length=180)
-    ticket_id=models.CharField('Loại vé trong Ticket Management',max_length=120)
+    ticket_id=models.CharField('Loại vé mặc định trong Ticket Management',max_length=120,blank=True)
     summary=models.CharField('Giới thiệu ngắn',max_length=400)
     body=models.TextField('Giới thiệu / điều kiện sử dụng')
     title_en=models.CharField('Tên / tiêu đề tiếng Anh',max_length=180,blank=True)
@@ -39,6 +39,7 @@ class Article(models.Model):
 
 class OnlinePrice(models.Model):
     service=models.ForeignKey(Service,on_delete=models.PROTECT,verbose_name='Dịch vụ')
+    option=models.ForeignKey('ServiceOption',on_delete=models.PROTECT,null=True,blank=True,verbose_name='Lựa chọn vé (trống = vé mặc định)')
     price=models.PositiveBigIntegerField('Giá bán online / vé (đồng)')
     starts_on=models.DateField('Từ ngày sử dụng')
     ends_on=models.DateField('Đến ngày sử dụng',null=True,blank=True)
@@ -48,10 +49,11 @@ class OnlinePrice(models.Model):
         verbose_name='Giá vé online'
         verbose_name_plural='Bảng giá online riêng'
     def clean(self):
-        if self.price<=0 or self.price>100000000:raise ValidationError('Giá cần từ 1 đến 100.000.000 đồng.')
+        if self.option_id and self.option.service_id!=self.service_id:raise ValidationError('Lựa chọn vé phải thuộc dịch vụ đã chọn.')
+        if self.price is not None and (self.price<=0 or self.price>100000000):raise ValidationError('Giá cần từ 1 đến 100.000.000 đồng.')
         if self.ends_on and self.starts_on and self.ends_on<self.starts_on:raise ValidationError('Ngày kết thúc phải sau ngày bắt đầu.')
         if self.active and self.service_id and self.starts_on:
-            rows=OnlinePrice.objects.filter(service_id=self.service_id,active=True).exclude(pk=self.pk)
+            rows=OnlinePrice.objects.filter(service_id=self.service_id,option_id=self.option_id,active=True).exclude(pk=self.pk)
             rows=rows.filter(models.Q(ends_on__isnull=True)|models.Q(ends_on__gte=self.starts_on))
             if self.ends_on:rows=rows.filter(starts_on__lte=self.ends_on)
             if rows.exists():raise ValidationError('Khoảng giá online bị trùng. Kết thúc kỳ giá cũ trước khi thêm kỳ mới.')
@@ -63,6 +65,8 @@ class OnlineOrder(models.Model):
     session_hash=models.CharField(max_length=64)
     fingerprint=models.CharField(max_length=64)
     service=models.ForeignKey(Service,on_delete=models.PROTECT)
+    option=models.ForeignKey('ServiceOption',on_delete=models.PROTECT,null=True,blank=True)
+    cart=models.ForeignKey('CartOrder',on_delete=models.PROTECT,null=True,blank=True,related_name='lines')
     customer_name=models.CharField(max_length=120)
     email=models.EmailField()
     phone=models.CharField(max_length=30)
@@ -85,6 +89,75 @@ class OnlineOrder(models.Model):
     @property
     def code(self):return 'ON-'+self.id.hex[:12].upper()
     def __str__(self):return self.code
+
+class ServiceOption(models.Model):
+    service=models.ForeignKey(Service,on_delete=models.PROTECT,related_name='options',verbose_name='Dịch vụ')
+    title=models.CharField('Tên lựa chọn (vd ECO · Người lớn)',max_length=180)
+    title_en=models.CharField('Tên lựa chọn tiếng Anh',max_length=180,blank=True)
+    ticket_id=models.CharField('Loại vé trong Ticket Management',max_length=120)
+    active=models.BooleanField('Đang bán',default=True)
+    sort_order=models.PositiveIntegerField('Thứ tự',default=0)
+    class Meta:
+        ordering=['sort_order','pk']
+        verbose_name='Lựa chọn vé online'
+        verbose_name_plural='Lựa chọn vé online'
+    def __str__(self):return str(self.service)+' — '+self.title
+
+class CartOrder(models.Model):
+    id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    request_id=models.UUIDField(unique=True)
+    session_hash=models.CharField(max_length=64)
+    fingerprint=models.CharField(max_length=64)
+    customer_name=models.CharField(max_length=120)
+    email=models.EmailField()
+    phone=models.CharField(max_length=30)
+    total=models.PositiveBigIntegerField()
+    language=models.CharField(max_length=2,default='en')
+    status=models.CharField(max_length=20,default='pending')
+    intent=models.OneToOneField('legacy.SePayIntent',on_delete=models.PROTECT,null=True,blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    paid_at=models.DateTimeField(null=True,blank=True)
+    email_state=models.CharField(max_length=20,default='pending')
+    send_started_at=models.DateTimeField(null=True,blank=True)
+    emailed_at=models.DateTimeField(null=True,blank=True)
+    processed_by=models.ForeignKey('accounts.User',on_delete=models.PROTECT,null=True,blank=True)
+    processing_note=models.TextField(blank=True)
+    notification_state=models.CharField(max_length=20,default='pending')
+    class Meta:
+        ordering=['-created_at']
+        verbose_name='Đơn giỏ hàng online'
+        verbose_name_plural='Đơn giỏ hàng online / Chờ gửi vé'
+    @property
+    def code(self):return 'SC-'+self.id.hex[:12].upper()
+    def __str__(self):return self.code
+    @property
+    def can_reconcile(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        return self.email_state in ('pending','uncertain') or (self.email_state=='sending' and self.send_started_at is not None and self.send_started_at<timezone.now()-timedelta(minutes=5))
+    @property
+    def delivery_label(self):
+        return {'pending':'Chờ xử lý / Gửi vé','sending':'Đang gửi email','sent':'Đã gửi qua hệ thống','external':'Đã xác nhận gửi bên ngoài','uncertain':'Chưa rõ kết quả gửi — cần đối soát'}.get(self.email_state,self.email_state)
+    @property
+    def notification_label(self):
+        return {'pending':'Chờ thông báo','sent':'Đã thông báo quản trị','unconfigured':'Chưa có email quản trị nhận thông báo','error':'Gửi thông báo lỗi — kiểm tra hộp thư cấu hình'}.get(self.notification_state,self.notification_state)
+
+def private_ticket_storage():
+    from django.conf import settings
+    from django.core.files.storage import FileSystemStorage
+    return FileSystemStorage(location=getattr(settings,'ONLINE_TICKET_ROOT',settings.BASE_DIR/'private_online_tickets'))
+
+def ticket_upload_path(instance,filename):return 'online/private-tickets/'+str(instance.order_id)+'/'+uuid.uuid4().hex+instance.extension
+
+class OrderTicket(models.Model):
+    order=models.ForeignKey(CartOrder,on_delete=models.PROTECT,related_name='tickets')
+    file=models.FileField(upload_to=ticket_upload_path,storage=private_ticket_storage)
+    name=models.CharField(max_length=180)
+    extension=models.CharField(max_length=8)
+    content_type=models.CharField(max_length=50)
+    size=models.PositiveIntegerField()
+    uploaded_by=models.ForeignKey('accounts.User',on_delete=models.PROTECT)
+    created_at=models.DateTimeField(auto_now_add=True)
 
 class SiteContact(models.Model):
     id=models.PositiveSmallIntegerField(primary_key=True,default=1,editable=False)

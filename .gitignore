@@ -10,3 +10,5 @@ sunny_server/private_counter/
 !*.env.example
 
 sunny_server/weather_cache/
+
+private_online_tickets/
