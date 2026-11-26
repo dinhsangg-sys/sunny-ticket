@@ -51,7 +51,7 @@ def source_rows(source):
         for booking in data.get('bookings',[]):
             if booking.get('status') in ('cancelled','canceled') or booking.get('cancelledAt'):continue
             for index,payment in enumerate(booking.get('payments') or []):
-                yield {'orderId':str(booking.get('id','')),'receiptId':str(payment.get('id') or index),'code':booking.get('bookingCode') or booking.get('id',''),'party':booking.get('customerName') or booking.get('agent') or 'Khách lẻ','date':day_of(payment.get('date')) or day_of(payment.get('createdAt')),'method':payment_method(payment),'amount':payment.get('amount',0),'feeData':payment.get('cardFee') or {}}
+                yield {'orderId':str(booking.get('id','')),'receiptId':str(payment.get('id') or index),'code':booking.get('bookingCode') or booking.get('id',''),'party':'Digital' if booking.get('salesChannel')=='online' else booking.get('customerName') or booking.get('agent') or 'Khách lẻ','date':day_of(payment.get('date')) or day_of(payment.get('createdAt')),'method':payment_method(payment),'amount':payment.get('amount',0),'feeData':payment.get('cardFee') or {}}
     else:
         from apps.souvenirs.models import SaleOrder
         for order in SaleOrder.objects.filter(status='paid',deleted_at__isnull=True).iterator():

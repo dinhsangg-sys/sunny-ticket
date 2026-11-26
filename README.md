@@ -1,3 +1,7 @@
+## 1.21.1 — Đối tượng Digital cho booking online
+
+Booking bán qua web dùng nhãn Digital trong báo cáo, giữ tên khách riêng và cập nhật nhãn cho dữ liệu online cũ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_21_1.md).
+
 ## 1.21.0 — Chat tư vấn không dùng API trả phí
 
 Khách chọn dịch vụ, bot trả lời FAQ theo từ khóa; chưa có đáp án thì mở WhatsApp/Zalo để nhắn nhân viên. Không kết nối OpenAI, không phát sinh phí AI theo tin nhắn. Có migration mới. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_21_0.md).

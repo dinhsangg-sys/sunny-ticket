@@ -79,7 +79,7 @@ class OnlineTests(TestCase):
         self.assertEqual(self.hook(intent).json()['state'],'applied');self.assertTrue(self.hook(intent).json()['duplicate'])
         self.assertEqual(self.hook(intent,id=124).json()['state'],'review')
         row=Workspace.objects.get(pk=1).data['bookings'][0]
-        self.assertEqual(row['salesChannel'],'online');self.assertEqual(row['revenue'],1200000);self.assertEqual(row['date'],self.day.isoformat());self.assertEqual(row['payments'][0]['method'],'bank_transfer')
+        self.assertEqual(row['salesChannel'],'online');self.assertEqual(row['agent'],'Digital');self.assertEqual(row['customerName'],'Khách Sunny');self.assertEqual(row['revenue'],1200000);self.assertEqual(row['date'],self.day.isoformat());self.assertEqual(row['payments'][0]['method'],'bank_transfer')
         self.assertEqual(len(Workspace.objects.get(pk=1).data['bookings']),1)
         self.assertEqual(self.client.get('/online/orders/'+str(order.pk)+'/status/').json()['state'],'paid')
         self.client.force_login(self.admin);report=self.client.get('/api/reports/payment-methods/',{'source':'tickets','method':'bank_transfer'}).json();self.assertEqual(report['totals']['amount'],1200000)
@@ -136,7 +136,7 @@ class OnlineTests(TestCase):
         from apps.legacy.card_fees import protect_card_receipts
         order,intent=self.intent();self.hook(intent)
         before=Workspace.objects.get(pk=1).data
-        for field,value in [('sellPrice',1),('qty',20),('salesChannel',''),('payments',[]),('customerEmail','someone@example.test')]:
+        for field,value in [('sellPrice',1),('qty',20),('salesChannel',''),('agent','Other'),('payments',[]),('customerEmail','someone@example.test')]:
             after=copy.deepcopy(before);after['bookings'][0][field]=value
             with self.assertRaises(ValueError):protect_card_receipts(before,after)
         after=copy.deepcopy(before);after['bookings'][0]['note']='Ghi chú xử lý'

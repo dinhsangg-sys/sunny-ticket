@@ -1,3 +1,9 @@
+## 1.21.1 — Đối tượng Digital cho booking online
+
+- 38 kiểm thử online/cart/báo cáo phương thức đạt: booking thanh toán qua SePay có agent Digital, báo cáo khoản thu hiện Digital và số tiền vẫn đúng, khóa sửa nhãn đối tượng ở booking online.
+- Migration dữ liệu được kiểm tra: đổi đúng nhãn của booking salesChannel=online, giữ nguyên tên/email, doanh thu/khoản thu/phiên bản vé và booking thủ công; revision tăng một lần khi có thay đổi, chạy lại không đổi.
+- Kiểm tra helper JS báo cáo: online hiện Digital, khách lẻ/đại lý thông thường giữ tên. Migration/model và git diff --check đạt. Chưa triển khai trực tiếp Ubuntu.
+
 ## 1.21.0 — Chat dịch vụ theo FAQ, không dùng API trả phí
 
 - 68 kiểm thử online/Souvenirs đạt. Chat: chỉ dịch vụ công khai và FAQ được bật, không lẫn dịch vụ, nhận tiếng Việt không dấu/cụm từ/tiếng Anh, xử lý câu hỏi mơ hồ bằng gợi ý và ưu tiên câu hỏi chọn chính xác.

@@ -74,7 +74,7 @@ class CartTests(TestCase):
         rows=Workspace.objects.get(pk=1).data['bookings'];self.assertEqual(len(rows),2);self.assertEqual(sum(row['payments'][0]['amount'] for row in rows),1700000)
         self.assertEqual(self.hook(intent,transferAmount=1700000).json()['duplicate'],True)
         self.assertEqual(len(mail.outbox),1);self.assertEqual(mail.outbox[0].to,['admin@example.test'])
-        self.client.force_login(self.admin);report=self.client.get('/api/reports/payment-methods/',{'source':'tickets','method':'bank_transfer'}).json();self.assertEqual(report['totals']['amount'],1700000)
+        self.client.force_login(self.admin);report=self.client.get('/api/reports/payment-methods/',{'source':'tickets','method':'bank_transfer'}).json();self.assertEqual(report['totals']['amount'],1700000);self.assertTrue(all(row['party']=='Digital' for row in report['rows']))
         self.assertContains(self.client.get('/online/staff/'),order.code)
     def test_upload_send_private_files_permissions_and_no_duplicate_mail(self):
         order=self.paid();url='/online/staff/cart/'+str(order.pk)+'/'
@@ -177,3 +177,19 @@ class CartTests(TestCase):
         self.assertEqual(attach_card_prices([self.service])[0].card_price,450000)
         obj.data['ticketTypes'][0]['active']=False;obj.save()
         self.assertIsNone(attach_card_prices([self.service])[0].card_price)
+
+    def test_existing_online_bookings_migrate_to_digital_without_financial_changes(self):
+        import importlib
+        from types import SimpleNamespace
+        from django.apps import apps
+        from django.db import connection
+        obj=Workspace.objects.get(pk=1)
+        online={'id':'old-online','salesChannel':'online','agent':'Khách online','customerType':'retail','customerName':'Actual guest','customerEmail':'guest@example.test','revenue':500000,'payments':[{'id':'bank-event','amount':500000,'method':'bank_transfer'}],'counterVersion':1}
+        manual={'id':'manual','agent':'Some agency','customerName':'Manual guest','revenue':300000}
+        obj.data['bookings']=[online,manual];obj.save();revision=obj.revision
+        migration=importlib.import_module('apps.online.migrations.0009_online_digital_party')
+        migration.mark_digital(apps,SimpleNamespace(connection=connection));obj.refresh_from_db()
+        self.assertEqual(obj.data['bookings'][0],{**online,'agent':'Digital'});self.assertEqual(obj.data['bookings'][1],manual);self.assertEqual(obj.revision,revision+1)
+        migration.mark_digital(apps,SimpleNamespace(connection=connection));obj.refresh_from_db();self.assertEqual(obj.revision,revision+1)
+        from apps.legacy.payment_methods import source_rows
+        self.assertEqual(list(source_rows('tickets'))[0]['party'],'Digital')
