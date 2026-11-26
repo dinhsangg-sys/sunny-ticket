@@ -1,3 +1,8 @@
+## 1.20.3 — Bỏ dải thông điệp trang chủ
+
+- Render template thật bằng database tạm đạt cho Việt/Anh: không còn dải promise, các thẻ dịch vụ vẫn có mặt. git diff --check đạt.
+- Không có migration mới; chưa triển khai trực tiếp Ubuntu.
+
 ## 1.20.2 — Giá giới thiệu gọn và chọn theo loại vé
 
 - Hai kiểm thử giá giới thiệu đạt: bỏ tên loại vé/ghi chú trên thẻ Việt/Anh, chọn loại 700.000 đ vẫn hiện 700.000 đ dù có loại 300.000 đ; kiểm tra giá không hợp lệ/tương lai giữ nguyên.

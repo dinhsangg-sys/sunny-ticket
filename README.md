@@ -1,3 +1,7 @@
+## 1.20.3 — Đưa dịch vụ lên cao hơn
+
+Bỏ dải ba thông điệp bên dưới phần mở đầu trang chủ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_20_3.md).
+
 ## 1.20.2 — Giá từ gọn trên thẻ dịch vụ
 
 Chỉ hiện Giá từ, bỏ chú thích bên dưới; quản trị có thể chọn bất kỳ loại vé làm giá giới thiệu. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_20_2.md).
