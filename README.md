@@ -1,3 +1,7 @@
+## 1.21.3 — Header gọn hơn
+
+Giảm chiều cao logo và khoảng đệm đầu trang để nội dung lên cao hơn. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_21_3.md).
+
 ## 1.21.2 — Đường cong sát chân ô cửa
 
 Đưa hai đường cong lên gần ô cửa hơn. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_21_2.md).

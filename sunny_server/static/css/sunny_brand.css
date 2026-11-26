@@ -18,3 +18,8 @@
 html{scroll-behavior:smooth;scroll-padding-top:12px}.sunny-floating-actions{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));z-index:200;display:flex;flex-direction:column;gap:12px}.sunny-floating-actions a{display:flex;align-items:center;justify-content:center;width:48px;height:48px;box-sizing:border-box;border-radius:50%;box-shadow:0 3px 12px #163f3830;text-decoration:none}.sunny-floating-actions .hotline-action{background:#eebd30;color:#193f38}.sunny-floating-actions .back-top-action{background:#193f38;color:#fff}.sunny-floating-actions svg{width:23px;height:23px;margin:0;flex:0 0 23px}.sunny-floating-actions a:hover{filter:brightness(1.08)}.sunny-floating-actions a:focus-visible{outline:3px solid #b9771a;outline-offset:4px}.hotline-action svg{animation:sunny-ring 3.6s ease-in-out infinite;transform-origin:center}@keyframes sunny-ring{0%,24%,100%{transform:rotate(0)}4%,12%,20%{transform:rotate(-14deg)}8%,16%{transform:rotate(14deg)}}
 @media(max-width:640px){body>footer,.sv-public>.sv-footer{padding-bottom:150px}.sunny-floating-actions{right:14px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.hotline-action svg{animation:none}}
+
+/* Compact public header; footer branding keeps its existing size. */
+.site-header{padding:8px 40px;gap:20px}.site-header .sunny-logo,.sv-header .sunny-logo{width:84px;height:84px}.sv-header{padding:8px 6%;gap:20px}
+@media(min-width:901px){.site-header .header-brand{flex-direction:row;align-items:center;gap:12px}}
+@media(max-width:640px){.site-header{padding:8px 18px;gap:8px}.site-header .sunny-logo,.sv-header .sunny-logo{width:64px;height:64px}.sv-header{padding:8px 5%;gap:8px}.site-header nav{gap:8px 14px}.sv-header nav{gap:8px 16px}}

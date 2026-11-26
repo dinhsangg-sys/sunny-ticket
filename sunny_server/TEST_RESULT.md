@@ -1,3 +1,8 @@
+## 1.21.3 — Header gọn hơn
+
+- Browser template thật trang chính/Souvenirs đạt desktop/mobile/320px, không tràn ngang; hồi quy điều hướng, checkout và Souvenirs đạt. Logo header giảm còn 84px desktop / 64px mobile, footer giữ nguyên. Thời tiết/header và bộ chọn ngôn ngữ tiếp tục hoạt động.
+- git diff --check đạt; không có migration mới, chưa triển khai trực tiếp Ubuntu.
+
 ## 1.21.2 — Hai đường cong sát chân ô cửa
 
 - Browser template thật desktop/mobile/320px và hồi quy điều hướng/checkout đạt. Quan sát desktop: hai đường cong sát chân ô cửa, chú thích phải nằm phía dưới không chồng nét.
