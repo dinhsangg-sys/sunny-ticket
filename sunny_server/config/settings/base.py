@@ -76,3 +76,8 @@ CACHES = {
 }
 
 ONLINE_ADMIN_EMAIL = os.environ.get('ONLINE_ADMIN_EMAIL','')
+
+
+# Local FAQ assistant only: no paid API, model or external chat dependency.
+SUNNY_CHAT_ENABLED = os.environ.get('SUNNY_CHAT_ENABLED','1') == '1'
+TEMPLATES[0]['OPTIONS']['context_processors'].append('apps.online.chat.context')

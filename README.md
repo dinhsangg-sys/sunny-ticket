@@ -1,3 +1,7 @@
+## 1.21.0 — Chat tư vấn không dùng API trả phí
+
+Khách chọn dịch vụ, bot trả lời FAQ theo từ khóa; chưa có đáp án thì mở WhatsApp/Zalo để nhắn nhân viên. Không kết nối OpenAI, không phát sinh phí AI theo tin nhắn. Có migration mới. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_21_0.md).
+
 ## 1.20.4 — Hai đường cong mềm
 
 Thêm hai đường cong mảnh dưới phần mở đầu trang chủ theo mẫu. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_20_4.md).

@@ -189,3 +189,19 @@ class SiteContact(models.Model):
         if self.pk!=1:errors['__all__']='Chỉ sử dụng một cấu hình liên hệ Sunny.'
         if errors:raise ValidationError(errors)
     def __str__(self):return 'Sunny — Kênh chính thức & liên hệ'
+
+
+class ServiceFAQ(models.Model):
+    service=models.ForeignKey(Service,on_delete=models.CASCADE,related_name='chat_faqs',verbose_name='Dịch vụ')
+    question=models.CharField('Câu hỏi',max_length=240)
+    answer=models.TextField('Trả lời đã duyệt',max_length=4000)
+    keywords=models.CharField('Từ khóa (phân cách bằng dấu phẩy)',max_length=500,help_text='Ví dụ: giờ mở cửa, lịch diễn, opening hours. Không dùng từ quá chung như vé hoặc dịch vụ.')
+    question_en=models.CharField('Câu hỏi tiếng Anh',max_length=240,blank=True)
+    answer_en=models.TextField('Trả lời tiếng Anh',max_length=4000,blank=True)
+    active=models.BooleanField('Cho phép bot sử dụng',default=False)
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering=['pk']
+        verbose_name='Câu hỏi tư vấn dịch vụ'
+        verbose_name_plural='Chat Sunny — Câu hỏi / Từ khóa'
+    def __str__(self):return str(self.service)+' — '+self.question

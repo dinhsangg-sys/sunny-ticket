@@ -1,3 +1,11 @@
+## 1.21.0 — Chat dịch vụ theo FAQ, không dùng API trả phí
+
+- 68 kiểm thử online/Souvenirs đạt. Chat: chỉ dịch vụ công khai và FAQ được bật, không lẫn dịch vụ, nhận tiếng Việt không dấu/cụm từ/tiếng Anh, xử lý câu hỏi mơ hồ bằng gợi ý và ưu tiên câu hỏi chọn chính xác.
+- Câu hỏi chưa biết/booking riêng/hoàn tiền hướng WhatsApp/Zalo; giá dẫn đến bộ chọn giá thật. Không đọc booking, giá vốn hoặc gửi thư/tin nhắn. Không có mã gọi API AI, không có API key hoặc model trong cấu hình chatbot.
+- Kiểm tra CSRF, payload/độ dài, giới hạn tần suất, tắt widget, nội dung HTML chỉ là chuỗi; thử chặn mọi urlopen vẫn trả lời FAQ thành công.
+- Browser template thật đạt chọn dịch vụ bắt buộc, gửi đúng dịch vụ/CSRF, nội dung an toàn bằng textContent, nút liên hệ, Enter/Escape, đổi dịch vụ xóa lịch sử hiển thị, 390px/320px không tràn.
+- Django check/migration khớp, git diff --check đạt. Migration online.0008 chỉ tạo ServiceFAQ. Dữ liệu kiểm thử độc lập; không gọi AI, không gửi WhatsApp/Zalo hoặc thay dữ liệu thật. Chưa triển khai trực tiếp Ubuntu; cần nhập FAQ thực trước khi trả lời khách.
+
 ## 1.20.4 — Hai đường cong dưới phần mở đầu
 
 - Browser template thật desktop/mobile/320px và hồi quy điều hướng/checkout đạt; quan sát desktop có đúng hai nét cong mảnh chạy ngang, không còn nét cong ngắn riêng dưới ô cửa. git diff --check đạt.

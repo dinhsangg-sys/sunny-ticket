@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.core.exceptions import ValidationError
 from PIL import Image
 from apps.legacy.models import Workspace
-from .models import Service,Article,OnlinePrice,OnlineOrder,ServiceOption,CartOrder
+from .models import Service,Article,OnlinePrice,OnlineOrder,ServiceOption,CartOrder,ServiceFAQ
 
 class ImageCheckForm(forms.ModelForm):
     def clean_image(self):
@@ -46,10 +46,15 @@ class ServiceOptionInline(admin.TabularInline):
     extra=0
     fields=['title','title_en','ticket_id','active','sort_order']
 
+class ServiceFAQInline(admin.StackedInline):
+    model=ServiceFAQ
+    extra=0
+    fields=['question','keywords','answer','question_en','answer_en','active']
+
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
     form=ServiceForm
-    inlines=[ServiceOptionInline]
+    inlines=[ServiceOptionInline,ServiceFAQInline]
     list_display=['title','ticket_id','published','card_price_source','sort_order']
     list_filter=['published']
     prepopulated_fields={'slug':('title',)}
@@ -100,3 +105,9 @@ class CartOrderAdmin(admin.ModelAdmin):
     def has_add_permission(self,request):return False
     def has_delete_permission(self,request,obj=None):return False
     def has_change_permission(self,request,obj=None):return False
+
+@admin.register(ServiceFAQ)
+class ServiceFAQAdmin(admin.ModelAdmin):
+    list_display=['question','service','active','updated_at']
+    list_filter=['service','active']
+    search_fields=['question','question_en','keywords','answer']

@@ -1,5 +1,8 @@
 {% load online_tags %}
 <nav class="sunny-floating-actions" aria-label="{% ot 'Trợ giúp nhanh' 'Quick actions' %}">
+  {% if sunny_chat_enabled %}<button class="chat-toggle" type="button" aria-controls="sunny-chat" aria-expanded="false" aria-label="{% ot 'Chat tư vấn dịch vụ' 'Chat about our services' %}" title="{% ot 'Chat với Sunny' 'Chat with Sunny' %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11c0 5-4 8-9 8H8l-5 3 1.3-5C2.8 15.6 2 13.5 2 11c0-5 4-8 10-8s9 3 9 8Z"/><path d="M7 10h.01M12 10h.01M17 10h.01"/></svg></button>{% endif %}
   <a class="hotline-action" href="tel:+84932548145" aria-label="{% ot 'Gọi hotline +84 932 548 145' 'Call hotline +84 932 548 145' %}" title="Hotline: +84 932 548 145">{% include 'online/company_icon.html' with icon='phone' %}</a>
   <a class="back-top-action" href="#page-top" aria-label="{% ot 'Về đầu trang' 'Back to top' %}" title="{% ot 'Về đầu trang' 'Back to top' %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4m-7 7 7-7 7 7"/></svg></a>
 </nav>
+
+{% include 'online/chat_widget.html' %}
