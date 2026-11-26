@@ -1,3 +1,7 @@
+## 1.21.2 — Đường cong sát chân ô cửa
+
+Đưa hai đường cong lên gần ô cửa hơn. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_21_2.md).
+
 ## 1.21.1 — Đối tượng Digital cho booking online
 
 Booking bán qua web dùng nhãn Digital trong báo cáo, giữ tên khách riêng và cập nhật nhãn cho dữ liệu online cũ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_21_1.md).

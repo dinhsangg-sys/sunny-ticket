@@ -1,3 +1,8 @@
+## 1.21.2 — Hai đường cong sát chân ô cửa
+
+- Browser template thật desktop/mobile/320px và hồi quy điều hướng/checkout đạt. Quan sát desktop: hai đường cong sát chân ô cửa, chú thích phải nằm phía dưới không chồng nét.
+- Cập nhật kiểm tra liên hệ theo footer vì bản chat đã có thêm nút WhatsApp/Zalo riêng. git diff --check đạt. Không có migration mới; chưa triển khai trực tiếp Ubuntu.
+
 ## 1.21.1 — Đối tượng Digital cho booking online
 
 - 38 kiểm thử online/cart/báo cáo phương thức đạt: booking thanh toán qua SePay có agent Digital, báo cáo khoản thu hiện Digital và số tiền vẫn đúng, khóa sửa nhãn đối tượng ở booking online.
