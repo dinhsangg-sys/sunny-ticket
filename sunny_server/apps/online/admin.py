@@ -44,7 +44,7 @@ class ServiceOptionInline(admin.TabularInline):
     model=ServiceOption
     form=ServiceOptionForm
     extra=0
-    fields=['title','title_en','ticket_id','active','sort_order']
+    fields=['group_name','group_name_en','audience','title','title_en','ticket_id','active','sort_order']
 
 class ServiceFAQInline(admin.StackedInline):
     model=ServiceFAQ
@@ -88,8 +88,8 @@ class SiteContactAdmin(admin.ModelAdmin):
 @admin.register(ServiceOption)
 class ServiceOptionAdmin(admin.ModelAdmin):
     form=ServiceOptionForm
-    list_display=['title','service','ticket_id','active']
-    list_filter=['service','active']
+    list_display=['title','service','group_name','audience','ticket_id','active']
+    list_filter=['service','audience','active']
     search_fields=['title','ticket_id']
 
 @admin.register(CartOrder)

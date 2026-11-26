@@ -193,3 +193,33 @@ class CartTests(TestCase):
         migration.mark_digital(apps,SimpleNamespace(connection=connection));obj.refresh_from_db();self.assertEqual(obj.revision,revision+1)
         from apps.legacy.payment_methods import source_rows
         self.assertEqual(list(source_rows('tickets'))[0]['party'],'Digital')
+
+    def test_ticket_type_groups_have_separate_audience_prices_and_quantities(self):
+        from .cart import ticket_groups
+        from django.core.exceptions import ValidationError
+        self.service.ticket_id='';self.service.save()
+        options=[]
+        for audience,title,price in [('adult','ECO · Người lớn',540000),('child','ECO · Trẻ em',270000),('senior','ECO · Người cao tuổi',400000)]:
+            option=ServiceOption.objects.create(service=self.service,title=title,ticket_id='eco',group_name='ECO',group_name_en='ECO',audience=audience)
+            OnlinePrice.objects.create(service=self.service,option=option,price=price,starts_on=timezone.localdate());options.append(option)
+        groups=ticket_groups(self.service);self.assertEqual(len(groups),1);self.assertEqual([row['title'] for row in groups[0]['options']],['Người lớn','Trẻ em','Người cao tuổi'])
+        response=self.client.get('/services/hoi-an/');self.assertContains(response,'class="ticket-group"',count=1);self.assertContains(response,'Người cao tuổi')
+        english=self.client.get('/services/hoi-an/',{'lang':'en'});self.assertContains(english,'Senior')
+        response=self.add(qty_default='0',**{'qty_'+str(options[0].pk):'1','qty_'+str(options[1].pk):'2'});self.assertEqual(response.status_code,302)
+        self.assertEqual(self.client.get('/cart/').context['total'],1080000)
+        duplicate=ServiceOption(service=self.service,title='Duplicate adult',ticket_id='eco',group_name='eco',audience='adult')
+        with self.assertRaises(ValidationError):duplicate.full_clean()
+
+    def test_legacy_option_names_group_without_price_or_id_changes(self):
+        import importlib
+        from types import SimpleNamespace
+        from django.apps import apps
+        from django.db import connection
+        adult=ServiceOption.objects.create(service=self.service,title='Eco NL',ticket_id='eco')
+        child=ServiceOption.objects.create(service=self.service,title='Eco TE',ticket_id='eco')
+        senior=ServiceOption.objects.create(service=self.service,title='High NCT',ticket_id='eco')
+        unknown=ServiceOption.objects.create(service=self.service,title='Custom package',ticket_id='eco')
+        price=OnlinePrice.objects.create(service=self.service,option=adult,price=540000,starts_on=self.day)
+        migration=importlib.import_module('apps.online.migrations.0010_ticket_groups_audiences');migration.group_existing_options(apps,SimpleNamespace(connection=connection))
+        adult.refresh_from_db();child.refresh_from_db();senior.refresh_from_db();unknown.refresh_from_db();price.refresh_from_db()
+        self.assertEqual((adult.group_name,adult.audience,adult.title),('Eco','adult','Eco NL'));self.assertEqual((child.group_name,child.audience),('Eco','child'));self.assertEqual((senior.group_name,senior.audience),('High','senior'));self.assertEqual(unknown.group_name,'');self.assertEqual(price.option_id,adult.pk);self.assertEqual(price.price,540000)

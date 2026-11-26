@@ -1,3 +1,10 @@
+## 1.21.4 — Loại vé xổ xuống theo nhóm khách
+
+- 71 kiểm thử online/Souvenirs đạt: ECO gom Người lớn/Trẻ em/Người cao tuổi; giá và số lượng từng dòng riêng, tổng tiền đúng; không cho khai báo hai lựa chọn đang bán trùng nhóm + nhóm khách.
+- Migration nhận diện tên cũ Eco NL / Eco TE / High NCT, giữ nguyên ID/giá và tên gốc; tên chưa rõ không tự đoán. Giỏ/đơn mới hiển thị đủ nhóm loại vé và nhóm khách, đơn cũ giữ snapshot cũ.
+- Browser template thật đạt: nhóm mặc định thu gọn, mở/đóng giữ số lượng/tổng, dấu số vé đã chọn trên nhóm, giá nằm phía trên số lượng, desktop/mobile/320px, Thêm vào giỏ và Thanh toán ngay. Hình và giá minh họa chỉ ở database tạm.
+- Check Django, model/migration và git diff --check đạt. Có migration online.0010; chưa triển khai trực tiếp Ubuntu.
+
 ## 1.21.3 — Header gọn hơn
 
 - Browser template thật trang chính/Souvenirs đạt desktop/mobile/320px, không tràn ngang; hồi quy điều hướng, checkout và Souvenirs đạt. Logo header giảm còn 84px desktop / 64px mobile, footer giữ nguyên. Thời tiết/header và bộ chọn ngôn ngữ tiếp tục hoạt động.

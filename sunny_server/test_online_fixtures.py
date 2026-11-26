@@ -45,4 +45,11 @@ with tempfile.TemporaryDirectory() as folder:
     order=OnlineOrder.objects.get();order.status='paid';order.booking_id='ONLINE-'+str(order.pk);order.save()
     obj=Workspace.objects.get(pk=1);obj.data['bookings']=[{'id':order.booking_id,'counterVersion':1}];obj.save()
     output['paid']=guest.get(response.url).content.decode()
+    from apps.online.models import ServiceOption
+    grouped=Service.objects.create(title='Dịch vụ minh họa nhóm vé',slug='grouped',summary='Dữ liệu chỉ dùng kiểm tra giao diện.',body='Nội dung thử, không phải dịch vụ thật.',published=True)
+    for group,audience,label,price in [('ECO','adult','Người lớn',540000),('ECO','child','Trẻ em',270000),('ECO','senior','Người cao tuổi',400000),('HIGH','adult','Người lớn',680000)]:
+        option=ServiceOption.objects.create(service=grouped,title=group+' · '+label,ticket_id='eco',group_name=group,group_name_en=group,audience=audience)
+        OnlinePrice.objects.create(service=grouped,option=option,price=price,starts_on=timezone.localdate())
+    output['grouped_detail']=guest.get('/services/grouped/').content.decode()
+    output['grouped_prices']=guest.get('/services/grouped/prices/',{'date':timezone.localdate().isoformat()}).json()
     connections.close_all();print(json.dumps(output))

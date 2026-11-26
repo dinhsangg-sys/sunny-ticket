@@ -101,13 +101,28 @@ class ServiceOption(models.Model):
     title=models.CharField('Tên lựa chọn (vd ECO · Người lớn)',max_length=180)
     title_en=models.CharField('Tên lựa chọn tiếng Anh',max_length=180,blank=True)
     ticket_id=models.CharField('Loại vé trong Ticket Management',max_length=120)
+    group_name=models.CharField('Nhóm loại vé (ECO / HIGH / VIP...)',max_length=100,blank=True)
+    group_name_en=models.CharField('Nhóm loại vé tiếng Anh',max_length=100,blank=True)
+    audience=models.CharField('Nhóm khách',max_length=10,choices=[('adult','Người lớn'),('child','Trẻ em'),('senior','Người cao tuổi')],blank=True)
     active=models.BooleanField('Đang bán',default=True)
     sort_order=models.PositiveIntegerField('Thứ tự',default=0)
     class Meta:
         ordering=['sort_order','pk']
         verbose_name='Lựa chọn vé online'
         verbose_name_plural='Lựa chọn vé online'
-    def __str__(self):return str(self.service)+' — '+self.title
+    def clean(self):
+        self.group_name=self.group_name.strip()
+        if self.group_name and not self.audience:raise ValidationError({'audience':'Chọn Người lớn, Trẻ em hoặc Người cao tuổi cho nhóm vé.'})
+        if self.audience and not self.group_name:raise ValidationError({'group_name':'Nhập nhóm loại vé, ví dụ ECO.'})
+        if self.active and self.group_name and self.audience and self.service_id and ServiceOption.objects.filter(service_id=self.service_id,group_name__iexact=self.group_name,audience=self.audience,active=True).exclude(pk=self.pk).exists():raise ValidationError('Nhóm loại vé đã có lựa chọn đang bán cho nhóm khách này.')
+    @property
+    def display_title(self):
+        return self.group_name+' · '+self.get_audience_display() if self.group_name and self.audience else self.title
+    @property
+    def display_title_en(self):
+        labels={'adult':'Adult','child':'Child','senior':'Senior'}
+        return (self.group_name_en or self.group_name)+' · '+labels.get(self.audience,self.audience) if self.group_name and self.audience else (self.title_en or self.title)
+    def __str__(self):return str(self.service)+' — '+self.display_title
 
 class CartOrder(models.Model):
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)

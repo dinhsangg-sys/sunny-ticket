@@ -1,3 +1,7 @@
+## 1.21.4 — Bộ chọn vé gọn hơn
+
+Nhóm loại vé xổ xuống Người lớn/Trẻ em/Người cao tuổi; giá nằm trên số lượng, thêm màu nền nhẹ và thu gọn khung đặt vé. Có migration mới. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_21_4.md).
+
 ## 1.21.3 — Header gọn hơn
 
 Giảm chiều cao logo và khoảng đệm đầu trang để nội dung lên cao hơn. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_21_3.md).

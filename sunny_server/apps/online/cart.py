@@ -31,12 +31,22 @@ def day_value(value):
 def choices(service):
     rows=[]
     if service.ticket_id:rows.append({'id':'default','title':'Vé mặc định','title_en':'Standard ticket','option':None})
-    for opt in service.options.filter(active=True):rows.append({'id':str(opt.pk),'title':opt.title,'title_en':opt.title_en or opt.title,'option':opt})
+    for opt in service.options.filter(active=True):rows.append({'id':str(opt.pk),'title':opt.display_title,'title_en':opt.display_title_en,'option':opt})
     return rows
+
+def ticket_groups(service):
+    groups={}
+    audiences={'adult':('Người lớn','Adult'),'child':('Trẻ em','Child'),'senior':('Người cao tuổi','Senior')}
+    for choice in choices(service):
+        opt=choice['option'];group_name=(opt.group_name if opt else '') or choice['title'];key=group_name.strip().casefold()
+        if key not in groups:groups[key]={'title':group_name,'title_en':(opt.group_name_en or group_name) if opt and opt.group_name else choice['title_en'],'options':[]}
+        labels=audiences.get(opt.audience) if opt else None
+        groups[key]['options'].append({**choice,'title':labels[0] if labels else choice['title'],'title_en':labels[1] if labels else choice['title_en']})
+    return list(groups.values())
 
 def service_page(request,service):
     options=choices(service)
-    return public_render(request,'online/service.html',{'item':service,'options':options,'today':timezone.localdate().isoformat(),'last_day':(timezone.localdate()+timedelta(days=365)).isoformat(),'show_weather':True})
+    return public_render(request,'online/service.html',{'item':service,'options':options,'ticket_groups':ticket_groups(service),'today':timezone.localdate().isoformat(),'last_day':(timezone.localdate()+timedelta(days=365)).isoformat(),'show_weather':True})
 
 @never_cache
 @require_GET
@@ -75,7 +85,7 @@ def add(request,slug):
         request.session[DIRECT_KEY if direct else CART_KEY]=cart
         return redirect('online-buy-now-checkout' if direct else 'online-cart')
     except (ValueError,KeyError,TypeError) as exc:error=str(exc)
-    return public_render(request,'online/service.html',{'item':service,'options':choices(service),'today':request.POST.get('visit_date',timezone.localdate().isoformat()),'last_day':(timezone.localdate()+timedelta(days=365)).isoformat(),'show_weather':True,'error':error})
+    return public_render(request,'online/service.html',{'item':service,'options':choices(service),'ticket_groups':ticket_groups(service),'today':request.POST.get('visit_date',timezone.localdate().isoformat()),'last_day':(timezone.localdate()+timedelta(days=365)).isoformat(),'show_weather':True,'error':error})
 
 def resolved(request,selected_only=False,direct=False):
     rows=[]
@@ -90,7 +100,7 @@ def resolved(request,selected_only=False,direct=False):
             day=day_value(row['date']);unit,ticket,cost=quote(service,day,option)
             result.update(day=day,unit=unit,total=unit*row['qty'],ticket=ticket,cost=cost)
             result['title']=(service.title_en or service.title) if language(request)=='en' else service.title
-            result['option_title']=((option.title_en or option.title) if language(request)=='en' else option.title) if option else ('Standard ticket' if language(request)=='en' else 'Vé mặc định')
+            result['option_title']=(option.display_title_en if language(request)=='en' else option.display_title) if option else ('Standard ticket' if language(request)=='en' else 'Vé mặc định')
         except (ValueError,KeyError,TypeError) as exc:result.update(error=str(exc),total=0,title=service.title if service else 'Unavailable',option_title='')
         rows.append(result)
     return rows
@@ -141,7 +151,7 @@ def checkout(request,direct=False):
                 order=CartOrder.objects.create(request_id=values['request_id'],session_hash=key,fingerprint=fingerprint,customer_name=values['customer_name'],email=values['email'],phone=values['phone'],total=sum(r['total'] for r in rows),language=language(request))
                 for row in rows:
                     service=row['service'];opt=row['option']
-                    OnlineOrder.objects.create(cart=order,request_id=uuid.uuid4(),session_hash=key,fingerprint=fingerprint,service=service,option=opt,customer_name=order.customer_name,email=order.email,phone=order.phone,visit_date=row['day'],qty=row['qty'],unit_price=row['unit'],total=row['total'],snapshot={'title':service.title,'title_en':service.title_en,'option':opt.title if opt else 'Vé mặc định','option_en':(opt.title_en or opt.title) if opt else 'Standard ticket','ticket':row['ticket'],'cost':row['cost']})
+                    OnlineOrder.objects.create(cart=order,request_id=uuid.uuid4(),session_hash=key,fingerprint=fingerprint,service=service,option=opt,customer_name=order.customer_name,email=order.email,phone=order.phone,visit_date=row['day'],qty=row['qty'],unit_price=row['unit'],total=row['total'],snapshot={'title':service.title,'title_en':service.title_en,'option':opt.display_title if opt else 'Vé mặc định','option_en':opt.display_title_en if opt else 'Standard ticket','ticket':row['ticket'],'cost':row['cost']})
             cart_key=DIRECT_KEY if direct else CART_KEY
             cart=dict(request.session.get(cart_key,{}))
             for row in rows:cart.pop(row['key'],None)
