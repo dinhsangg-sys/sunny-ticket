@@ -1,3 +1,9 @@
+## 1.20.1 — Giá giới thiệu trên thẻ dịch vụ
+
+- 29 kiểm thử online/cart đạt; xác minh tự lấy giá thấp nhất, chọn vé mặc định hoặc một lựa chọn thuộc dịch vụ, giá tương lai có thể đặt, ẩn vé ngừng bán/giá hết hạn. Không đổi giá checkout/đơn cũ.
+- Browser template thật desktop/mobile/320px và hồi quy điều hướng/checkout đạt. Django check và migration/model khớp.
+- Có migration online.0007; chưa cập nhật trực tiếp Ubuntu.
+
 ## 1.20.0 — Dịch vụ, giỏ hàng, thanh toán ngay và gửi vé
 
 - 60 kiểm thử online/Souvenirs đạt: giá mặc định và lựa chọn độc lập, dữ liệu giá tại máy chủ, chọn/bỏ mục trong giỏ, giá thay đổi trước checkout, giới hạn số lượng, CSRF, đơn riêng theo phiên, checkout lặp không tạo đơn mới, thanh toán ngay giữ nguyên giỏ khác.

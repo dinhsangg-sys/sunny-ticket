@@ -1,3 +1,7 @@
+## 1.20.1 — Giá giới thiệu trên thẻ dịch vụ
+
+Hiển thị Giá từ / From; quản trị chọn loại vé giới thiệu hoặc tự lấy giá thấp nhất hợp lệ. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_20_1.md).
+
 ## 1.20.0 — Dịch vụ, giỏ hàng và quản trị gửi vé
 
 Bài dịch vụ 3/4 + chọn vé 1/4, nhiều loại vé/giá online, Thêm vào giỏ hoặc Thanh toán ngay, thanh toán tổng qua SePay, thông báo và xử lý/đính kèm/gửi vé trong quản trị. Có migration mới. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_20_0.md).

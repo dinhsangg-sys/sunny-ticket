@@ -50,6 +50,9 @@ def public_render(request,template,context):
     from .contacts import public_contacts
     from .cart import cart_count
     context={'cart_count':cart_count(request),**public_contacts(),**context,'lang':lang,'vi_url':url('vi'),'en_url':url('en')}
+    if context.get('services') is not None:
+        from .card_prices import attach_card_prices
+        context['services']=attach_card_prices(context['services'])
     for key in ('services','articles'):
         if context.get(key) is not None:context[key]=[localized(obj,lang) for obj in context[key]]
     for key in ('item','service'):

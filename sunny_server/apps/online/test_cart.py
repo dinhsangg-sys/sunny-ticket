@@ -148,3 +148,30 @@ class CartTests(TestCase):
         order=CartOrder.objects.get();self.assertEqual(order.total,600000);self.assertEqual(order.lines.count(),1)
         self.assertEqual(self.client.session['sunny_cart_v1'],before);self.assertEqual(self.client.session['sunny_direct_v1'],{})
         self.assertEqual(self.client.post('/checkout/now/',body).status_code,302);self.assertEqual(CartOrder.objects.count(),1)
+
+    def test_card_price_auto_and_admin_selected_option(self):
+        from .card_prices import attach_card_prices
+        from django.core.exceptions import ValidationError
+        option=ServiceOption.objects.create(service=self.service,title='ECO · Trẻ em',title_en='ECO · Child',ticket_id='eco')
+        OnlinePrice.objects.create(service=self.service,option=option,price=300000,starts_on=timezone.localdate())
+        row=attach_card_prices([self.service])[0];self.assertEqual(row.card_price,300000)
+        response=self.client.get('/discover/');self.assertContains(response,'Giá từ');self.assertContains(response,'ECO · Trẻ em')
+        self.service.card_price_source='default';self.service.save();self.assertEqual(attach_card_prices([self.service])[0].card_price,600000)
+        self.service.card_price_source='option';self.service.card_price_option=option;self.service.full_clean();self.service.save()
+        self.assertEqual(attach_card_prices([self.service])[0].card_price,300000)
+        response=self.client.get('/services/',{'lang':'en'});self.assertContains(response,'From');self.assertContains(response,'ECO · Child')
+        other=Service.objects.create(title='Other',slug='other-card',ticket_id='eco',summary='x',body='x')
+        self.service.card_price_option=ServiceOption.objects.create(service=other,title='Other',ticket_id='eco')
+        with self.assertRaises(ValidationError):self.service.full_clean()
+
+    def test_card_price_hides_unavailable_and_uses_future_bookable_window(self):
+        from .card_prices import attach_card_prices
+        OnlinePrice.objects.update(ends_on=timezone.localdate()-timezone.timedelta(days=1))
+        self.assertIsNone(attach_card_prices([self.service])[0].card_price)
+        future=timezone.localdate()+timezone.timedelta(days=8)
+        OnlinePrice.objects.create(service=self.service,price=450000,starts_on=future)
+        self.assertEqual(attach_card_prices([self.service])[0].card_price,450000)
+        obj=Workspace.objects.get(pk=1);obj.data['costPrices'][0]['from']=(future+timezone.timedelta(days=1)).isoformat();obj.save()
+        self.assertEqual(attach_card_prices([self.service])[0].card_price,450000)
+        obj.data['ticketTypes'][0]['active']=False;obj.save()
+        self.assertIsNone(attach_card_prices([self.service])[0].card_price)

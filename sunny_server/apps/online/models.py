@@ -14,11 +14,17 @@ class Service(models.Model):
     image=models.ImageField('Ảnh giới thiệu',upload_to='online/content/',blank=True)
     published=models.BooleanField('Hiển thị công khai',default=False)
     sort_order=models.PositiveIntegerField('Thứ tự',default=0)
+    card_price_source=models.CharField('Giá giới thiệu trên thẻ',max_length=12,choices=[('auto','Tự chọn giá thấp nhất đang có thể đặt'),('default','Dùng loại vé mặc định'),('option','Chọn một lựa chọn vé')],default='auto')
+    card_price_option=models.ForeignKey('ServiceOption',on_delete=models.SET_NULL,null=True,blank=True,related_name='+',verbose_name='Loại vé làm giá giới thiệu')
     class Meta:
         ordering=['sort_order','title']
         verbose_name='Dịch vụ online'
         verbose_name_plural='Dịch vụ online'
     def __str__(self):return self.title
+    def clean(self):
+        if self.card_price_source=='option':
+            if not self.card_price_option_id:raise ValidationError({'card_price_option':'Chọn loại vé để giới thiệu.'})
+            if not self.pk or self.card_price_option.service_id!=self.pk:raise ValidationError({'card_price_option':'Loại vé phải thuộc dịch vụ này.'})
 
 class Article(models.Model):
     title=models.CharField('Tiêu đề',max_length=180)
