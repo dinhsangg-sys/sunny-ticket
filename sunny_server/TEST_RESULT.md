@@ -1,3 +1,11 @@
+# 1.21.5 — Soạn bài dịch vụ có ảnh
+
+- Trình soạn trực quan cho body và body_en: định dạng, chèn ảnh, liên kết, xem trước.
+- Kiểm tra escaping nội dung cũ, HTML allowlist, chặn thuộc tính thực thi / URL không an toàn, quyền upload, ảnh không hợp lệ và phục vụ ảnh đã mã hóa lại.
+- Playwright/Edge: tiêu đề, đồng bộ textarea, xem trước, không tràn ngang ở 390px; ảnh chụp output/service-editor-desktop.png.
+- Bộ test apps.online.test_richtext và apps.online.tests: 19 tests.
+- Không thay đổi cấu trúc dữ liệu hay tính tiền.
+
 ## 1.21.4 — Loại vé xổ xuống theo nhóm khách
 
 - 71 kiểm thử online/Souvenirs đạt: ECO gom Người lớn/Trẻ em/Người cao tuổi; giá và số lượng từng dòng riêng, tổng tiền đúng; không cho khai báo hai lựa chọn đang bán trùng nhóm + nhóm khách.

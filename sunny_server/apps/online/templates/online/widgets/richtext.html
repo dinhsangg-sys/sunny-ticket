@@ -1,0 +1,11 @@
+<div class="sunny-editor">
+<div class="sunny-toolbar" role="toolbar" aria-label="Định dạng bài viết">
+<button type="button" data-command="bold"><b>Đậm</b></button><button type="button" data-command="italic"><i>Nghiêng</i></button>
+<button type="button" data-command="formatBlock" data-value="h2">Tiêu đề</button><button type="button" data-command="formatBlock" data-value="p">Đoạn văn</button>
+<button type="button" data-command="insertUnorderedList">Danh sách</button><button type="button" data-command="insertOrderedList">Đánh số</button><button type="button" data-command="formatBlock" data-value="blockquote">Trích dẫn</button><button type="button" data-link>Liên kết</button>
+<button type="button" data-image>Chèn ảnh</button><button type="button" data-preview>Xem trước</button>
+<input type="file" accept="image/jpeg,image/png,image/webp" hidden>
+</div><div class="sunny-editable" contenteditable="true" role="textbox" aria-multiline="true" aria-label="{{ widget.name }}">{{ widget.rendered }}</div>
+<div class="sunny-preview" hidden></div><p class="sunny-editor-status" aria-live="polite">Chèn ảnh tại vị trí con trỏ. Gõ chú thích bên dưới ảnh. Soạn riêng tiếng Việt và tiếng Anh.</p>
+<textarea name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %} hidden>{{ widget.value|default_if_none:'' }}</textarea>
+</div>

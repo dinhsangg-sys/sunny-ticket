@@ -1,3 +1,7 @@
+# Bản 1.21.5 — Soạn bài giới thiệu dịch vụ
+
+Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_21_5.md).
+
 ## 1.21.4 — Bộ chọn vé gọn hơn
 
 Nhóm loại vé xổ xuống Người lớn/Trẻ em/Người cao tuổi; giá nằm trên số lượng, thêm màu nền nhẹ và thu gọn khung đặt vé. Có migration mới. [Hướng dẫn cập nhật](sunny_server/UPGRADE_1_21_4.md).

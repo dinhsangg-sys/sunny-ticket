@@ -16,8 +16,19 @@ class ImageCheckForm(forms.ModelForm):
             except Exception:raise ValidationError('Chỉ dùng JPEG/PNG/WebP hợp lệ, tối đa 25 triệu điểm ảnh.')
             image.seek(0)
         return image
+from .richtext import RichTextWidget,MARKER,sanitize
+
 class ServiceForm(ImageCheckForm):
-    class Meta:model=Service;fields='__all__'
+    class Meta:
+        model=Service
+        fields='__all__'
+        widgets={'body':RichTextWidget(),'body_en':RichTextWidget()}
+    def clean_body(self):
+        value=self.cleaned_data['body']
+        return MARKER+sanitize(value[len(MARKER):]) if value.startswith(MARKER) else value
+    def clean_body_en(self):
+        value=self.cleaned_data.get('body_en','')
+        return MARKER+sanitize(value[len(MARKER):]) if value.startswith(MARKER) else value
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         data=Workspace.objects.filter(pk=1).values_list('data',flat=True).first() or {}
