@@ -1,3 +1,12 @@
+# 1.22.0 — Thu gọn quản lý website và vé online
+
+- 78 tests apps.online và apps.souvenirs đạt; system check không có lỗi.
+- Kiểm thử mới: lưu vé và giá Digital trong nhóm qua admin, giá mặc định ưu tiên kỳ giá cũ, giá công bố/gạch ngang, giá không hợp lệ, vé dừng bán, nhóm sai dịch vụ, giới hạn quyền, migration giữ giá kỳ cũ và chuyển lựa chọn giá giới thiệu, đường đặt vé cũ không bỏ qua giá nhóm mới.
+- Playwright/Edge: tab quản lý dịch vụ, trường giá trong nhóm, gạch ngang giá công bố, mobile và không lỗi JavaScript. Ảnh trong output/online-management-service.png, output/online-management-group.png và output/online-published-price-mobile.png.
+- Bộ Playwright hiện có: bộ chọn vé, tổng tiền, giỏ hàng, thanh toán ngay, trường khách hàng, 390/320px và lỗi tải giá đều đạt.
+- makemigrations --check --dry-run: không thiếu migration. git diff --check đạt.
+- Không triển khai lên máy chủ thật hoặc thực hiện thanh toán thật trong kiểm thử.
+
 # 1.21.5 — Soạn bài dịch vụ có ảnh
 
 - Trình soạn trực quan cho body và body_en: định dạng, chèn ảnh, liên kết, xem trước.

@@ -59,11 +59,15 @@ def owner():
 def checkout_ready():return settings.ONLINE_CHECKOUT_ENABLED and ready() and email_ready() and owner() is not None
 
 def quote(service,day,option=None):
+    if option is None and service.ticket_groups.exists():raise ValueError('Vui lòng chọn lại vé trong nhóm vé của dịch vụ. / Please select a ticket from this service.')
     data=Workspace.objects.filter(pk=1).values_list('data',flat=True).first() or {}
     ticket_id=option.ticket_id if option else service.ticket_id
     if option and (option.service_id!=service.pk or not option.active):raise ValueError('Lựa chọn vé đang ngừng bán.')
     tickets=[t for t in data.get('ticketTypes',[]) if t.get('id')==ticket_id and t.get('active',True)]
     if len(tickets)!=1:raise ValueError('Loại vé đang tạm ngừng bán online.')
+    if option and option.online_price is not None:
+        if not 0<option.online_price<=100000000:raise ValueError('Giá online chưa hợp lệ.')
+        return option.online_price,tickets[0],default_cost(data,ticket_id,day.isoformat())
     prices=list(OnlinePrice.objects.filter(service=service,option=option,active=True,starts_on__lte=day).filter(Q(ends_on__isnull=True)|Q(ends_on__gte=day))[:2])
     if len(prices)!=1:raise ValueError('Ngày đã chọn chưa có giá online duy nhất. Vui lòng chọn ngày khác hoặc liên hệ Sunny.')
     if not 0<prices[0].price<=100000000:raise ValueError('Giá online chưa hợp lệ.')
@@ -73,6 +77,7 @@ def quote(service,day,option=None):
 @require_http_methods(['GET','POST'])
 def checkout(request,slug):
     service=get_object_or_404(Service,slug=slug,published=True)
+    if service.ticket_groups.exists():return redirect('online-service',slug=service.slug)
     form=CheckoutForm(request.POST or None,lang=language(request),initial={'request_id':uuid.uuid4(),'visit_date':timezone.localdate()})
     if request.method=='POST' and form.is_valid():
         if not checkout_ready():form.add_error(None,text('Thanh toán online đang tạm đóng. Vui lòng quay lại sau.',language(request)))

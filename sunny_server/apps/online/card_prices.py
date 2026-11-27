@@ -16,10 +16,31 @@ def attach_card_prices(services):
     for service in services:
         service.card_price=None;service.card_ticket_title='';service.card_ticket_title_en=''
         if service.card_price_source=='option' and not service.card_price_option_id:continue
+        fixed=[]
+        from .views import quote
+        for option in service.options.filter(active=True,online_price__isnull=False):
+            if service.card_price_source=='default':continue
+            if service.card_price_source=='option' and option.pk!=service.card_price_option_id:continue
+            days={today}
+            for cost in data.get('costPrices',[]):
+                if cost.get('ticketId')!=option.ticket_id:continue
+                for field in ('from','to'):
+                    try:day=date.fromisoformat(cost.get(field,''))+(timedelta(days=1) if field=='to' else timedelta())
+                    except (ValueError,TypeError):continue
+                    if today<=day<=last:days.add(day)
+            for day in sorted(days):
+                try:unit,_,_=quote(service,day,option)
+                except (ValueError,KeyError,TypeError):continue
+                fixed.append((unit,option));break
+        if fixed:
+            unit,option=min(fixed,key=lambda row:row[0])
+            service.card_price=unit;service.card_ticket_title=option.display_title;service.card_ticket_title_en=option.display_title_en
         candidates=[]
         for price in rows:
             if price.service_id!=service.pk or not 0<price.price<=100000000:continue
             option=price.option
+            if option is None and service.ticket_groups.exists():continue
+            if option and option.online_price is not None:continue
             if option and (not option.active or option.service_id!=service.pk):continue
             if service.card_price_source=='default' and option is not None:continue
             if service.card_price_source=='option' and price.option_id!=service.card_price_option_id:continue
@@ -46,6 +67,7 @@ def attach_card_prices(services):
                 except (ValueError,KeyError,TypeError):continue
                 available=True;break
             if not available:continue
+            if service.card_price is not None and service.card_price<=price.price:break
             service.card_price=price.price
             if option:
                 service.card_ticket_title=option.title;service.card_ticket_title_en=option.title_en or option.title

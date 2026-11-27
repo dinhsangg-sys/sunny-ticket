@@ -96,8 +96,28 @@ class OnlineOrder(models.Model):
     def code(self):return 'ON-'+self.id.hex[:12].upper()
     def __str__(self):return self.code
 
+class ServiceTicketGroup(models.Model):
+    service=models.ForeignKey(Service,on_delete=models.PROTECT,related_name='ticket_groups',verbose_name='Dịch vụ')
+    name=models.CharField('Tên nhóm vé',max_length=100)
+    name_en=models.CharField('Tên tiếng Anh',max_length=100,blank=True)
+    sort_order=models.PositiveIntegerField('Thứ tự',default=0)
+    class Meta:
+        ordering=['sort_order','pk']
+        verbose_name='Nhóm vé của dịch vụ'
+        verbose_name_plural='Nhóm vé của dịch vụ'
+        constraints=[models.UniqueConstraint(fields=['service','name'],name='online_unique_service_group')]
+    def __str__(self):return self.name
+    def clean(self):
+        self.name=self.name.strip()
+        if not self.name:raise ValidationError({'name':'Nhập tên nhóm vé.'})
+        if self.service_id and ServiceTicketGroup.objects.filter(service_id=self.service_id,name__iexact=self.name).exclude(pk=self.pk).exists():raise ValidationError({'name':'Dịch vụ đã có nhóm vé với tên này.'})
+
 class ServiceOption(models.Model):
     service=models.ForeignKey(Service,on_delete=models.PROTECT,related_name='options',verbose_name='Dịch vụ')
+    group=models.ForeignKey(ServiceTicketGroup,on_delete=models.PROTECT,null=True,blank=True,related_name='options',verbose_name='Nhóm vé')
+    online_price=models.PositiveBigIntegerField('Giá online mặc định (đ)',null=True,blank=True)
+    published_price=models.PositiveBigIntegerField('Giá công bố (đ)',null=True,blank=True)
+    strike_published_price=models.BooleanField('Gạch ngang giá công bố',default=False)
     title=models.CharField('Tên lựa chọn (vd ECO · Người lớn)',max_length=180)
     title_en=models.CharField('Tên lựa chọn tiếng Anh',max_length=180,blank=True)
     ticket_id=models.CharField('Loại vé trong Ticket Management',max_length=120)
@@ -111,17 +131,24 @@ class ServiceOption(models.Model):
         verbose_name='Lựa chọn vé online'
         verbose_name_plural='Lựa chọn vé online'
     def clean(self):
+        if self.group_id:
+            if self.group.service_id!=self.service_id:raise ValidationError('Nhóm vé phải thuộc dịch vụ này.')
+            self.group_name=self.group.name;self.group_name_en=self.group.name_en
+        for field in ('online_price','published_price'):
+            value=getattr(self,field)
+            if value is not None and not 0<value<=100000000:raise ValidationError({field:'Giá cần từ 1 đến 100.000.000 đồng.'})
+        if self.strike_published_price and (not self.published_price or not self.online_price or self.online_price>=self.published_price):raise ValidationError({'strike_published_price':'Chỉ gạch ngang khi giá online thấp hơn giá công bố.'})
         self.group_name=self.group_name.strip()
         if self.group_name and not self.audience:raise ValidationError({'audience':'Chọn Người lớn, Trẻ em hoặc Người cao tuổi cho nhóm vé.'})
         if self.audience and not self.group_name:raise ValidationError({'group_name':'Nhập nhóm loại vé, ví dụ ECO.'})
         if self.active and self.group_name and self.audience and self.service_id and ServiceOption.objects.filter(service_id=self.service_id,group_name__iexact=self.group_name,audience=self.audience,active=True).exclude(pk=self.pk).exists():raise ValidationError('Nhóm loại vé đã có lựa chọn đang bán cho nhóm khách này.')
     @property
     def display_title(self):
-        return self.group_name+' · '+self.get_audience_display() if self.group_name and self.audience else self.title
+        return (self.group.name if self.group_id else self.group_name)+' · '+self.get_audience_display() if (self.group_id or self.group_name) and self.audience else self.title
     @property
     def display_title_en(self):
         labels={'adult':'Adult','child':'Child','senior':'Senior'}
-        return (self.group_name_en or self.group_name)+' · '+labels.get(self.audience,self.audience) if self.group_name and self.audience else (self.title_en or self.title)
+        return ((self.group.name_en or self.group.name) if self.group_id else (self.group_name_en or self.group_name))+' · '+labels.get(self.audience,self.audience) if self.group_name and self.audience else (self.title_en or self.title)
     def __str__(self):return str(self.service)+' — '+self.display_title
 
 class CartOrder(models.Model):

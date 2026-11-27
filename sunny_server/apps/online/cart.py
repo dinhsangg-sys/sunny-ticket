@@ -30,16 +30,16 @@ def day_value(value):
 
 def choices(service):
     rows=[]
-    if service.ticket_id:rows.append({'id':'default','title':'Vé mặc định','title_en':'Standard ticket','option':None})
-    for opt in service.options.filter(active=True):rows.append({'id':str(opt.pk),'title':opt.display_title,'title_en':opt.display_title_en,'option':opt})
+    if service.ticket_id and not service.ticket_groups.exists():rows.append({'id':'default','title':'Vé mặc định','title_en':'Standard ticket','option':None})
+    for opt in service.options.filter(active=True).select_related('group').order_by('group__sort_order','group_id','sort_order','pk'):rows.append({'id':str(opt.pk),'title':opt.display_title,'title_en':opt.display_title_en,'option':opt})
     return rows
 
 def ticket_groups(service):
     groups={}
     audiences={'adult':('Người lớn','Adult'),'child':('Trẻ em','Child'),'senior':('Người cao tuổi','Senior')}
     for choice in choices(service):
-        opt=choice['option'];group_name=(opt.group_name if opt else '') or choice['title'];key=group_name.strip().casefold()
-        if key not in groups:groups[key]={'title':group_name,'title_en':(opt.group_name_en or group_name) if opt and opt.group_name else choice['title_en'],'options':[]}
+        opt=choice['option'];group_name=((opt.group.name if opt.group_id else opt.group_name) if opt else '') or choice['title'];key=group_name.strip().casefold()
+        if key not in groups:groups[key]={'title':group_name,'title_en':((opt.group.name_en if opt.group_id else opt.group_name_en) or group_name) if opt and (opt.group_id or opt.group_name) else choice['title_en'],'options':[]}
         labels=audiences.get(opt.audience) if opt else None
         groups[key]['options'].append({**choice,'title':labels[0] if labels else choice['title'],'title_en':labels[1] if labels else choice['title_en']})
     return list(groups.values())
@@ -58,7 +58,8 @@ def prices(request,slug):
     for choice in choices(service):
         try:
             unit,_,_=quote(service,day,choice['option'])
-            rows.append({'id':choice['id'],'price':unit,'available':True})
+            opt=choice['option']
+            rows.append({'id':choice['id'],'price':unit,'available':True,'published_price':opt.published_price if opt else None,'strike_published_price':bool(opt and opt.strike_published_price and opt.published_price and unit<opt.published_price)})
         except (ValueError,KeyError,TypeError):rows.append({'id':choice['id'],'available':False})
     return JsonResponse({'date':day.isoformat(),'options':rows})
 
