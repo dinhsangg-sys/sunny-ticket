@@ -1,3 +1,9 @@
+# 1.23.2 — Email booking tiếng Anh
+
+- 20 kiểm thử luồng cart/phương thức thanh toán hiện có đạt; 2 kiểm thử email mới đạt (cash chưa thu, paid, không gửi nhầm pending QR, đúng nơi nhận, cấu trúc HTML/text, tiếng Anh/ngày tháng khi ngôn ngữ ứng dụng là Việt, escape dữ liệu khách).
+- Playwright/Edge: render mẫu cash/paid và không tràn ngang ở 390/320px. Ảnh output/booking-email-desktop.png, output/booking-email-mobile.png; HTML mẫu output/booking-email-cash.html.
+- Email dùng locmem trong kiểm thử, không gửi email thật. Không đổi tài chính hay người nhận, không migration mới. git diff --check đạt.
+
 # 1.23.1 — Nhấn mạnh thông tin kiểm tra đơn
 
 - Chữ đậm cho thông tin khách, ngày dùng, số lượng và số tiền; các vùng màu phân biệt thông tin/dịch vụ/tổng đơn.

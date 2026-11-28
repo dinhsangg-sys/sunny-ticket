@@ -1,0 +1,39 @@
+{% autoescape off %}SUNNY TRAVEL & LEISURE
+{{ title }} — {{ order.code }}
+
+{{ intro }}
+{% if cash_request %}NOT PAID: No cash has been collected. This request is not a confirmed delivery appointment.{% endif %}
+
+BOOKING DETAILS
+Booking reference: {{ order.code }}
+Created: {{ order.created_at|date:"d M Y, H:i" }} (Vietnam time)
+Status: {{ status }}
+Payment method: {{ method }}
+
+CUSTOMER DETAILS
+Your name: {{ order.customer_name }}
+Email: {{ order.email }}
+Phone: {{ order.phone }}
+
+SELECTED EXPERIENCES
+{% for line in lines %}{{ line.title }}
+Ticket: {{ line.option }}
+Visit date: {{ line.visit_date|date:"d M Y" }}
+Quantity: {{ line.qty }}
+Unit price: {{ line.unit_price }} VND
+Subtotal: {{ line.total }} VND
+
+{% endfor %}ORDER TOTAL: {{ total }} VND
+{% if order.delivery_note %}
+DELIVERY INFORMATION
+{{ order.delivery_note }}
+{% endif %}
+NEXT STEP
+{% if cash_request %}Contact the customer and confirm delivery in Da Nang. Record payment only after tickets have been delivered and the full cash amount has been received.{% else %}Check the booking and ticket details, attach the correct tickets, and send them to the customer's registered email.{% endif %}
+Open booking (staff sign-in required): {{ process_url }}
+
+Sunny Company Limited
+36/147 Le Quy Don, Hoi An Ward, Da Nang City, Vietnam
+booking@sunnygovn.com | +84 932 548 145
+Local heart. Lasting memories.
+{% endautoescape %}

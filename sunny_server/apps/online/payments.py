@@ -66,9 +66,7 @@ def apply_cart_event(event,intent):
 
 
 def notify_admin(key):
-    from django.core.mail import EmailMessage
     from django.core.validators import validate_email
-    from django.core.exceptions import ValidationError
     from .models import CartOrder
     try:
         order=CartOrder.objects.get(pk=key)
@@ -79,11 +77,9 @@ def notify_admin(key):
         if not address:
             CartOrder.objects.filter(pk=key).update(notification_state='unconfigured');return
         validate_email(address)
-        url=settings.PUBLIC_SITE_URL+'/online/staff/cart/'+str(order.pk)+'/'
-        if order.payment_method=='cash' and order.status=='pending':
-            message=EmailMessage('Sunny: yêu cầu giao vé và thu tiền mặt — '+order.code,f'Khách {order.customer_name} — {order.phone} — {order.email} yêu cầu giao vé và thu tiền tại Đà Nẵng. Chưa thu tiền, chưa ghi nhận doanh thu.\nThông tin giao vé: {order.delivery_note}\n{url}',to=[address])
-        else:
-            message=EmailMessage('Sunny: đơn '+order.code+' đã thanh toán — cần gửi vé',f'Đơn {order.code} đã nhận đủ tiền. Vào trang quản trị để kiểm tra và gửi vé cho khách.\n{url}',to=[address])
+        if order.status!='paid' and not (order.status=='pending' and order.payment_method=='cash' and order.cash_requested_at):return
+        from .booking_email import booking_notification
+        message=booking_notification(order,address)
         if message.send()!=1:raise ValueError('Email not accepted')
         CartOrder.objects.filter(pk=key).update(notification_state='sent')
     except Exception:
