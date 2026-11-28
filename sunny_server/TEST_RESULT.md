@@ -1,3 +1,9 @@
+# 1.23.1 — Nhấn mạnh thông tin kiểm tra đơn
+
+- Chữ đậm cho thông tin khách, ngày dùng, số lượng và số tiền; các vùng màu phân biệt thông tin/dịch vụ/tổng đơn.
+- Playwright/Edge hiện có đạt cho VI/EN, phương thức thanh toán, checkbox, trạng thái cash và màn hình 390/320px; kiểm tra trực quan ảnh output/order-details-desktop.png.
+- Thay đổi giao diện, không đổi dữ liệu/tính tiền, không migration mới. git diff --check đạt.
+
 # 1.23.0 — Đơn hàng và lựa chọn thanh toán
 
 - 87 tests apps.online và apps.souvenirs đạt, system check không có lỗi.

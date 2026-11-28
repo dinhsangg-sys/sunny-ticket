@@ -1,3 +1,7 @@
+# Bản 1.23.1 — Thông tin đơn hàng rõ và dễ kiểm tra
+
+Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_23_1.md).
+
 # Bản 1.23.0 — Chi tiết đơn và phương thức thanh toán
 
 Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_23_0.md).
