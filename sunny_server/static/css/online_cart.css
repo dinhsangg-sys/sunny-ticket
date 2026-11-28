@@ -12,4 +12,6 @@
 
 .prose img{max-width:100%;height:auto;border-radius:6px}.prose figure{margin:24px 0}.prose figcaption{font-size:14px;color:#657369}.prose h2{font-size:30px}.prose blockquote{border-left:3px solid #e3b438;margin:20px 0;padding-left:20px}
 
-.ticket-prices{grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:flex-end;gap:3px}.ticket-prices small{font-size:11px;color:#68746b;line-height:1.4}.ticket-prices small[hidden]{display:none}.ticket-prices .discounted{text-decoration:line-through}.ticket-prices strong{font-size:16px}
+.ticket-prices{grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:flex-end;gap:3px}.ticket-identity small{font-size:11px;color:#68746b;line-height:1.4}.ticket-identity small[hidden]{display:none}.ticket-identity .discounted{text-decoration:line-through}.ticket-prices strong{font-size:16px}
+
+.service-picker .ticket-identity{grid-column:1;grid-row:1 / 3;align-self:center;min-width:0;display:flex;flex-direction:column;gap:4px}.service-picker .ticket-identity .ticket-name{display:block;align-self:stretch;text-align:left}.ticket-identity small{display:block;overflow-wrap:anywhere}

@@ -1,3 +1,7 @@
+# Bản 1.22.1 — Giá công bố ngay dưới tên vé
+
+Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_22_1.md).
+
 # Bản 1.22.0 — Quản lý dịch vụ, nhóm vé và giá Digital
 
 Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_22_0.md).

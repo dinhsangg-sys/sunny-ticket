@@ -1,3 +1,9 @@
+# 1.22.1 — Giá công bố dưới tên vé
+
+- Playwright/Edge kiểm tra giao diện, giá công bố gạch ngang và không tràn ngang màn hình 390px; không lỗi JavaScript.
+- Giá công bố nằm trong cột tên vé; giá online và số lượng ở cột phải.
+- Không thay đổi cách tính tiền hoặc dữ liệu. git diff --check đạt.
+
 # 1.22.0 — Thu gọn quản lý website và vé online
 
 - 78 tests apps.online và apps.souvenirs đạt; system check không có lỗi.
