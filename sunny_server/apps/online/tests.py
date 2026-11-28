@@ -27,7 +27,7 @@ class OnlineTests(TestCase):
         OnlinePrice.objects.create(service=self.service,price=600000,starts_on=timezone.localdate())
         self.day=timezone.localdate()+timedelta(days=1)
         self.url='/services/hoi-an/book/'
-        self.body={'request_id':str(uuid.uuid4()),'visit_date':self.day.isoformat(),'qty':2,'customer_name':'Khách Sunny','email':'guest@example.test','phone':'0901234567','agreed':'on'}
+        self.body={'request_id':str(uuid.uuid4()),'visit_date':self.day.isoformat(),'qty':2,'customer_name':'Khách Sunny','email':'guest@example.test','phone_country':'+84','phone':'0901234567','agreed':'on'}
     def create_order(self,**changes):
         response=self.client.post(self.url,{**self.body,**changes})
         self.assertEqual(response.status_code,302,response.content)

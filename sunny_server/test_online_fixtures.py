@@ -38,7 +38,7 @@ with tempfile.TemporaryDirectory() as folder:
 
     guest.get('/discover/?lang=vi')
     import uuid
-    response=guest.post('/services/hoi-an/book/',{'request_id':str(uuid.uuid4()),'visit_date':timezone.localdate().isoformat(),'qty':2,'customer_name':'Khách thử giao diện','email':'guest@example.test','phone':'0901234567','agreed':'on'})
+    response=guest.post('/services/hoi-an/book/',{'request_id':str(uuid.uuid4()),'visit_date':timezone.localdate().isoformat(),'qty':2,'customer_name':'Khách thử giao diện','email':'guest@example.test','phone_country':'+84','phone':'0901234567','agreed':'on'})
     output['order_url']=response.url;output['order']=guest.get(response.url).content.decode();guest.post(response.url)
     output['qr']=guest.get(response.url).content.decode()
     from apps.online.models import OnlineOrder

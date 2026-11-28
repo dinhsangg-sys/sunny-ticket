@@ -175,7 +175,8 @@ def queue(request):
         except (OperationalError,IntegrityError):error='Có nhân viên đang cập nhật đơn. Tải lại để kiểm tra.'
     from .models import CartOrder
     carts=CartOrder.objects.filter(Q(status='paid')|Q(status='pending',payment_method='cash',cash_requested_at__isnull=False))
-    if request.GET.get('all')!='1':carts=carts.exclude(email_state__in=['sent','external'])
+    if request.GET.get('cancelled')=='1':carts=CartOrder.objects.filter(status='cancelled')
+    elif request.GET.get('all')!='1':carts=carts.exclude(email_state__in=['sent','external'])
     carts=carts.prefetch_related('lines')[:200]
     rows=[]
     orders=OnlineOrder.objects.filter(status='paid',cart__isnull=True).select_related('service','assigned_to','intent')[:200]

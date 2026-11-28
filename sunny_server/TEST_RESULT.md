@@ -1,3 +1,11 @@
+# 1.23.3 — Hủy đơn chưa thu tiền và kiểm tra bắt buộc
+
+- 93 tests apps.online và apps.souvenirs đạt. Kiểm thử hủy được chạy lại sau khi thêm thông báo thành công: 3 tests đạt.
+- Kiểm tra mới: quản trị hủy cash chưa thu, lưu lý do/người/thời gian, chuyển các dòng vé, lịch sử hủy và trạng thái khách, không tạo QR lại; nhân viên không có quyền; thiếu lý do/xác nhận bị chặn; đơn có QR/đã thu không bị hủy.
+- Kiểm tra bắt buộc từng trường họ tên/email/mã quốc gia/điện thoại/đồng ý ở browser và server. Fixtures gửi mã quốc gia rõ ràng thay cho tự suy đoán.
+- Playwright/Edge đạt: nút Hủy đơn và mở mục xác nhận, required lý do, required thông tin khách, bố cục 390px. Ảnh output/cancel-order-admin.png và output/required-checkout-fields.png.
+- makemigrations --check --dry-run, check và git diff --check đạt. Migration online.0013 thêm metadata hủy; không tự hủy/xóa đơn thật.
+
 # 1.23.2 — Email booking tiếng Anh
 
 - 20 kiểm thử luồng cart/phương thức thanh toán hiện có đạt; 2 kiểm thử email mới đạt (cash chưa thu, paid, không gửi nhầm pending QR, đúng nơi nhận, cấu trúc HTML/text, tiếng Anh/ngày tháng khi ngôn ngữ ứng dụng là Việt, escape dữ liệu khách).

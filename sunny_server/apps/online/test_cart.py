@@ -23,7 +23,7 @@ class CartTests(TestCase):
         self.add()
         response=self.client.get('/cart/checkout/')
         form=response.context['form']
-        body={'request_id':str(form.initial['request_id']),'quote_token':form.initial['quote_token'],'customer_name':'Cart guest','email':'guest@example.test','phone':'+84932548145','agreed':'on'}
+        body={'request_id':str(form.initial['request_id']),'quote_token':form.initial['quote_token'],'customer_name':'Cart guest','email':'guest@example.test','phone_country':'+84','phone':'+84932548145','agreed':'on'}
         response=self.client.post('/cart/checkout/',body)
         self.assertEqual(response.status_code,302,response.content)
         order=CartOrder.objects.get(request_id=body['request_id'])
@@ -142,7 +142,7 @@ class CartTests(TestCase):
         self.assertRedirects(response,'/checkout/now/',fetch_redirect_response=False)
         self.assertEqual(self.client.session['sunny_cart_v1'],before)
         response=self.client.get('/checkout/now/');self.assertEqual(response.context['total'],600000)
-        form=response.context['form'];body={'request_id':str(form.initial['request_id']),'quote_token':form.initial['quote_token'],'customer_name':'Direct guest','email':'direct@example.test','phone':'+84932548145','agreed':'on'}
+        form=response.context['form'];body={'request_id':str(form.initial['request_id']),'quote_token':form.initial['quote_token'],'customer_name':'Direct guest','email':'direct@example.test','phone_country':'+84','phone':'+84932548145','agreed':'on'}
         response=self.client.post('/checkout/now/',body)
         self.assertEqual(response.status_code,302,response.content)
         order=CartOrder.objects.get();self.assertEqual(order.total,600000);self.assertEqual(order.lines.count(),1)

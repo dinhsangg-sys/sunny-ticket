@@ -27,3 +27,12 @@ class PhoneTests(SimpleTestCase):
         self.assertEqual(form.cleaned_data['phone'],'+84932548145')
         form=CartCheckoutForm({**data,'phone_country':'+1','phone':'+84932548145'},lang='en')
         self.assertFalse(form.is_valid());self.assertIn('phone',form.errors)
+
+    def test_customer_fields_and_consent_are_required(self):
+        import uuid
+        data={'request_id':str(uuid.uuid4()),'quote_token':'test','customer_name':'Guest','email':'guest@example.test','phone_country':'+84','phone':'0932548145','agreed':'on'}
+        for name in ['customer_name','email','phone_country','phone','agreed']:
+            form=CartCheckoutForm({**data,name:''},lang='en')
+            self.assertFalse(form.is_valid());self.assertIn(name,form.errors)
+        form=CartCheckoutForm(lang='en')
+        for name in ['customer_name','email','phone_country','phone','agreed']:self.assertIn('required',str(form[name]))

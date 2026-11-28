@@ -46,6 +46,13 @@ def process(request,key):
             action=request.POST.get('action')
             with transaction.atomic():
                 order=CartOrder.objects.select_for_update().get(pk=key)
+                if action=='cancel_order':
+                    if request.POST.get('confirmed')!='on':raise ValueError('Xác nhận khách muốn hủy và đơn chưa thu tiền.')
+                    from .cancellation import cancel_unpaid
+                    cancel_unpaid(order,request.user,request.POST.get('reason',''))
+                    from django.contrib import messages
+                    messages.success(request,'Đã hủy đơn '+order.code+'. Có thể xem lại trong Đơn đã hủy.')
+                    return redirect('online-queue')
                 if action=='collect_cash':
                     if not request.POST.get('confirmed'):raise ValueError('Xác nhận đã giao đúng vé và thực nhận đủ tiền mặt.')
                     from .payments import collect_cash
@@ -111,7 +118,7 @@ def process(request,key):
         except (ValueError,OSError,RuntimeError) as exc:error=str(exc)
         except (IntegrityError,OperationalError):error='Có thao tác đồng thời. Tải lại để kiểm tra.'
     order.refresh_from_db()
-    return render(request,'online/process_cart.html',{'order':order,'lines':order.lines.select_related('service'),'tickets':order.tickets.all(),'error':error,'cash_pending':order.status=='pending' and order.payment_method=='cash' and order.cash_requested_at is not None,'can_collect_cash':request.user.is_superuser or request.user.has_perm('online.collect_cash_orders'),'ready':order.status=='paid' and state(order)!='review','can_send':order.email_state=='pending','can_reconcile':order.can_reconcile})
+    return render(request,'online/process_cart.html',{'order':order,'lines':order.lines.select_related('service'),'tickets':order.tickets.all(),'error':error,'can_cancel_order':request.user.is_superuser and order.status=='pending' and not order.intent_id and not order.paid_at,'cash_pending':order.status=='pending' and order.payment_method=='cash' and order.cash_requested_at is not None,'can_collect_cash':request.user.is_superuser or request.user.has_perm('online.collect_cash_orders'),'ready':order.status=='paid' and state(order)!='review','can_send':order.email_state=='pending','can_reconcile':order.can_reconcile})
 
 @login_required
 @never_cache

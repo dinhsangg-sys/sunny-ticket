@@ -8,7 +8,7 @@ class CheckoutForm(forms.Form):
     qty=forms.IntegerField(label='Số lượng vé',min_value=1,max_value=20,initial=1)
     customer_name=forms.CharField(label='Họ tên khách',max_length=120)
     email=forms.EmailField(label='Email nhận vé',max_length=254)
-    phone_country=forms.CharField(label='Mã quốc gia',max_length=80,initial='+1',required=False,widget=CountryWidget(attrs={'autocomplete':'off','role':'combobox','aria-expanded':'false'}))
+    phone_country=forms.CharField(label='Mã quốc gia',max_length=80,initial='+1',required=True,widget=CountryWidget(attrs={'autocomplete':'off','role':'combobox','aria-expanded':'false'}))
     phone=forms.CharField(label='Số điện thoại',max_length=30,widget=forms.TextInput(attrs={'type':'tel','inputmode':'tel','autocomplete':'tel-national'}))
     agreed=forms.BooleanField(label='Tôi đã kiểm tra email, ngày sử dụng và đồng ý điều kiện của dịch vụ. Vé sẽ được nhân viên gửi qua email sau khi thanh toán.')
     website=forms.CharField(required=False,widget=forms.HiddenInput)
@@ -19,6 +19,8 @@ class CheckoutForm(forms.Form):
             labels={'visit_date':'Visit date','qty':'Number of tickets','customer_name':'Full name','email':'Email for your tickets','phone':'Phone number','phone_country':'Country calling code','agreed':'I have checked my email and visit date and accept the service conditions. Tickets will be emailed by Sunny staff after payment.'}
             for name,label in labels.items():self.fields[name].label=label
             for field in self.fields.values():field.error_messages.update(required='This field is required.',invalid='Please enter a valid value.',min_value='Please enter at least %(limit_value)s.',max_value='Please enter no more than %(limit_value)s.',max_length='Please use no more than %(limit_value)s characters.')
+        for name,field in self.fields.items():
+            if field.required and not field.widget.is_hidden and name!='agreed':field.label+=' *'
     def clean_phone_country(self):
         value=self.cleaned_data.get('phone_country') or '+1'
         country(value)
@@ -26,14 +28,7 @@ class CheckoutForm(forms.Form):
     def clean(self):
         values=super().clean()
         if 'phone' in values and 'phone_country' in values:
-            # Old clients posting an international number without the new control remain valid.
             selected=values['phone_country']
-            if self.is_bound and 'phone_country' not in self.data:
-                raw=values['phone'].strip()
-                if raw.startswith('+'):
-                    from .phone import COUNTRIES
-                    selected=next(('+'+c[3] for c in sorted(COUNTRIES,key=lambda c:-len(c[3])) if raw[1:].startswith(c[3])),selected)
-                elif raw.startswith('0'):selected='+84'
             try:values['phone']=normalize_phone(values['phone'],selected)
             except forms.ValidationError as exc:self.add_error('phone',exc)
         return values

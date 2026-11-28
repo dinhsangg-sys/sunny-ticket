@@ -50,4 +50,8 @@ with tempfile.TemporaryDirectory() as folder:
     output['order_details_en']=guest.get(response.url+'?lang=en').content.decode()
     guest.post(response.url,{'payment_method':'cash','cash_confirmed':'on','delivery_note':'Khách sạn tại Đà Nẵng'})
     output['cash_pending']=guest.get(response.url+'?lang=vi').content.decode()
+    staff=Client();staff.force_login(admin)
+    order=CartOrder.objects.get()
+    output['cancel_queue']=staff.get('/online/staff/').content.decode()
+    output['cancel_process']=staff.get('/online/staff/cart/'+str(order.pk)+'/?cancel=1').content.decode()
     connections.close_all();print(json.dumps(output))

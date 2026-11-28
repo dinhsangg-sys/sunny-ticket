@@ -174,6 +174,9 @@ class CartOrder(models.Model):
     payment_method=models.CharField('Phương thức thanh toán',max_length=20,default='',blank=True,choices=[('','Chưa chọn'),('bank_transfer','QR chuyển khoản'),('cash','Tiền mặt khi giao vé')])
     cash_requested_at=models.DateTimeField(null=True,blank=True)
     delivery_note=models.CharField('Thông tin giao vé tại Đà Nẵng',max_length=500,blank=True)
+    cancelled_at=models.DateTimeField('Hủy lúc',null=True,blank=True)
+    cancelled_by=models.ForeignKey('accounts.User',on_delete=models.PROTECT,null=True,blank=True,related_name='+',verbose_name='Người hủy')
+    cancellation_reason=models.CharField('Lý do hủy',max_length=1000,blank=True)
     class Meta:
         ordering=['-created_at']
         permissions=[('collect_cash_orders','Xác nhận giao vé và thu tiền mặt đơn online')]
@@ -189,6 +192,7 @@ class CartOrder(models.Model):
         return self.email_state in ('pending','uncertain') or (self.email_state=='sending' and self.send_started_at is not None and self.send_started_at<timezone.now()-timedelta(minutes=5))
     @property
     def delivery_label(self):
+        if self.status=='cancelled':return 'Đã hủy — chưa thu tiền'
         if self.payment_method=='cash' and self.status=='pending':return 'Chờ liên hệ giao vé / Thu tiền tại Đà Nẵng'
         if self.payment_method=='cash' and self.email_state=='external':return 'Đã giao vé và thu tiền mặt'
         return {'pending':'Chờ xử lý / Gửi vé','sending':'Đang gửi email','sent':'Đã gửi qua hệ thống','external':'Đã xác nhận gửi bên ngoài','uncertain':'Chưa rõ kết quả gửi — cần đối soát'}.get(self.email_state,self.email_state)

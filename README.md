@@ -1,3 +1,7 @@
+# Bản 1.23.3 — Hủy đơn chưa thu tiền và thông tin đặt vé bắt buộc
+
+Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_23_3.md).
+
 # Bản 1.23.2 — Email booking tiếng Anh
 
 Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_23_2.md).

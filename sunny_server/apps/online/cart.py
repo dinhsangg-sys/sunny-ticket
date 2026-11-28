@@ -165,6 +165,7 @@ def checkout(request,direct=False):
 def customer_order(request,key):return get_object_or_404(CartOrder,pk=key,session_hash=session_hash(request))
 
 def state(order):
+    if order.status=='cancelled':return 'cancelled'
     if order.status=='paid':
         from .views import order_state
         if any(order_state(line)[0]=='review' for line in order.lines.all()):return 'review'
@@ -175,7 +176,7 @@ def state(order):
     return 'pending'
 
 def label(value,lang):
-    return {'cash_pending':('Chờ liên hệ giao vé và thu tiền','Awaiting delivery arrangements & cash payment'),'delivered':('Đã giao vé và thu tiền mặt','Tickets delivered — Cash received'),'pending':('Chờ thanh toán','Awaiting payment'),'paid':('Đã thanh toán — Chờ gửi vé','Payment received — Awaiting tickets'),'sent':('Đã gửi vé qua email','Tickets sent by email')}.get(value,('Cần kiểm tra trạng thái, không thanh toán lại.','Please check the order status. Do not pay again.'))[lang=='en']
+    return {'cancelled':('Đơn đã hủy','Booking cancelled'),'cash_pending':('Chờ liên hệ giao vé và thu tiền','Awaiting delivery arrangements & cash payment'),'delivered':('Đã giao vé và thu tiền mặt','Tickets delivered — Cash received'),'pending':('Chờ thanh toán','Awaiting payment'),'paid':('Đã thanh toán — Chờ gửi vé','Payment received — Awaiting tickets'),'sent':('Đã gửi vé qua email','Tickets sent by email')}.get(value,('Cần kiểm tra trạng thái, không thanh toán lại.','Please check the order status. Do not pay again.'))[lang=='en']
 
 @never_cache
 @require_http_methods(['GET','POST'])
