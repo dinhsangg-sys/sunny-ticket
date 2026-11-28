@@ -1,3 +1,11 @@
+# 1.22.2 — Tìm/chọn mã quốc gia cho điện thoại
+
+- Mặc định +1, điều khiển tìm theo tên/mã và danh sách cuộn, chọn bằng chuột/bàn phím.
+- 36 tests (phone, cart, online core) đạt: chuẩn hóa số VN/US/Italy, số quốc tế khớp mã đã chọn, từ chối mã/số sai, biểu mẫu song ngữ, giá/giỏ/thanh toán và xử lý đơn.
+- Playwright/Edge đạt: +1 mặc định, danh sách cuộn, lọc +84 hoặc tên Mỹ, chọn và nhập số, không tràn ngang ở 390/320px, không lỗi JavaScript. Ảnh output/phone-country-desktop.png.
+- makemigrations --check --dry-run: không thiếu migration. git diff --check đạt.
+- Không gọi dịch vụ tra số, không thực hiện cuộc gọi hoặc thanh toán thật; không sửa số ở đơn cũ.
+
 # 1.22.1 — Giá công bố dưới tên vé
 
 - Playwright/Edge kiểm tra giao diện, giá công bố gạch ngang và không tràn ngang màn hình 390px; không lỗi JavaScript.

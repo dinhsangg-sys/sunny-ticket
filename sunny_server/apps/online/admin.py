@@ -194,7 +194,7 @@ class OnlineOrderAdmin(WebsiteAdmin):
     def get_model_perms(self,request):return {}
     list_display=['code','customer_name','service','visit_date','qty','total','status','created_at']
     list_filter=['status','visit_date']
-    search_fields=['customer_name','email','booking_id']
+    search_fields=['customer_name','email','phone','booking_id']
     readonly_fields=[f.name for f in OnlineOrder._meta.fields]
     def has_add_permission(self,request):return False
     def has_delete_permission(self,request,obj=None):return False
