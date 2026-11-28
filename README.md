@@ -1,3 +1,7 @@
+# Bản 1.23.0 — Chi tiết đơn và phương thức thanh toán
+
+Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_23_0.md).
+
 # Bản 1.22.2 — Chọn mã quốc gia khi nhập số điện thoại
 
 Xem [hướng dẫn cập nhật](sunny_server/UPGRADE_1_22_2.md).

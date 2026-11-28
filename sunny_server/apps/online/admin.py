@@ -217,8 +217,8 @@ class ServiceOptionAdmin(WebsiteAdmin):
 
 @admin.register(CartOrder)
 class CartOrderAdmin(WebsiteAdmin):
-    list_display=['code','customer_name','email','total','status','email_state','created_at','processing_link']
-    list_filter=['status','email_state','created_at']
+    list_display=['code','customer_name','email','total','payment_method','status','email_state','created_at','processing_link']
+    list_filter=['status','payment_method','email_state','created_at']
     search_fields=['email','customer_name','phone']
     readonly_fields=[f.name for f in CartOrder._meta.fields]+['processing_link']
     def processing_link(self,obj):

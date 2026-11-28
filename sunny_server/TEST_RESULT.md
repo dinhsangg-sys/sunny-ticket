@@ -1,3 +1,12 @@
+# 1.23.0 — Đơn hàng và lựa chọn thanh toán
+
+- 87 tests apps.online và apps.souvenirs đạt, system check không có lỗi.
+- Kiểm thử mới: yêu cầu tiền mặt giữ pending, không có doanh thu/QR; giới hạn phiên riêng tư; lặp yêu cầu không lặp thu; thẻ Visa/Mastercard bị từ chối ở server; không đổi sang cash sau khi tạo QR; không tạo QR sau khi yêu cầu cash; hết hạn giữ giá; quyền thu tiền, xác nhận giao vé, đúng số tiền; tạo booking Digital và khoản thu cash một lần.
+- CSRF HTTPS với token hợp lệ và Referer cùng nguồn được chấp nhận; Origin không tin cậy bị từ chối. Trang đơn có Referrer-Policy same-origin.
+- Playwright/Edge: chi tiết khách/dịch vụ/số lượng/giá/tổng VI/EN, lựa chọn phương thức, thẻ chưa khả dụng, xác nhận cash, ô tick trước nội dung, trạng thái chờ giao, không tràn ngang 390/320px, không lỗi JavaScript. Ảnh output/order-details-desktop.png và order-details-mobile.png.
+- makemigrations --check --dry-run và git diff --check đạt. Migration online.0012 bổ sung trường cash và quyền collect_cash_orders.
+- Toàn bộ email, đơn hàng, thanh toán trong kiểm thử dùng dữ liệu tách biệt; không triển khai máy chủ, không gửi email/call/thanh toán thật.
+
 # 1.22.2 — Tìm/chọn mã quốc gia cho điện thoại
 
 - Mặc định +1, điều khiển tìm theo tên/mã và danh sách cuộn, chọn bằng chuột/bàn phím.

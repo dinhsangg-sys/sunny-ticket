@@ -46,6 +46,11 @@ def process(request,key):
             action=request.POST.get('action')
             with transaction.atomic():
                 order=CartOrder.objects.select_for_update().get(pk=key)
+                if action=='collect_cash':
+                    if not request.POST.get('confirmed'):raise ValueError('Xác nhận đã giao đúng vé và thực nhận đủ tiền mặt.')
+                    from .payments import collect_cash
+                    collect_cash(order,request.user,request.POST.get('cash_amount',''),request.POST.get('note','').strip())
+                    return redirect('online-cart-process',key=key)
                 if order.status!='paid' or state(order)=='review':raise ValueError('Đơn chưa thanh toán hoặc đang cần đối soát; chưa được gửi vé.')
                 if order.email_state in ('sent','external'):raise ValueError('Đơn đã ghi nhận gửi vé. Không gửi lặp.')
                 if order.email_state=='sending' and not (action=='external' and order.can_reconcile):raise ValueError('Email đang gửi. Nếu bị gián đoạn, chờ 5 phút rồi đối soát hộp thư trước khi ghi nhận đã gửi bên ngoài.')
@@ -103,10 +108,10 @@ def process(request,key):
                 CartOrder.objects.filter(pk=key,email_state='sending').update(email_state='sent',emailed_at=timezone.now())
                 AuditLog.objects.create(user=request.user,action='online.cart.sent:'+order.code)
                 return redirect('online-cart-process',key=key)
-        except (ValueError,OSError) as exc:error=str(exc)
+        except (ValueError,OSError,RuntimeError) as exc:error=str(exc)
         except (IntegrityError,OperationalError):error='Có thao tác đồng thời. Tải lại để kiểm tra.'
     order.refresh_from_db()
-    return render(request,'online/process_cart.html',{'order':order,'lines':order.lines.select_related('service'),'tickets':order.tickets.all(),'error':error,'ready':order.status=='paid' and state(order)!='review','can_send':order.email_state=='pending','can_reconcile':order.can_reconcile})
+    return render(request,'online/process_cart.html',{'order':order,'lines':order.lines.select_related('service'),'tickets':order.tickets.all(),'error':error,'cash_pending':order.status=='pending' and order.payment_method=='cash' and order.cash_requested_at is not None,'can_collect_cash':request.user.is_superuser or request.user.has_perm('online.collect_cash_orders'),'ready':order.status=='paid' and state(order)!='review','can_send':order.email_state=='pending','can_reconcile':order.can_reconcile})
 
 @login_required
 @never_cache

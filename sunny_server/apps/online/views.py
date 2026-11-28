@@ -56,6 +56,8 @@ def session_hash(request):
 def owner():
     return get_user_model().objects.filter(username=settings.ONLINE_PAYMENT_OWNER,is_active=True,is_superuser=True).first()
 
+def order_ready():return settings.ONLINE_CHECKOUT_ENABLED and email_ready() and owner() is not None
+
 def checkout_ready():return settings.ONLINE_CHECKOUT_ENABLED and ready() and email_ready() and owner() is not None
 
 def quote(service,day,option=None):
@@ -138,7 +140,7 @@ def order_page(request,key):
     state,label=order_state(order)
     payment=customer_data(order.intent) if order.intent_id else None
     response=public_render(request,'online/order.html',{'order':order,'state':state,'label':label,'payment':payment,'error':error})
-    response['Referrer-Policy']='no-referrer';return response
+    response['Referrer-Policy']='same-origin';return response
 
 @never_cache
 @require_GET
@@ -172,7 +174,7 @@ def queue(request):
         except (ValueError,RuntimeError) as exc:error=str(exc)
         except (OperationalError,IntegrityError):error='Có nhân viên đang cập nhật đơn. Tải lại để kiểm tra.'
     from .models import CartOrder
-    carts=CartOrder.objects.filter(status='paid')
+    carts=CartOrder.objects.filter(Q(status='paid')|Q(status='pending',payment_method='cash',cash_requested_at__isnull=False))
     if request.GET.get('all')!='1':carts=carts.exclude(email_state__in=['sent','external'])
     carts=carts.prefetch_related('lines')[:200]
     rows=[]

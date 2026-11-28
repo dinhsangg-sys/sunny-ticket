@@ -14,7 +14,7 @@ from apps.legacy.sepay import customer_data
 from .models import Service,ServiceOption,OnlineOrder,CartOrder
 from .forms import CartCheckoutForm
 from .language import public_render,language
-from .views import quote,session_hash,checkout_ready,owner
+from .views import quote,session_hash,checkout_ready,order_ready,owner
 
 CART_KEY='sunny_cart_v1'
 DIRECT_KEY='sunny_direct_v1'
@@ -145,7 +145,7 @@ def checkout(request,direct=False):
                     return redirect('online-cart-order',key=existing.pk)
                 if not rows or any(r['error'] for r in rows):raise ValueError('Giỏ chưa có lựa chọn hợp lệ. / Choose valid cart items.')
                 if signing.loads(values['quote_token'],salt='sunny-cart',max_age=1800)!=digest(rows):raise ValueError('Giá/giỏ đã thay đổi. Mở lại trang để kiểm tra. / Prices or cart changed. Reload to review.')
-                if not checkout_ready():raise ValueError('Thanh toán tạm đóng. / Online payment is temporarily unavailable.')
+                if not order_ready():raise ValueError('Thanh toán tạm đóng. / Online payment is temporarily unavailable.')
                 ratekey='online-cart:'+hashlib.sha256(request.META.get('REMOTE_ADDR','').encode()).hexdigest();count=cache.get(ratekey,0)
                 if count>=30 or CartOrder.objects.filter(session_hash=key,created_at__gte=timezone.now()-timedelta(hours=1)).count()>=10:raise ValueError('Quá nhiều yêu cầu. / Too many requests.')
                 cache.set(ratekey,count+1,3600)
@@ -160,7 +160,7 @@ def checkout(request,direct=False):
             return redirect('online-cart-order',key=order.pk)
         except (ValueError,KeyError,TypeError,signing.BadSignature) as exc:form.add_error(None,str(exc))
         except (IntegrityError,OperationalError):form.add_error(None,'Đang xử lý, thử lại cùng yêu cầu. / Processing; retry this request.')
-    return public_render(request,'online/cart_checkout.html',{'direct':direct,'form':form,'rows':rows,'total':sum(r['total'] for r in rows),'available':bool(rows) and not any(r['error'] for r in rows) and checkout_ready()})
+    return public_render(request,'online/cart_checkout.html',{'direct':direct,'form':form,'rows':rows,'total':sum(r['total'] for r in rows),'available':bool(rows) and not any(r['error'] for r in rows) and order_ready()})
 
 def customer_order(request,key):return get_object_or_404(CartOrder,pk=key,session_hash=session_hash(request))
 
@@ -168,12 +168,14 @@ def state(order):
     if order.status=='paid':
         from .views import order_state
         if any(order_state(line)[0]=='review' for line in order.lines.all()):return 'review'
+        if order.payment_method=='cash' and order.email_state=='external':return 'delivered'
         return 'sent' if order.email_state in ('sent','external') else 'paid'
+    if order.payment_method=='cash' and order.cash_requested_at:return 'cash_pending'
     if order.intent_id:return customer_data(order.intent)['state']
     return 'pending'
 
 def label(value,lang):
-    return {'pending':('Chờ thanh toán','Awaiting payment'),'paid':('Đã thanh toán — Chờ gửi vé','Payment received — Awaiting tickets'),'sent':('Đã gửi vé qua email','Tickets sent by email')}.get(value,('Cần kiểm tra trạng thái, không thanh toán lại.','Please check the order status. Do not pay again.'))[lang=='en']
+    return {'cash_pending':('Chờ liên hệ giao vé và thu tiền','Awaiting delivery arrangements & cash payment'),'delivered':('Đã giao vé và thu tiền mặt','Tickets delivered — Cash received'),'pending':('Chờ thanh toán','Awaiting payment'),'paid':('Đã thanh toán — Chờ gửi vé','Payment received — Awaiting tickets'),'sent':('Đã gửi vé qua email','Tickets sent by email')}.get(value,('Cần kiểm tra trạng thái, không thanh toán lại.','Please check the order status. Do not pay again.'))[lang=='en']
 
 @never_cache
 @require_http_methods(['GET','POST'])
@@ -183,17 +185,36 @@ def order_page(request,key):
         try:
             with transaction.atomic():
                 order=CartOrder.objects.select_for_update().get(pk=order.pk)
-                if order.status!='pending' or not checkout_ready():raise ValueError('Đơn không thể tạo QR. / Payment QR unavailable.')
+                method=request.POST.get('payment_method','bank_transfer')
+                if method in ('visa','mastercard','card'):raise ValueError('Thanh toán thẻ quốc tế hiện chưa khả dụng. Vui lòng chọn QR hoặc tiền mặt. / International card payments are currently unavailable. Choose QR or cash.')
+                if method not in ('bank_transfer','cash'):raise ValueError('Phương thức thanh toán không hợp lệ. / Invalid payment method.')
+                if order.status!='pending':raise ValueError('Đơn không còn chờ thanh toán. / Order is no longer pending.')
+                if order.payment_method=='cash':
+                    if method=='cash':return redirect('online-cart-order',key=order.pk)
+                    raise ValueError('Đã gửi yêu cầu giao vé. Liên hệ Sunny trước khi đổi phương thức. / Contact Sunny before changing the delivery payment method.')
+                if method=='cash':
+                    if not order_ready():raise ValueError('Chưa thể nhận yêu cầu. / Orders are temporarily unavailable.')
+                    if order.intent_id:raise ValueError('Đơn đã tạo QR. Liên hệ Sunny để kiểm tra trước khi đổi sang tiền mặt. / A QR already exists. Contact Sunny before switching to cash.')
+                    if timezone.now()>order.created_at+timedelta(minutes=30) or order.lines.filter(visit_date__lt=timezone.localdate()).exists():raise ValueError('Đơn hết hạn giữ giá, hãy đặt lại. / Price hold expired; please book again.')
+                    if not request.POST.get('cash_confirmed'):raise ValueError('Xác nhận giao vé và thu tiền tại Đà Nẵng. / Confirm cash delivery in Da Nang.')
+                    note=request.POST.get('delivery_note','').strip()
+                    if len(note)>500:raise ValueError('Thông tin giao vé tối đa 500 ký tự. / Delivery note: maximum 500 characters.')
+                    order.payment_method='cash';order.cash_requested_at=timezone.now();order.delivery_note=note
+                    order.save(update_fields=['payment_method','cash_requested_at','delivery_note'])
+                    from .payments import notify_admin
+                    transaction.on_commit(lambda:notify_admin(order.pk))
+                    return redirect('online-cart-order',key=order.pk)
+                if not checkout_ready():raise ValueError('Đơn không thể tạo QR. / Payment QR unavailable.')
                 if not order.intent_id:
                     if timezone.now()>order.created_at+timedelta(minutes=30) or order.lines.filter(visit_date__lt=timezone.localdate()).exists():raise ValueError('Đơn hết hạn giữ giá, hãy đặt lại. / Price hold expired; please book again.')
                     Workspace.objects.get_or_create(pk=1)
                     order.intent=SePayIntent.objects.create(owner=owner(),booking_id='CART-'+str(order.pk),booking_code=order.code,booking_version=1,booking_fingerprint=order.fingerprint,code='STP'+str(uuid.uuid4().int%10**18).zfill(18),amount=order.total,bank_code=settings.SEPAY_BANK_CODE,gateway=settings.SEPAY_GATEWAY,account_number=settings.SEPAY_ACCOUNT_NUMBER,account_name=settings.SEPAY_ACCOUNT_NAME,mode=settings.SEPAY_MODE,expires_at=timezone.now()+timedelta(seconds=settings.SEPAY_TTL_SECONDS))
-                    order.save(update_fields=['intent'])
+                    order.payment_method='bank_transfer';order.save(update_fields=['intent','payment_method'])
         except ValueError as exc:error=str(exc)
         except (IntegrityError,OperationalError):error='Đang xử lý. / Processing, please reload.'
     current=state(order)
-    response=public_render(request,'online/cart_order.html',{'order':order,'lines':order.lines.all(),'state':current,'label':label(current,language(request)),'payment':customer_data(order.intent) if order.intent_id else None,'error':error})
-    response['Referrer-Policy']='no-referrer';return response
+    response=public_render(request,'online/cart_order.html',{'order':order,'lines':order.lines.all(),'state':current,'label':label(current,language(request)),'payment':customer_data(order.intent) if order.intent_id else None,'error':error,'qr_ready':checkout_ready()})
+    response['Referrer-Policy']='same-origin';return response
 
 @never_cache
 @require_GET
